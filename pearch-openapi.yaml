@@ -1,0 +1,1172 @@
+openapi: 3.0.4
+info:
+  title: Pearch.AI API
+  description: "Pearch.AI API for executing search queries. You need to pass API key as 'Authorization: Bearer <API_KEY>' header. "
+  version: 1.0
+
+servers:
+  - url: https://api.pearch.ai/
+    description: Main server
+
+paths:
+  /v2/search:
+ 
+    post:
+      summary: Submit a search query with enhanced parameters (POST)
+      tags:
+        - Search endpoints
+      description: |
+        Enhanced search endpoint with additional parameters for more granular control over search behavior.
+        Submit a new search query using POST with JSON body. Uses LangGraph for processing with configurable options.
+        This endpoint always returns results immediately (synchronous).
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                query:
+                  type: string
+                  description: The search query string to be processed.
+                  example: "Software engineer with Python experience from Forida who is interested in science"
+                type:
+                  type: string
+                  enum: [fast, pro]
+                  default: "pro"
+                  description: The type of search to perform. 
+                insights:
+                  type: boolean
+                  default: true
+                  description: Enable detailed insights and analysis for search results.
+                high_freshness:
+                  type: boolean
+                  default: false
+                  description: Enable real-time profile updates for fresher data.
+                profile_scoring:
+                  type: boolean
+                  default: true
+                  description: Enable profile scoring and reranking for better result quality.
+                custom_filters:
+                  type: object
+                  description: |
+                    Custom filters in JSON format for advanced filtering. Format: {"filter_name1": ["value1", "value2"], ...}. The following filters are currently supported: locations, languages, titles, industries, companies, universities, keywords
+                  example: null
+                show_emails:
+                  type: boolean
+                  default: false
+                  description: Include email addresses in search results if available.
+                show_phone_numbers:
+                  type: boolean
+                  default: false
+                  description: Include phone numbers in search results if available.
+                limit:
+                  type: integer
+                  minimum: 1
+                  maximum: 100
+                  default: 10
+                  description: The maximum number of search results to return.
+              required:
+                - query
+      responses:
+        "200":
+          description: Search completed and results returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  uuid:
+                    type: string
+                    description: Unique identifier for the query (thread ID).
+                    example: "ec191bf9-99ff-4989-8383-c97c71fafb6d"
+                  query:
+                    type: string
+                    description: The search query submitted by the user.
+                    example: "software engineer from Ohio"
+                  user:
+                    type: string
+                    description: Email address of the user who made the query.
+                    example: "dev@dev.co"
+                  created_at:
+                    type: number
+                    format: float
+                    description: Timestamp (UNIX epoch) when the query was created.
+                    example: 1744446727.123
+                  duration:
+                    type: number
+                    format: float
+                    description: Time taken to complete the search in seconds.
+                    example: 2.45
+                  status:
+                    type: string
+                    description: The current status of the query.
+                    example: "Done"
+                  total_estimate:
+                    type: integer
+                    description: The estimated total number of search results available.
+                    example: 1000
+                  credits_remaining:
+                    type: integer
+                    description: Number of credits remaining for the user.
+                    example: 950
+                  search_results:
+                    type: array
+                    description: List of search result objects matching the query.
+                    items:
+                      $ref: '#/components/schemas/ScoredProfile'
+        "401":
+          description: Invalid API key
+        "400":
+          description: Invalid parameter values. JSON body contains the error message.
+
+  /v2/search_company_leads:
+    post:
+      summary: Search for companies and their leads
+      tags:
+        - Search endpoints
+      description: |
+        Endpoint for finding companies based on a query and optionally finding leads within those companies. 
+        Allows for generation of personalized outreach messages for the identified leads.
+        This endpoint always returns results immediately (synchronous).
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                company_query:
+                  type: string
+                  description: The search query for finding companies.
+                  example: "AI startups in San Francisco with 50-200 employees"
+                lead_query:
+                  type: string
+                  description: Optional query for finding specific leads within the companies.
+                  example: "CTOs and engineering managers"
+                outreach_message_instruction:
+                  type: string
+                  description: Optional query for generating personalized outreach messages.
+                  example: "Suggest buying my saas recruitment product <300 characters, email style, casual"
+                limit:  
+                  type: integer
+                  minimum: 1
+                  maximum: 1000
+                  default: 50
+                  description: The maximum number of company results to return.
+                leads_limit:
+                  type: integer
+                  minimum: 1
+                  maximum: 10
+                  default: 3
+                  description: The number of leads to find per company. 
+                show_emails:
+                  type: boolean
+                  default: true
+                  description: Include email addresses in lead results if available.
+                show_phone_numbers:
+                  type: boolean
+                  default: true
+                  description: Include phone numbers in lead results if available.
+              required:
+                - company_query
+      responses:
+        "200":
+          description: Company and lead search completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  query:
+                    type: string
+                    description: The complete search query that was processed.
+                    example: "Find companies: ```AI startups in San Francisco```\nFind leads in these companies: ```CTOs and engineering managers```"
+                  search_results:
+                    type: array
+                    description: List of company search results with associated leads.
+                    items:
+                      $ref: '#/components/schemas/CompanyLeadResult'
+                  created_at:
+                    type: number
+                    format: float
+                    description: Timestamp (UNIX epoch) when the query was created.
+                    example: 1744446727.123
+                  duration:
+                    type: number
+                    format: float
+                    description: Time taken to complete the search in seconds.
+                    example: 3.21
+                  user:
+                    type: string
+                    description: Email address of the user who made the query.
+                    example: "dev@dev.co"
+                  status:
+                    type: string
+                    description: The current status of the query.
+                    example: "Done"
+                  total_estimate:
+                    type: integer
+                    description: The estimated total number of companies available.
+                    example: 500
+                  credits_remaining:
+                    type: integer
+                    description: Number of credits remaining for the user.
+                    example: 950
+        "400":
+          description: Invalid parameter values. JSON body contains the error message.
+        "401":
+          description: Invalid API key
+        "502":
+          description: Search Backend Error
+
+   Deprecated and removed from docs
+   /v1/search:                      
+    get:
+      summary: Submit a search query
+      deprecated: true
+      tags:
+        - Search endpoints
+      description: |
+        Deprecated! Don't use this endpoint. Use /v2/search instead.
+        Submit a new search query or check the status of an existing query. Parameter are accepted both as query parameters with GET request and as JSON body with POST request.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: query
+          in: query
+          required: false
+          schema:
+            type: string
+          description: The search query string to be processed. Provide either query or uuid.
+          example: "Seeking a CEO who co-founded a $1B startup"
+        - name: type
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [fast, pro]
+          description: The type of search to perform. 'fast' for quicker but less comprehensive results, 'pro' for more thorough analysis.
+          example: "fast"
+        - name: require_emails
+          in: query
+          required: false
+          schema:
+            type: boolean
+          description: Whether to require search results to have at least one email address (but don't necessarily return them)
+          example: false
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+          description: The maximum number of search results to return.
+          example: 10
+
+      responses:
+        "200":
+          description: Query accepted and status returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  uuid:
+                    type: string
+                    description: Unique identifier for the query.
+                    example: "ec191bf9-99ff-4989-8383-c97c71fafb6d"
+                  query:
+                    type: string
+                    description: The search query submitted by the user.
+                    example: "software engineer from Ohio"
+                  user:
+                    type: string
+                    description: Email address of the user who made the query.
+                    example: "dev@dev.co"
+                  created_at:
+                    type: integer
+                    description: Timestamp (UNIX epoch) when the query was created.
+                    example: 1744446727
+                  status:
+                    type: string
+                    description: The current status of the query.
+                    example: "Done"
+                  total_results:
+                    type: integer
+                    description: The total number of search results returned.
+                    example: 1
+                  progress:
+                    type: number
+                    format: float
+                    description: Progress of the query processing
+                    example: 0.6
+                  execution_details:
+                    type: array
+                    description: Detailed execution steps of the query
+                    items:
+                      type: object
+                      properties:
+                        status:
+                          type: string
+                          description: Status of a specific execution step
+                          example: "Started"
+                        timestamp:
+                          type: integer
+                          description: Timestamp of when the execution step occurred
+                          example: 1672531199
+                  search_results:
+                    type: array
+                    description: List of search result objects matching the query.
+                    items:
+                      $ref: '#/components/schemas/ScoredProfile'
+
+
+        "401":
+          description: Invalid API key
+        "400":
+          description: Invalid parameter values. JSON body contains the error message.
+
+
+  /v1/upsert_jobs:
+    post:
+      summary: Submit a list of jobs to be indexed
+      tags:
+        - Jobs
+      description: |
+        Accepts a JSON array of job objects, each with job_id and job_description fields, and indexes them. If job_id already exists, it will be updated. If replace is true, all existing jobs will be replaced with the provided list. If replace is false or omitted, jobs are upserted (added or updated only).
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                jobs:
+                  type: array
+                  description: List of job objects to be upserted.
+                  items:
+                    type: object
+                    properties:
+                      job_id:
+                        type: string
+                        description: Unique identifier for the job
+                        example: "job-1234"
+                      job_description:
+                        type: string
+                        description: Description of the job
+                        example: "Machine Learning Engineer for an AI startup with leadership skills"
+                    required:
+                      - job_id
+                      - job_description
+                replace:
+                  type: boolean
+                  description: If true, replaces all existing jobs with the provided list. If false or omitted, jobs are upserted (added or updated).
+                  example: false
+              required:
+                - jobs
+      responses:
+        "200":
+          description: Jobs accepted and processed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  uuid:
+                    type: string
+                    description: Unique identifier for the query.
+                    example: "ec191bf9-99ff-4989-8383-c97c71fafb6d"
+                  status:
+                    type: string
+                    example: "success"
+                  processed_count:
+                    type: integer
+                    example: 10
+        "400":
+          description: Invalid job data
+        "401":
+          description: Invalid API key
+
+  /v1/find_matching_jobs:
+    post:
+      summary: Find jobs relevant to the provided profile
+      tags:
+        - Jobs
+      description: |
+        Accepts a profile (arbitrary JSON), and returns a list of jobs relevant to the provided profile. Also accepts optional limit argument. 
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                profile:
+                  type: object
+                  description: Arbitrary JSON representing the candidate profile.
+                  example:
+                    id: "123"
+                    name: "Jane Doe"
+                    work_history:
+                      - company: "Pure Storage"
+                        position: "Product Manager"
+                        start_date: "Mar 2024"
+                        end_date: "Present"
+                        description: ""
+                    education_history:
+                      - institution: "The School of Electrical and Computer Engineering of Applied Studies"
+                        degree: "Bachelor of Applied Science - BASc"
+                        field: "Information Technology"
+                        start_year: "2020"
+                        end_year: "2023"
+                    skills:
+                      - "Python"
+                      - "Machine Learning"
+                limit:
+                  type: integer
+                  description: Maximum number of jobs to return (1-100)
+                  example: 10
+      responses:
+        "200":
+          description: List of relevant jobs returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  uuid:
+                    type: string
+                    description: Unique identifier for the query.
+                    example: "ec191bf9-99ff-4989-8383-c97c71fafb6d"
+                  jobs:
+                    type: array
+                    description: List of job objects relevant to the profile.
+                    items:
+                      type: object
+                      properties:
+                        job_id:
+                          type: string
+                          description: Unique identifier for the job.
+                          example: "job-1234"
+                        job_description:
+                          type: string
+                          description: Job description.
+                          example: "Work on AI models for healthcare."
+                        score:
+                          type: number
+                          format: float
+                          description: Relevance score for the match (2.0..5.0)
+                          example: 2.92
+                        insights:
+                          type: object
+                          description: Insights of how well the job matches the profile.
+                          properties:
+                            query_insights:
+                              type: array
+                              description: Insights broken down by subqueries.
+                              items:
+                                type: object
+                                properties:
+                                  match_level:
+                                    type: string
+                                    description: 'The degree to which the candidate matches the requirement: Exceeds Expectations,Meets Expectations,Partially Meets,Insufficient Data,Does Not Meet'
+                                    example: "Exceeds Expectations"
+                                  priority:
+                                    type: string
+                                    description: 'Indicates how important this subquery: Essential, Important, Optional'
+                                    example: "Essential"
+                                  short_rationale:
+                                    type: string
+                                    description: Concise version of the rationale.
+                                    example: "3+ years as a software engineer"
+                                  subquery:
+                                    type: string
+                                    description: Specific subquery analyzed for this insight.
+                                    example: "software engineer"
+                                  short_quotes:
+                                    type: array
+                                    description: Short quotes from the candidate's profile.
+                                    items:
+                                      type: string
+                                      example: "I have 3+ years of experience in software development."                          
+        "400":
+          description: Invalid input data
+        "401":
+          description: Invalid API key
+
+  /v1/profile:
+    get:
+      summary: Retrieve a user profile
+      tags:
+        - Profile endpoints
+      description: |
+        Retrieve a user profile based on the provided linkedin profile ID (docid) as a query parameter.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: docid
+          in: query
+          required: true
+          schema:
+            type: string
+          description: The linkedin profile ID of the profile to retrieve.
+          example: "hrachik"
+        - name: high_freshness
+          in: query
+          required: false
+          schema:
+            type: boolean
+          description: Enable real-time profile updates for fresher data.
+          example: false
+        - name: show_emails
+          in: query
+          required: false
+          schema:
+            type: boolean
+          description: Include email addresses in the profile if available.
+          example: false
+        - name: show_phone_numbers
+          in: query
+          required: false
+          schema:
+            type: boolean
+          description: Include phone numbers in the profile if available.
+          example: false
+      responses:
+        "200":
+          description: Profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  uuid:
+                    type: string
+                    description: Unique identifier for the query
+                    example: "ec191bf9-99ff-4989-8383-c97c71fafb6d"
+                  profile:
+                    $ref: '#/components/schemas/Profile'
+        "401":
+          description: Invalid API key
+        "404":
+          description: Profile not found
+        "400":
+          description: Invalid parameter values. JSON body contains the error message.
+
+components:
+  schemas:
+      
+    Language:
+      type: object
+      description: Language with proficiency level
+      properties:
+        language:
+          type: string
+          description: Language name
+          example: "English"
+        proficiency:
+          type: string
+          description: "Proficiency level: A1, A2, B1, B2, C1, C2"
+          example: "С1"
+    
+    FundingRound:
+      type: object
+      description: Information about a company's funding round
+      properties:
+        value_usd:
+          type: integer
+          description: Funding amount in USD
+          example: 2000000
+        date:
+          type: string
+          format: date
+          description: Date of the funding round
+          example: "2023-06-15"
+        round_name:
+          type: string
+          description: Name of the funding round
+          example: "Series A"
+    
+    CompanyInfo:
+      type: object
+      description: Comprehensive company information and metadata
+      properties:
+        name:
+          type: string
+          description: The name of the company
+          example: "Dragoonitcn"
+        domain:
+          type: string
+          description: Company's primary domain
+          example: "dragoonitcn.com"
+        website:
+          type: string
+          description: The official website of the company
+          example: "http://www.dragoonitcn.com"
+        linkedin_url:
+          type: string
+          description: The LinkedIn URL of the company
+          example: "https://linkedin.com/company/dragoon-itcn"
+        linkedin_slug:
+          type: string
+          description: LinkedIn slug identifier
+          example: "dragoon-itcn"
+        crunchbase_url:
+          type: string
+          description: The Crunchbase URL of the company
+          example: "https://www.crunchbase.com/organization/dragoonitcn"
+        social_urls:
+          type: array
+          description: List of social media URLs
+          items:
+            type: string
+          example: ["https://twitter.com/dragoonitcn", "https://facebook.com/pages/Dragoonitcn/125328487521849"]
+        emails:
+          type: array
+          description: List of company email addresses
+          items:
+            type: string
+          example: ["contact@dragoonitcn.com", "sales@dragoonitcn.com"]
+        phone_number:
+          type: string
+          description: Company phone number
+          example: "+1-555-123-4567"
+        phone_numbers:
+          type: array
+          description: List of company phone numbers
+          items:
+            type: string
+          example: ["+1-555-123-4567", "+1-555-987-6543"]
+        short_address:
+          type: string
+          description: Brief address information
+          example: "Dayton, OH"
+        locations:
+          type: array
+          description: List of company locations
+          items:
+            type: string
+          example: ["Dayton, Ohio", "San Francisco, CA"]
+        type:
+          type: string
+          description: Type of company
+          example: "Private"
+        description:
+          type: string
+          description: A brief description of the company's business
+          example: "Targeting Complex Aerospace Issues with Precision Test Tools"
+        industries:
+          type: array
+          description: The industries the company operates in
+          items:
+            type: string
+          example: ["Aerospace", "Defense", "Information Technology"]
+        specialties:
+          type: array
+          description: Company specialties
+          items:
+            type: string
+          example: ["Precision Testing", "Aerospace Solutions"]
+        keywords:
+          type: array
+          description: Keywords associated with the company's operations
+          items:
+            type: string
+          example: ["cable fault isolation", "tdr", "comint"]
+        technologies:
+          type: array
+          description: Technologies used by the company
+          items:
+            type: string
+          example: ["Python", "Machine Learning", "Cloud Computing"]
+        founded_in:
+          type: integer
+          description: The year the company was founded
+          example: 1992
+        num_employees:
+          type: integer
+          description: Exact number of employees
+          example: 25
+        num_employees_range:
+          type: string
+          description: The range of the number of employees in the company
+          example: "11-50"
+        annual_revenue:
+          type: integer
+          description: The annual revenue of the company in USD
+          example: 33867000
+        followers_count:
+          type: integer
+          description: Number of followers on LinkedIn
+          example: 1500
+        funding_total_usd:
+          type: integer
+          description: Total funding raised in USD
+          example: 5000000
+        latest_funding_amount:
+          type: integer
+          description: Amount of the latest funding round in USD
+          example: 2000000
+        latest_funding_round:
+          type: string
+          description: Latest funding round information
+          example: "Series A"
+        last_funding_round_year:
+          type: integer
+          description: Year of the last funding round
+          example: 2023
+        valuation:
+          type: integer
+          description: Company valuation in USD
+          example: 50000000
+        funding_rounds:
+          type: array
+          description: List of funding rounds
+          items:
+            $ref: '#/components/schemas/FundingRound'
+        is_startup:
+          type: boolean
+          description: Indicates if the company is considered a startup
+          example: false
+        has_ipo:
+          type: boolean
+          description: Indicates if the company has had an Initial Public Offering (IPO)
+          example: false
+        is_b2b:
+          type: boolean
+          description: Indicates if the company operates on a Business-to-Business model
+          example: true
+        is_b2c:
+          type: boolean
+          description: Indicates if the company operates on a Business-to-Consumer model
+          example: false
+        is_saas:
+          type: boolean
+          description: Indicates if the company provides Software as a Service
+          example: false
+        is_hiring:
+          type: boolean
+          description: Indicates if the company is currently hiring
+          example: true
+        backed_by_y_combinator:
+          type: boolean
+          description: Indicates if the company is backed by Y Combinator
+          example: false
+        icon:
+          type: string
+          description: The URL to the company's icon image
+          example: "https://zenprospect-production.s3.amazonaws.com/uploads/pictures/6768a72faa352b0001ee57ef/picture"
+        website_score:
+          type: integer
+          description: Website quality/trust score
+          example: 85
+
+    Experience:
+      type: object
+      description: Professional work experience
+      properties:
+        sequenceNo:
+          type: integer
+          description: Sequence number for ordering roles
+          example: 1
+        company:
+          type: string
+          description: Name of the company for this role
+          example: "Dragoonitcn"
+        company_domain:
+          type: string
+          description: Company domain
+          example: "dragoonitcn.com"
+        title:
+          type: string
+          description: Job title for the role
+          example: "Software Engineer II"
+        start_date:
+          type: string
+          format: date
+          description: Start date of the role
+          example: "2024-01-01"
+        end_date:
+          type: string
+          format: date
+          description: End date of the role
+          example: "2024-08-01"
+        duration_years:
+          type: number
+          description: Duration in years the role was held
+          example: 0.7
+        age_years:
+          type: number
+          description: Age of the experience in years
+          example: 1.2
+        location:
+          type: string
+          description: Location of the job
+          example: "Dayton, Ohio, United States"
+        location_info:
+          type: object
+          description: Structured location information
+          additionalProperties: true
+        experience_summary:
+          type: string
+          description: Summary of responsibilities and accomplishments in this role
+          example: "Designed and developed software using .NET..."
+        is_current_experience:
+          type: boolean
+          description: Whether this is the current role
+          example: true
+        company_info:
+          $ref: '#/components/schemas/CompanyInfo'
+
+    Education:
+      type: object
+      description: Educational experience
+      properties:
+        sequenceNo:
+          type: integer
+          description: Sequence number for ordering education entries
+          example: 1
+        university_linkedin_url:
+          type: string
+          description: LinkedIn URL of the educational institution
+          example: "https://linkedin.com/school/university-of-california-berkeley"
+        campus:
+          type: string
+          description: Campus name or location
+          example: "Berkeley Campus"
+        specialization:
+          type: string
+          description: Field of specialization or study
+          example: "Computer Science"
+        degree:
+          type: array
+          description: 'List of degrees obtained: "bachelor", "master", "MBA", "doctor", "postdoc"'
+          items:
+            type: string
+          example: ["Bachelor", "Doctor"]
+        major:
+          type: string
+          description: Major field of study
+          example: "Computer Science"
+
+    Certification:
+      type: object
+      description: Professional certification
+      properties:
+        title:
+          type: string
+          description: Certification title
+          example: "AWS Certified Solutions Architect"
+
+    Patent:
+      type: object
+      description: Patent information
+      properties:
+        title:
+          type: string
+          description: Patent title
+          example: "Machine Learning Algorithm for Data Processing"
+        reference:
+          type: string
+          description: Patent reference number
+          example: "US10123456B2"
+        description:
+          type: string
+          description: Patent description
+          example: "A novel approach to processing large datasets using machine learning techniques"
+        date:
+          type: string
+          format: date
+          description: Patent date
+          example: "2023-05-15"
+        url:
+          type: string
+          description: URL to patent documentation
+          example: "https://patents.uspto.gov/patent/10123456"
+
+    CompanyExperienceGroup:
+      type: object
+      description: Group of experiences at the same company
+      properties:
+        company_info:
+          $ref: '#/components/schemas/CompanyInfo'
+        company_roles:
+          type: array
+          description: Roles held by the candidate in this company
+          items:
+            $ref: '#/components/schemas/Experience'
+
+    Profile:
+      type: object
+      description: Structured profile of the candidate based on StrictProfile schema.
+      properties:
+        docid:
+          type: string
+          description: Unique document ID of the candidate profile.
+          example: "jason-tysl"
+        linkedin_slug:
+          type: string
+          description: LinkedIn profile slug/identifier.
+          example: "jason-tysl"
+        first_name:
+          type: string
+          description: First name of the candidate.
+          example: "Jason"
+        middle_name:
+          type: string
+          description: Middle name of the candidate.
+          example: "Michael"
+        last_name:
+          type: string
+          description: Last name of the candidate.
+          example: "Tysl"
+        picture_url:
+          type: string
+          description: URL to the candidate's profile picture.
+          example: "https://example.com/profile.jpg"
+        title:
+          type: string
+          description: Current job title or headline.
+          example: "Software Engineer II"
+        summary:
+          type: string
+          description: Professional summary or bio.
+          example: "Experienced software engineer with expertise in..."
+        gender:
+          type: string
+          description: 'Gender of the candidate. As of now only two genders are supported: male, female'
+          example: "male"
+        is_decision_maker:
+          type: number
+          description: Whether the candidate is a decision maker in their organization 0 means no, 1 means yes.
+          example: 1.
+        languages:
+          type: array
+          description: List of languages the candidate knows with proficiency levels.
+          items:
+            $ref: '#/components/schemas/Language'
+        inferred_languages:
+          type: array
+          description: Languages inferred from the candidate's profile with proficiency levels.
+          items:
+            $ref: '#/components/schemas/Language'
+        location:
+          type: string
+          description: Current location of the candidate.
+          example: "Dayton, Ohio, United States"
+        is_top_universities:
+          type: boolean
+          description: Whether the candidate attended a top university.
+          example: true
+        is_opentowork:
+          type: boolean
+          description: Whether the candidate is open to work opportunities.
+          example: false
+        is_hiring:
+          type: boolean
+          description: Whether the candidate is currently hiring.
+          example: false
+        total_experience_years:
+          type: number
+          description: Total years of professional experience.
+          example: 3.5
+        estimated_age:
+          type: number
+          description: Estimated age of the candidate.
+          example: 28.0
+        expertise:
+          type: array
+          description: Areas of expertise or skills.
+          items:
+            type: string
+          example: ["Python", "Machine Learning", "Software Engineering"]
+        has_emails:
+          type: boolean
+          description: Whether the candidate has any email addresses available.
+          example: true
+        emails:
+          type: array
+          description: List of all email addresses associated with the candidate.
+          items:
+            type: string
+          example: ["jtysl@agileblue.com", "jason.tysl@gmail.com"]
+        best_personal_email:
+          type: string
+          description: Best personal email address for the candidate.
+          example: "jason.tysl@gmail.com"
+        best_business_email:
+          type: string
+          description: Best business email address for the candidate.
+          example: "jtysl@agileblue.com"
+        personal_emails:
+          type: array
+          description: List of personal email addresses.
+          items:
+            type: string
+          example: ["jason.tysl@gmail.com"]
+        business_emails:
+          type: array
+          description: List of business email addresses.
+          items:
+            type: string
+          example: ["jtysl@agileblue.com"]
+        has_phone_numbers:
+          type: boolean
+          description: Whether the candidate has any phone numbers available.
+          example: true
+        phone_numbers:
+          type: array
+          description: List of phone numbers associated with the candidate.
+          items:
+            type: string
+          example: ["+1-555-123-4567"]
+        phone_types:
+          type: array
+          description: List of phone number types available for the candidate.
+          items:
+            type: string
+          example: ["mobile", "work", "home"]
+        followers_count:
+          type: integer
+          description: Number of followers on LinkedIn.
+          example: 150
+        connections_count:
+          type: integer
+          description: Number of connections on LinkedIn.
+          example: 500
+        experiences:
+          type: array
+          description: List of professional work experiences grouped by company.
+          items:
+            $ref: '#/components/schemas/CompanyExperienceGroup'
+        educations:
+          type: array
+          description: List of educational experiences.
+          items:
+            $ref: '#/components/schemas/Education'
+        awards:
+          type: array
+          description: List of awards or recognitions received.
+          items:
+            type: string
+          example: ["The Morrill Scholarship Program"]
+        certifications:
+          type: array
+          description: List of certifications.
+          items:
+            $ref: '#/components/schemas/Certification'
+        memberships:
+          type: array
+          description: List of professional memberships.
+          items:
+            type: object
+            description: Membership object with flexible structure.
+            additionalProperties: true
+        patents:
+          type: array
+          description: List of patents.
+          items:
+            $ref: '#/components/schemas/Patent'
+        publications:
+          type: array
+          description: List of publications.
+          items:
+            type: object
+            description: Publication object with flexible structure.
+            additionalProperties: true
+        updated_date:
+          type: string
+          format: date
+          description: Date when the profile was last updated.
+          example: "2024-01-15"
+        outreach_message:
+          type: string
+          description: Personalized outreach message for the candidate.
+          example: "Hi Jason, I noticed your expertise in Python and machine learning..."
+
+    ScoredProfile:
+      type: object
+      description: A single search result object containing candidate profile and analysis
+      properties:
+        docid:
+          type: string
+          description: Unique document ID of the candidate profile.
+          example: "jason-tysl"
+        insighter:
+          type: object
+          description: Analysis and insights relevant to the query.
+          properties:
+            overall_summary:
+              type: string
+              description: General summary of the candidate's fit for the role.
+              example: "Jason Tysl is qualified engineer with 3+ years of experience."
+            query_insights:
+              type: array
+              description: Insights derived from the query, broken down by subquery.
+              items:
+                type: object
+                properties:
+                  match_level:
+                    type: string
+                    description: 'The degree to which the candidate matches the requirement: Exceeds Expectations,Meets Expectations,Partially Meets,Insufficient Data,Does Not Meet'
+                    example: "Exceeds Expectations"
+                  priority:
+                    type: string
+                    description: 'Indicates how important this subquery: Essential, Important, Optional'
+                    example: "Essential"
+                  short_rationale:
+                    type: string
+                    description: Concise version of the rationale.
+                    example: "3+ years as a software engineer"
+                  subquery:
+                    type: string
+                    description: Specific subquery analyzed for this insight.
+                    example: "software engineer"
+                  short_quotes:
+                    type: array
+                    description: Short quotes from the candidate's profile.
+                    items:
+                      type: string
+                      example: "I have 3+ years of experience in software development."
+        score:
+          type: integer
+          description: Numerical score representing candidate relevance.
+          example: 4
+          enum: [2, 3, 4]
+        profile:
+          $ref: '#/components/schemas/Profile'
+
+    CompanyLeadResult:
+      type: object
+      description: A company search result with associated leads
+      properties:
+        company:
+          $ref: '#/components/schemas/CompanyInfo'
+        leads:
+          type: array
+          description: List of leads found within this company.
+          items:
+            $ref: '#/components/schemas/ScoredProfile'
+        score:
+          type: number
+          format: float
+          description: Relevance score for the company match (0..100). 100 means the company is a perfect match for the query.
+          example: 85
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+   
+security:
+  - bearerAuth: []
