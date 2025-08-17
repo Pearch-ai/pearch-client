@@ -224,8 +224,7 @@ paths:
         "502":
           description: Search Backend Error
 
-   Deprecated and removed from docs
-   /v1/search:                      
+  /v1/search:                      
     get:
       summary: Submit a search query
       deprecated: true
