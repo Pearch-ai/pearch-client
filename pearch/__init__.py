@@ -1,6 +1,11 @@
 """Pearch client library for accessing the Pearch API."""
 
-from .client import AsyncPearchClient, PearchAPIError, PearchAuthenticationError, PearchValidationError
+from .client import (
+    AsyncPearchClient,
+    PearchAPIError,
+    PearchAuthenticationError,
+    PearchValidationError,
+)
 from .schema import (
     V1FindMatchingJobsRequest,
     V1ProfileRequest,
@@ -8,20 +13,20 @@ from .schema import (
     V1UpsertJobsRequest,
     V2SearchRequest,
     V2SearchCompanyLeadsRequest,
-    Job
+    Job,
 )
 
 __version__ = "0.1.0"
 __all__ = [
     "AsyncPearchClient",
-    "PearchAPIError", 
+    "PearchAPIError",
     "PearchAuthenticationError",
     "PearchValidationError",
     "V1FindMatchingJobsRequest",
-    "V1ProfileRequest", 
+    "V1ProfileRequest",
     "V1SearchRequest",
     "V1UpsertJobsRequest",
     "V2SearchRequest",
     "V2SearchCompanyLeadsRequest",
-    "Job"
+    "Job",
 ]

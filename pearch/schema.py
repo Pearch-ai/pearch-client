@@ -7,7 +7,6 @@ from pydantic import BaseModel, ConfigDict, Field
 logger = logging.getLogger("schema.py")
 
 
-
 class FundingRound(BaseModel):
     value_usd: int | None = None
     date: Date | None = None
@@ -124,7 +123,7 @@ class Profile(BaseModel):
     picture_url: str | None = None
     title: str | None = None
     summary: str | None = None
-    gender: Literal["male","female"] | None = None
+    gender: Literal["male", "female"] | None = None
     is_decision_maker: float | None = None
     languages: List[Language] | None = Field(default_factory=list)
     inferred_languages: List[Language] | None = Field(default_factory=list)
@@ -141,7 +140,7 @@ class Profile(BaseModel):
     personal_emails: List[str] | None = Field(default_factory=list)
     business_emails: List[str] | None = Field(default_factory=list)
     has_phone_numbers: bool | None = None
-    has_emails: bool | None = None    
+    has_emails: bool | None = None
     phone_numbers: List[str] | None = Field(default_factory=list)
     phone_types: List[str] | None = Field(default_factory=list)
     followers_count: int | None = None
@@ -157,7 +156,7 @@ class Profile(BaseModel):
     updated_date: Date | None = None
 
     outreach_message: str | None = None
- 
+
     model_config = ConfigDict(extra="ignore")
 
 
@@ -177,10 +176,11 @@ class Insighter(BaseModel):
 
 
 class ScoredProfile(BaseModel):
-    docid: str 
+    docid: str
     profile: Profile | None = None
     insighter: Insighter | None = None
     score: int | None = None
+    outreach_message: str | None = None
     model_config = ConfigDict(extra="ignore")
 
 
@@ -269,6 +269,7 @@ class V1ProfileResponse(BaseModel):
 
 # Request parameter classes for each endpoint
 
+
 class V2SearchRequest(BaseModel):
     query: str
     type: Literal["fast", "pro"] | None = "pro"
@@ -325,4 +326,3 @@ class V1ProfileRequest(BaseModel):
     show_emails: bool | None = False
     show_phone_numbers: bool | None = False
     model_config = ConfigDict(extra="ignore")
-

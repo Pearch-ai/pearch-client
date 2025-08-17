@@ -1087,10 +1087,6 @@ components:
           format: date
           description: Date when the profile was last updated.
           example: "2024-01-15"
-        outreach_message:
-          type: string
-          description: Personalized outreach message for the candidate.
-          example: "Hi Jason, I noticed your expertise in Python and machine learning..."
 
     ScoredProfile:
       type: object
@@ -1143,6 +1139,11 @@ components:
           enum: [2, 3, 4]
         profile:
           $ref: '#/components/schemas/Profile'
+        outreach_message:
+          type: string
+          description: Personalized outreach message for the candidate.
+          example: "Hi Jason, I noticed your expertise in Python and machine learning..."
+
 
     CompanyLeadResult:
       type: object

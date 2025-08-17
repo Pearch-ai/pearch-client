@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pearch-client"
-version = "0.1.0"
+version = "1.0.0"
 description = "Python client library for the Pearch API"
 readme = "README.MD"
 requires-python = ">=3.8"
@@ -12,7 +12,7 @@ authors = [
     {name = "Pearch Team"}
 ]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.8",
@@ -31,13 +31,15 @@ dependencies = [
 [project.optional-dependencies]
 test = [
     "pytest>=7.0.0",
+    "pytest-dotenv",
 ]
 dev = [
     "pytest>=7.0.0",
+    "pytest-dotenv",
 ]
 
 [project.urls]
-"Repository" = "https://github.com/your-org/pearch-client"
+"Repository" = "https://github.com/Pearch-ai/pearch-client"
 
 
 
@@ -47,3 +49,6 @@ include = ["pearch*"]
 
 [tool.setuptools.package-dir]
 pearch = "pearch"
+
+[tool.black]
+line-length = 120
