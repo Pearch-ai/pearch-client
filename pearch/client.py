@@ -27,6 +27,8 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
+TIMEOUT = 1800
+
 
 class PearchAPIError(Exception):
     """Base exception for Pearch API errors"""
@@ -66,7 +68,7 @@ class PearchClient:
         self,
         api_key: Optional[str] = None,
         base_url: str = None,
-        timeout: float = 30.0,
+        timeout: float = TIMEOUT,
         max_retries: int = 3,
         token: Optional[str] = None,
         **kwargs,
@@ -341,7 +343,7 @@ class AsyncPearchClient:
         self,
         api_key: Optional[str] = None,
         base_url: Optional[str] = None,
-        timeout: float = 30.0,
+        timeout: float = TIMEOUT,
         max_retries: int = 3,
         token: Optional[str] = None,
         **kwargs,

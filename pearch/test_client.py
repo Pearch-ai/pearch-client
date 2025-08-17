@@ -80,11 +80,15 @@ async def test_find_matching_jobs():
 
 @pytest.mark.asyncio
 async def test_profile():
-    request = V1ProfileRequest(docid="vslaykovsky", show_emails=True)
+    request = V1ProfileRequest(docid="vslaykovsky", show_emails=True, high_freshness=True)
     generate_curl_command("get_profile", request)
     response = await AsyncPearchClient().get_profile(request)
     assert "vlad" in response.profile.first_name.lower()
 
+    request = V1ProfileRequest(docid="victorsunden", show_emails=True, high_freshness=True)
+    generate_curl_command("get_profile", request)
+    response = await AsyncPearchClient().get_profile(request)
+    assert "victor" in response.profile.first_name.lower()
 
 @pytest.mark.asyncio
 async def test_v1_fast_search():
