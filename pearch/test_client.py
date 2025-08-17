@@ -39,7 +39,7 @@ def generate_curl_command(client_method: str, request: Any) -> str:
         return f"# Unable to generate curl for {client_method}"
 
     http_method, endpoint = method_mapping[client_method]
-    base_url = os.getenv("PEARCH_API_URL")
+    base_url = os.getenv("PEARCH_API_URL") or "https://api.pearch.ai/"
     api_key = os.getenv("PEARCH_API_KEY")
     token = os.getenv("PEARCH_TEST_KEY")
     url = f"{base_url.rstrip('/')}/{endpoint}"
