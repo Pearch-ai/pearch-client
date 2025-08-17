@@ -85,12 +85,16 @@ with PearchClient() as client:
             )
         ]
     ))
+    print(response.uuid)
+    print(response.status)
     print(f"Upsert status: {response.model_dump_json()}")
 ```
 Output:
 ```bash
 INFO - pearch.client - client.py:270 - Upserting 1 jobs (replace=False)
 INFO - httpx - _client.py:1025 - HTTP Request: POST https://api.pearch.ai/v1/upsert_jobs "HTTP/1.1 200 OK"
+e7d685cd-e669-4b1c-b4e4-276ed607d735
+success
 Upsert status: {"uuid":"e7d685cd-e669-4b1c-b4e4-276ed607d735","status":"success","processed_count":1}
 ```
 
@@ -105,14 +109,14 @@ with PearchClient() as client:
         limit=2,
     ))
     for job in response.jobs:
-        print(job.model_dump_json()[:100])
+        print(job.job_id, job.model_dump_json()[:100])
 ```
 Output:
 ```bash
 INFO - pearch.client - client.py:295 - Finding matching jobs for profile (limit=2)
 INFO - httpx - _client.py:1025 - HTTP Request: POST https://api.pearch.ai/v1/find_matching_jobs "HTTP/1.1 200 OK"
-{"job_id":"83","job_description":"We are seeking a Senior Silicon Design Enginee
-{"job_id":"84","job_description":"Join a leading enterprise in the medical imagi
+83 {"job_id":"83","job_description":"We are seeking a Senior Silicon Design Enginee
+84 {"job_id":"84","job_description":"Join a leading enterprise in the medical imagi
 ```
 
 ### Enrich profile (/v1/profile)
