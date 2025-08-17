@@ -65,7 +65,7 @@ class PearchClient:
     def __init__(
         self,
         api_key: Optional[str] = None,
-        base_url: str = "https://api.pearch.ai/",
+        base_url: str = None,
         timeout: float = 30.0,
         max_retries: int = 3,
         token: Optional[str] = None,
@@ -76,7 +76,7 @@ class PearchClient:
 
         Args:
             api_key: Your Pearch.AI API key (defaults to PEARCH_API_KEY environment variable)
-            base_url: Base URL for the API (default: https://api.pearch.ai/)
+            base_url: Base URL for the API (default: PEARCH_API_URL or https://api.pearch.ai/)
             timeout: Request timeout in seconds (default: 30.0)
             max_retries: Maximum number of retries for failed requests (default: 3)
             token: Optional test token (sent as X-Test-Secret header)
@@ -85,6 +85,9 @@ class PearchClient:
         # Use environment variable if api_key not provided
         if api_key is None:
             api_key = os.getenv("PEARCH_API_KEY")
+
+        if base_url is None:
+            base_url = os.getenv("PEARCH_API_URL") or "https://api.pearch.ai/"
 
         if not api_key:
             raise ValueError(
@@ -348,7 +351,7 @@ class AsyncPearchClient:
 
         Args:
             api_key: Your Pearch.AI API key (defaults to PEARCH_API_KEY environment variable)
-            base_url: Base URL for the API (default: https://api.pearch.ai/)
+            base_url: Base URL for the API (default: PEARCH_API_URL or https://api.pearch.ai/)
             timeout: Request timeout in seconds (default: 30.0)
             max_retries: Maximum number of retries for failed requests (default: 3)
             token: Optional test token (sent as X-Test-Secret header)
@@ -356,7 +359,7 @@ class AsyncPearchClient:
         """
         # Use environment variable if api_key not provided
         if base_url is None:
-            base_url = os.getenv("PEARCH_API_URL")
+            base_url = os.getenv("PEARCH_API_URL") or "https://api.pearch.ai/"
 
         if api_key is None:
             api_key = os.getenv("PEARCH_API_KEY")

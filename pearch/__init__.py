@@ -2,6 +2,7 @@
 
 from .client import (
     AsyncPearchClient,
+    PearchClient,
     PearchAPIError,
     PearchAuthenticationError,
     PearchValidationError,
@@ -19,6 +20,7 @@ from .schema import (
 __version__ = "0.1.0"
 __all__ = [
     "AsyncPearchClient",
+    "PearchClient",
     "PearchAPIError",
     "PearchAuthenticationError",
     "PearchValidationError",
