@@ -1,24 +1,27 @@
 openapi: 3.0.4
 info:
   title: Pearch.AI API
-  description: "Pearch.AI API for executing search queries. You need to pass API key as 'Authorization: Bearer <API_KEY>' header. "
-  version: 1.0
+  description: "Pearch.AI API. You need to pass API key as 'Authorization: Bearer <API_KEY>' header."
+  version: 2.0
 
 servers:
   - url: https://api.pearch.ai/
     description: Main server
 
 paths:
-  /v2/search:
- 
+  /v2/search: 
     post:
-      summary: Submit a search query with enhanced parameters (POST)
+      summary: Search people profiles
       tags:
         - Search endpoints
-      description: |
-        Enhanced search endpoint with additional parameters for more granular control over search behavior.
-        Submit a new search query using POST with JSON body. Uses LangGraph for processing with configurable options.
-        This endpoint always returns results immediately (synchronous).
+      description: |        
+        Run a search query. This accepts a natural langugage query as `query` parameter along with additional settings. It returns a list of profiles that match the query and orders them by relevance.
+        The query can be a simple search query like "software engineer from Ohio" or a more complex query like "Find me engineers in California speaking at least basic english working in software industry with experience at FAANG with 2+ years of experience and at least 500 followers and at least BS degree".
+        Use parameters to control tradeoffs between speed and quality. Here are some recipes:        
+        - For highest quality results (1-3 minutes) use pro search with insights and profile scoring enabled: `{"query": "<YOUR QUERY HERE>", "type": "pro", "insights": true, "profile_scoring": true}`
+        - If you have "broad" queries where you expect many results (>1000) to be returned, then "fast" search may work well for you and save some costs and time. `{"query": "<YOUR QUERY HERE>", "type": "fast", "insights": true, "profile_scoring": true}`
+        - If you want results very fast, then enforce no filtering by passing empty `custom_filters` and turn of `insights` and `profile_scoring`: `{"query": "<YOUR QUERY HERE>", "type": "fast", "insights": false, "profile_scoring": flase, "custom_filters": {}}`
+        Check out other parameters below to adjust speed vs quality and additional data that can be returned by the endpoint. 
       security:
         - bearerAuth: []
       requestBody:
@@ -30,29 +33,32 @@ paths:
               properties:
                 query:
                   type: string
-                  description: The search query string to be processed.
+                  description: The human readable search query string. The query can be a simple search query like "software engineer from Ohio" or a more complex query like "Find me engineers in California speaking at least basic english working in software industry with experience at FAANG with 2+ years of experience and at least 500 followers and at least BS degree". Query parameter can handle full job descriptions, but passing specific subset of important requirements normally works better
                   example: "Software engineer with Python experience from Forida who is interested in science"
                 type:
                   type: string
                   enum: [fast, pro]
                   default: "pro"
-                  description: The type of search to perform. 
+                  description: The type of search to perform. "fast" is faster but may have less recall. "pro" is slower and more costly, but has higher quality and recall. 
                 insights:
                   type: boolean
                   default: true
-                  description: Enable detailed insights and analysis for search results.
+                  description: Enable detailed insights and analysis for search results. If your product only needs highly relevant profiles with scores without deeper explanations, use insights=false, profile_scoring=true
                 high_freshness:
                   type: boolean
                   default: false
-                  description: Enable real-time profile updates for fresher data.
+                  description: Enable real-time profile updates for fresher data. This downloads the most recent copies of profiles directly from source websites in realtime (e.g. Linkedin). If you are ok with profiles that may be a few months outdated, and want to save ~30 seconds, turn off high_freshness.
                 profile_scoring:
                   type: boolean
                   default: true
-                  description: Enable profile scoring and reranking for better result quality.
+                  description: Enable profile scoring and reranking for better result quality. This filters out less relevant profiles and produces scores for more relevant once. Scores range from 2.0 to 4.0 where higher is better. 
                 custom_filters:
                   type: object
                   description: |
-                    Custom filters in JSON format for advanced filtering. Format: {"filter_name1": ["value1", "value2"], ...}. The following filters are currently supported: locations, languages, titles, industries, companies, universities, keywords
+                    Custom filters in JSON format for advanced filtering. 
+                    Format: {"filter_name1": ["value1", "value2"], ...}. The following filters are currently supported: locations, languages, titles, industries, companies, universities, keywords
+                    Use any string values; Pearch.ai matches them to profile data.
+                    If you want to force no filtering (e.g. to speed up search), pass empty object `{}`
                   example: null
                 show_emails:
                   type: boolean
