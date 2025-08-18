@@ -36,11 +36,15 @@ paths:
                   type: string
                   description: The human readable search query string. The query can be a simple search query like "software engineer from Ohio" or a more complex query like "Find me engineers in California speaking at least basic english working in software industry with experience at FAANG with 2+ years of experience and at least 500 followers and at least BS degree". Query parameter can handle full job descriptions, but passing specific subset of important requirements normally works better
                   example: "Software engineer with Python experience from Florida who is interested in science"
+                  default: "Software engineer with Python experience from Florida who is interested in science"
                 type:
                   type: string
                   enum: [fast, pro]
                   default: "pro"
-                  description: The type of search to perform. "fast" is faster but may have less recall. "pro" is slower and more costly, but has higher quality and recall. 
+                  description: |
+                    The type of search to perform. 
+                    * "fast" is faster but may have less recall. 
+                    * "pro" is slower and more costly, but has higher quality and recall. 
                 insights:
                   type: boolean
                   default: true
@@ -56,20 +60,30 @@ paths:
                 custom_filters:
                   type: object
                   description: |
-                    Custom filters in JSON format for advanced filtering. 
-                    Format: {"filter_name1": ["value1", "value2"], "filter_name2": ["value3", "value4"], ...}. This is applied as boolean filters `(filter_name1=value1 OR filter_name1=value2) AND (filter_name2=value3 OR filter_name2=value4)` etc.
-                    The following fields are currently supported: `locations`, `languages`, `titles`, `industries`, `companies`, `universities`, `keywords`
-                    Use any string values as is. Pearch.ai internally correctly matches them to profile data. E.g. you may pass {"industries": "health"} to filter for profiles in health industry, this will be correctly mapped to pearch.ai internal "healthcare" industry. 
-                    If you want to force no filtering at all (either custom_filters or default filters), pass empty object `"custom_filters": {}`. This will speed up search, increase recall at some relevancy cost.  
-                  example: null
+                    Custom filters in JSON format for advanced filtering. Leave empty to use default filtering logic. 
+                    Format: `{"filter_name1": ["value1", "value2"], "filter_name2": ["value3", "value4"], ...}`. This is applied as boolean filters `(filter_name1=value1 OR filter_name1=value2) AND (filter_name2=value3 OR filter_name2=value4)` etc.
+
+                    The following fields are currently supported: 
+                    * `locations`
+                    * `languages`
+                    * `titles`
+                    * `industries`
+                    * `companies`
+                    * `universities`
+                    * `keywords`
+
+                    Use any string values as is. Pearch.ai internally correctly matches them to profile data. E.g. you may pass `{"industries": "health"}` to filter for profiles in health industry, this will be correctly mapped to pearch.ai internal `healthcare` industry. 
+                    If you want to force no filtering at all (`custom_filters` or default filters), pass empty object `"custom_filters": {}`. This will speed up search, increase recall at some relevancy cost.  
+                  example: {"industries": ["health", "pharma"], "locations": ["San Francisco", "New York"], "titles": ["software engineer", "data scientist"]}
+                  default: null
                 show_emails:
                   type: boolean
                   default: false
-                  description: Include email addresses in search results if available. This returns all available emails including personal and work emails. Additional charges apply.
+                  description: Include email addresses in search results if available. This returns all available emails including personal and work emails. _Additional charges may apply_
                 show_phone_numbers:
                   type: boolean
                   default: false
-                  description: Include phone numbers in search results if available. This returns all available phone numbers including personal and work numbers. Additional charges apply.
+                  description: Include phone numbers in search results if available. This returns all available phone numbers including personal and work numbers. _Additional charges may apply_
                 limit:
                   type: integer
                   minimum: 1
@@ -157,6 +171,7 @@ paths:
                   type: string
                   description: The search query for finding companies.
                   example: "AI startups in San Francisco with 50-200 employees"
+                  default: "AI startups in San Francisco with 50-200 employees"
                 lead_query:
                   type: string
                   description: 'Optional query for finding specific leads within the companies. Do not include company requirements in the lead query. if you don''t have good intuition about personas to target, use a very broad query like `{..., "lead_query": "people who I can contact regarding partnerships or any c-level (CEO CFO COO CTO CIO CMO CHRO CPO CLO CSO) /founder/director/owner roles"}`'
@@ -180,11 +195,11 @@ paths:
                 show_emails:
                   type: boolean
                   default: false
-                  description: Include email addresses in lead results if available. Additional charges apply.
+                  description: Include email addresses in lead results if available. _Additional charges may apply_.
                 show_phone_numbers:
                   type: boolean
                   default: false
-                  description: Include phone numbers in lead results if available. Additional charges apply.
+                  description: Include phone numbers in lead results if available. _Additional charges may apply_.
               required:
                 - company_query
       responses:
@@ -256,7 +271,7 @@ paths:
           schema:
             type: string
           description: The search query string to be processed. Provide either query or uuid.
-          example: "Seeking a CEO who co-founded a $1B startup"
+          example: "Software engineer with Python experience from Florida who is interested in science"
         - name: type
           in: query
           required: false
@@ -351,10 +366,10 @@ paths:
       tags:
         - Jobs
       description: |
-        Accepts a JSON array of job objects, each with job_id and job_description fields, and adds them to a custom index. Each account can have a single custom index only. 
-        This endpoint is used in conjunction with /v1/find_matching_jobs endpoint. First you need to upsert jobs, then you can use /v1/find_matching_jobs to find jobs relevant to a profile.
-        If `"replace"` is true, all existing jobs will be replaced with the provided list. This means for example that if a job with existing job_id "job-1234" already exists, but it is not provided in the request, then it will be removed from the index.
-        If `"replace"` is false or omitted, jobs are upserted (added or updated only).
+        Accepts a JSON array of job objects, each with `job_id` and `job_description` fields, and adds them to a custom index. Each account can have a single custom index only. 
+        This endpoint is used in conjunction with `/v1/find_matching_jobs` endpoint. 
+        1. First you need to upsert jobs with `/v1/upsert_jobs`
+        2. Then you can use `/v1/find_matching_jobs` to find jobs relevant to a profile.        
       security:
         - bearerAuth: []
       requestBody:
@@ -383,7 +398,9 @@ paths:
                       - job_description
                 replace:
                   type: boolean
-                  description: If true, replaces all existing jobs with the provided list. If false or omitted, jobs are upserted (added or updated).
+                  description: |
+                    * If `"replace"` is true, all existing jobs will be replaced with the provided list. This means for example that if a job with existing `job_id` "job-1234" already exists, but it is not provided in the request, then it will be removed from the index. 
+                    * If `"replace"` is false or omitted, jobs are upserted (added or updated only).
                   example: false
               required:
                 - jobs
@@ -417,7 +434,10 @@ paths:
       tags:
         - Jobs
       description: |
-        Accepts a profile (arbitrary JSON), and returns a list of jobs relevant to the provided profile. This endpoint is used in conjunction with /v1/upsert_jobs endpoint. First you need to create/update jobs index with /v1/upsert_jobs, then you can use /v1/find_matching_jobs to find jobs relevant to a profile.
+        Accepts a profile (arbitrary JSON), and returns a list of jobs relevant to the provided profile. 
+        This endpoint is used in conjunction with `/v1/upsert_jobs` endpoint. 
+        1. First you need to upsert jobs with `/v1/upsert_jobs`
+        2. Then you can use `/v1/find_matching_jobs` to find jobs relevant to a profile.        
       security:
         - bearerAuth: []
       requestBody:
@@ -529,7 +549,7 @@ paths:
       tags:
         - Enrichment
       description: |
-        Retrieve enriched user profile based on the provided Linkedin profile ID as a query parameter. Linkedin profile ID is the part that comes after "https://www.linkedin.com/in/" in the profile URL.
+        Retrieve enriched user profile based on the provided Linkedin profile ID as a query parameter. Linkedin profile ID is the part that comes after `https://www.linkedin.com/in/` in the profile URL.
       security:
         - bearerAuth: []
       parameters:
@@ -538,7 +558,7 @@ paths:
           required: true
           schema:
             type: string
-          description: The linkedin profile ID of the profile to retrieve. Linkedin profile ID is the part that comes after "https://www.linkedin.com/in/" in the profile URL.
+          description: The linkedin profile ID of the profile to retrieve. Linkedin profile ID is the part that comes after `https://www.linkedin.com/in/` in the profile URL.
           example: "hrachik"
         - name: high_freshness
           in: query
@@ -552,14 +572,14 @@ paths:
           required: false
           schema:
             type: boolean
-          description: Include email addresses in the profile if available. Additional charges apply.
+          description: Include email addresses in the profile if available. _Additional charges may apply_.
           example: false
         - name: show_phone_numbers
           in: query
           required: false
           schema:
             type: boolean
-          description: Include phone numbers in the profile if available. Additional charges apply.
+          description: Include phone numbers in the profile if available. _Additional charges may apply_.
           example: false
       responses:
         "200":
