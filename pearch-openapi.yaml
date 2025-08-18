@@ -2,7 +2,7 @@ openapi: 3.0.4
 info:
   title: Pearch.AI API
   description: "Pearch.AI API. You need to pass API key as 'Authorization: Bearer <API_KEY>' header."
-  version: 2.0
+  version: "2.0"
 
 servers:
   - url: https://api.pearch.ai/
@@ -11,9 +11,10 @@ servers:
 paths:
   /v2/search: 
     post:
+      operationId: post_v2-search
       summary: Search people profiles
       tags:
-        - Search endpoints
+        - Search
       description: |        
         Run a search query. This accepts a natural language query as `query` parameter along with additional settings. It returns a list of profiles that match the query and orders them by relevance.
         The query can be a simple search query like "software engineer from Ohio" or a more complex query like "Find me engineers in California speaking at least basic english working in software industry with experience at FAANG with 2+ years of experience and at least 500 followers and at least BS degree".
@@ -43,7 +44,7 @@ paths:
                 insights:
                   type: boolean
                   default: true
-                  description: Enable detailed insights and analysis for search results. This includes scores for each of query requirements along with quotes from profiles that match subqueries. Check out `insights` output fields for details. This may be helpful if you share search results with users and want to provide deeper explanations of why profiles are relevant. If your product only needs highly relevant profiles without explanations, use `{"insights": false, "profile_scoring": true}`
+                  description: 'Enable detailed insights and analysis for search results. This includes scores for each of query requirements along with quotes from profiles that match subqueries. Check out `insights` output fields for details. This may be helpful if you share search results with users and want to provide deeper explanations of why profiles are relevant. If your product only needs highly relevant profiles without explanations, use `{"insights": false, "profile_scoring": true}`'
                 high_freshness:
                   type: boolean
                   default: false
@@ -131,9 +132,10 @@ paths:
 
   /v2/search_company_leads:
     post:
+      operationId: post_v2-search-company-leads
       summary: Search for companies and their leads
       tags:
-        - Search endpoints
+        - Search
       description: |
         Endpoint for finding companies and related leads within those companies. Primary use case is for B2B sales, but can also be used for headhunting/executive search. It uses natural language query and returns a list of most relevant companies. 
         Allows for generation of personalized outreach messages for the identified leads.
@@ -157,7 +159,7 @@ paths:
                   example: "AI startups in San Francisco with 50-200 employees"
                 lead_query:
                   type: string
-                  description: Optional query for finding specific leads within the companies. Do not include company requirements in the lead query. if you don't have good intuition about personas to target, use a very broad query like `{..., "lead_query": "people who I can contact regarding partnerships or any c-level (CEO CFO COO CTO CIO CMO CHRO CPO CLO CSO) /founder/director/owner roles"}`
+                  description: 'Optional query for finding specific leads within the companies. Do not include company requirements in the lead query. if you don''t have good intuition about personas to target, use a very broad query like `{..., "lead_query": "people who I can contact regarding partnerships or any c-level (CEO CFO COO CTO CIO CMO CHRO CPO CLO CSO) /founder/director/owner roles"}`'
                   example: "CTOs and engineering managers"
                 outreach_message_instruction:
                   type: string
@@ -237,10 +239,11 @@ paths:
 
   /v1/search:                      
     get:
-      summary: Submit a search query
+      operationId: get_v1-search
+      summary: Search people profiles
       deprecated: true
       tags:
-        - Search endpoints
+        - Search
       description: |
         Deprecated! Don't use this endpoint. Use /v2/search instead.
         Submit a new search query or check the status of an existing query. Parameter are accepted both as query parameters with GET request and as JSON body with POST request.
@@ -343,7 +346,8 @@ paths:
 
   /v1/upsert_jobs:
     post:
-      summary: Submit a list of jobs to be indexed
+      operationId: post_v1-upsert-jobs
+      summary: Index jobs
       tags:
         - Jobs
       description: |
@@ -408,7 +412,8 @@ paths:
 
   /v1/find_matching_jobs:
     post:
-      summary: Find jobs relevant to the provided profile. 
+      operationId: post_v1-find-matching-jobs
+      summary: Find relevant jobs
       tags:
         - Jobs
       description: |
@@ -519,9 +524,10 @@ paths:
 
   /v1/profile:
     get:
-      summary: Retrieve a user profile
+      operationId: get_v1-profile
+      summary: Enrich profile
       tags:
-        - Profile endpoints
+        - Enrichment
       description: |
         Retrieve enriched user profile based on the provided Linkedin profile ID as a query parameter. Linkedin profile ID is the part that comes after "https://www.linkedin.com/in/" in the profile URL.
       security:
