@@ -23,6 +23,8 @@ paths:
         - If you have "broad" queries where you expect many results (>1000) to be returned, then "fast" search may work well for you and save some costs and time. `{"query": "<YOUR QUERY HERE>", "type": "fast", "insights": true, "profile_scoring": true}`
         - If you want results very fast, then enforce no filtering by passing empty `custom_filters` and turn of `insights` and `profile_scoring`: `{"query": "<YOUR QUERY HERE>", "type": "fast", "insights": false, "profile_scoring": false, "custom_filters": {}}`
         Check out other parameters below to adjust speed vs quality and additional data that can be returned by the endpoint. 
+
+        _Check out official [Python client](https://github.com/Pearch-ai/pearch-client)_
       security:
         - bearerAuth: []
       requestBody:
@@ -158,6 +160,8 @@ paths:
         - When you need companies and leads, pass both company and lead queries. Note that the lead query shouldn't include company requirements: `{"company_query": "manufacturers of aviation parts", "lead_query": "CTOs and engineering managers"}`
         - When you want to generate personalized outreach messages for the identified leads, pass the outreach message instruction: `{"company_query": "manufacturers of aviation parts", "lead_query": "CTOs and engineering managers", "outreach_message_instruction": "Suggest buying my (Rob) SaaS recruitment product <300 characters, email style, casual, personal touch"}`
         - if you don't have good intuition about personas to target, use a very broad query like `{..., "lead_query": "people who I can contact regarding partnerships or any c-level (CEO CFO COO CTO CIO CMO CHRO CPO CLO CSO) /founder/director/owner roles"}`
+        
+        _Check out official [Python client](https://github.com/Pearch-ai/pearch-client)_
       security:
         - bearerAuth: []
       requestBody:
@@ -260,8 +264,10 @@ paths:
       tags:
         - Search
       description: |
-        Deprecated! Don't use this endpoint. Use /v2/search instead.
+        **Deprecated!** Don't use this endpoint. Use [/v2/search](/reference/post_v2-search) instead.
         Submit a new search query or check the status of an existing query. Parameter are accepted both as query parameters with GET request and as JSON body with POST request.
+
+        _Check out official [Python client](https://github.com/Pearch-ai/pearch-client)_
       security:
         - bearerAuth: []
       parameters:
@@ -368,8 +374,10 @@ paths:
       description: |
         Accepts a JSON array of job objects, each with `job_id` and `job_description` fields, and adds them to a custom index. Each account can have a single custom index only. 
         This endpoint is used in conjunction with `/v1/find_matching_jobs` endpoint. 
-        1. First you need to upsert jobs with `/v1/upsert_jobs`
-        2. Then you can use `/v1/find_matching_jobs` to find jobs relevant to a profile.        
+        1. First you need to upsert jobs with [/v1/upsert_jobs](/reference/post_v1-upsert-jobs)
+        2. Then you can use [/v1/find_matching_jobs](/reference/post_v1-find-matching-jobs) to find jobs relevant to a profile.        
+
+        _Check out official [Python client](https://github.com/Pearch-ai/pearch-client)_
       security:
         - bearerAuth: []
       requestBody:
@@ -435,9 +443,11 @@ paths:
         - Jobs
       description: |
         Accepts a profile (arbitrary JSON), and returns a list of jobs relevant to the provided profile. 
-        This endpoint is used in conjunction with `/v1/upsert_jobs` endpoint. 
-        1. First you need to upsert jobs with `/v1/upsert_jobs`
-        2. Then you can use `/v1/find_matching_jobs` to find jobs relevant to a profile.        
+        This endpoint is used in conjunction with `/v1/find_matching_jobs` endpoint. 
+        1. First you need to upsert jobs with [/v1/upsert_jobs](/reference/post_v1-upsert-jobs)
+        2. Then you can use [/v1/find_matching_jobs](/reference/post_v1-find-matching-jobs) to find jobs relevant to a profile.        
+
+        _Check out official [Python client](https://github.com/Pearch-ai/pearch-client)_
       security:
         - bearerAuth: []
       requestBody:
@@ -550,6 +560,8 @@ paths:
         - Enrichment
       description: |
         Retrieve enriched user profile based on the provided Linkedin profile ID as a query parameter. Linkedin profile ID is the part that comes after `https://www.linkedin.com/in/` in the profile URL.
+
+        _Check out official [Python client](https://github.com/Pearch-ai/pearch-client)_
       security:
         - bearerAuth: []
       parameters:
