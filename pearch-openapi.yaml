@@ -15,12 +15,12 @@ paths:
       tags:
         - Search endpoints
       description: |        
-        Run a search query. This accepts a natural langugage query as `query` parameter along with additional settings. It returns a list of profiles that match the query and orders them by relevance.
+        Run a search query. This accepts a natural language query as `query` parameter along with additional settings. It returns a list of profiles that match the query and orders them by relevance.
         The query can be a simple search query like "software engineer from Ohio" or a more complex query like "Find me engineers in California speaking at least basic english working in software industry with experience at FAANG with 2+ years of experience and at least 500 followers and at least BS degree".
         Use parameters to control tradeoffs between speed and quality. Here are some recipes:        
         - For highest quality results (1-3 minutes) use pro search with insights and profile scoring enabled: `{"query": "<YOUR QUERY HERE>", "type": "pro", "insights": true, "profile_scoring": true}`
         - If you have "broad" queries where you expect many results (>1000) to be returned, then "fast" search may work well for you and save some costs and time. `{"query": "<YOUR QUERY HERE>", "type": "fast", "insights": true, "profile_scoring": true}`
-        - If you want results very fast, then enforce no filtering by passing empty `custom_filters` and turn of `insights` and `profile_scoring`: `{"query": "<YOUR QUERY HERE>", "type": "fast", "insights": false, "profile_scoring": flase, "custom_filters": {}}`
+        - If you want results very fast, then enforce no filtering by passing empty `custom_filters` and turn of `insights` and `profile_scoring`: `{"query": "<YOUR QUERY HERE>", "type": "fast", "insights": false, "profile_scoring": false, "custom_filters": {}}`
         Check out other parameters below to adjust speed vs quality and additional data that can be returned by the endpoint. 
       security:
         - bearerAuth: []
@@ -34,7 +34,7 @@ paths:
                 query:
                   type: string
                   description: The human readable search query string. The query can be a simple search query like "software engineer from Ohio" or a more complex query like "Find me engineers in California speaking at least basic english working in software industry with experience at FAANG with 2+ years of experience and at least 500 followers and at least BS degree". Query parameter can handle full job descriptions, but passing specific subset of important requirements normally works better
-                  example: "Software engineer with Python experience from Forida who is interested in science"
+                  example: "Software engineer with Python experience from Florida who is interested in science"
                 type:
                   type: string
                   enum: [fast, pro]
@@ -43,7 +43,7 @@ paths:
                 insights:
                   type: boolean
                   default: true
-                  description: Enable detailed insights and analysis for search results. If your product only needs highly relevant profiles with scores without deeper explanations, use insights=false, profile_scoring=true
+                  description: Enable detailed insights and analysis for search results. This includes scores for each of query requirements along with quotes from profiles that match subqueries. Check out `insights` output fields for details. This may be helpful if you share search results with users and want to provide deeper explanations of why profiles are relevant. If your product only needs highly relevant profiles without explanations, use `{"insights": false, "profile_scoring": true}`
                 high_freshness:
                   type: boolean
                   default: false
@@ -51,27 +51,28 @@ paths:
                 profile_scoring:
                   type: boolean
                   default: true
-                  description: Enable profile scoring and reranking for better result quality. This filters out less relevant profiles and produces scores for more relevant once. Scores range from 2.0 to 4.0 where higher is better. 
+                  description: Enable profile scoring and reranking for better result quality. This filters out less relevant profiles and produces scores for more relevant once. Scores range from 0.0 to 4.0 where higher is better. 
                 custom_filters:
                   type: object
                   description: |
                     Custom filters in JSON format for advanced filtering. 
-                    Format: {"filter_name1": ["value1", "value2"], ...}. The following filters are currently supported: locations, languages, titles, industries, companies, universities, keywords
-                    Use any string values; Pearch.ai matches them to profile data.
-                    If you want to force no filtering (e.g. to speed up search), pass empty object `{}`
+                    Format: {"filter_name1": ["value1", "value2"], "filter_name2": ["value3", "value4"], ...}. This is applied as boolean filters `(filter_name1=value1 OR filter_name1=value2) AND (filter_name2=value3 OR filter_name2=value4)` etc.
+                    The following fields are currently supported: `locations`, `languages`, `titles`, `industries`, `companies`, `universities`, `keywords`
+                    Use any string values as is. Pearch.ai internally correctly matches them to profile data. E.g. you may pass {"industries": "health"} to filter for profiles in health industry, this will be correctly mapped to pearch.ai internal "healthcare" industry. 
+                    If you want to force no filtering at all (either custom_filters or default filters), pass empty object `"custom_filters": {}`. This will speed up search, increase recall at some relevancy cost.  
                   example: null
                 show_emails:
                   type: boolean
                   default: false
-                  description: Include email addresses in search results if available.
+                  description: Include email addresses in search results if available. This returns all available emails including personal and work emails. Additional charges apply.
                 show_phone_numbers:
                   type: boolean
                   default: false
-                  description: Include phone numbers in search results if available.
+                  description: Include phone numbers in search results if available. This returns all available phone numbers including personal and work numbers. Additional charges apply.
                 limit:
                   type: integer
                   minimum: 1
-                  maximum: 100
+                  maximum: 1000
                   default: 10
                   description: The maximum number of search results to return.
               required:
@@ -134,9 +135,13 @@ paths:
       tags:
         - Search endpoints
       description: |
-        Endpoint for finding companies based on a query and optionally finding leads within those companies. 
+        Endpoint for finding companies and related leads within those companies. Primary use case is for B2B sales, but can also be used for headhunting/executive search. It uses natural language query and returns a list of most relevant companies. 
         Allows for generation of personalized outreach messages for the identified leads.
-        This endpoint always returns results immediately (synchronous).
+        Some recipes:
+        - When you only need companies, pass only the company query: `{"company_query": "manufacturers of aviation parts"}`
+        - When you need companies and leads, pass both company and lead queries. Note that the lead query shouldn't include company requirements: `{"company_query": "manufacturers of aviation parts", "lead_query": "CTOs and engineering managers"}`
+        - When you want to generate personalized outreach messages for the identified leads, pass the outreach message instruction: `{"company_query": "manufacturers of aviation parts", "lead_query": "CTOs and engineering managers", "outreach_message_instruction": "Suggest buying my (Rob) SaaS recruitment product <300 characters, email style, casual, personal touch"}`
+        - if you don't have good intuition about personas to target, use a very broad query like `{..., "lead_query": "people who I can contact regarding partnerships or any c-level (CEO CFO COO CTO CIO CMO CHRO CPO CLO CSO) /founder/director/owner roles"}`
       security:
         - bearerAuth: []
       requestBody:
@@ -152,11 +157,11 @@ paths:
                   example: "AI startups in San Francisco with 50-200 employees"
                 lead_query:
                   type: string
-                  description: Optional query for finding specific leads within the companies.
+                  description: Optional query for finding specific leads within the companies. Do not include company requirements in the lead query. if you don't have good intuition about personas to target, use a very broad query like `{..., "lead_query": "people who I can contact regarding partnerships or any c-level (CEO CFO COO CTO CIO CMO CHRO CPO CLO CSO) /founder/director/owner roles"}`
                   example: "CTOs and engineering managers"
                 outreach_message_instruction:
                   type: string
-                  description: Optional query for generating personalized outreach messages.
+                  description: Optional instruction for generating personalized outreach messages. This uses LLM to generate a message for each lead. In addition to this instruction the LLM gets full lead's profile and company information as context. 
                   example: "Suggest buying my saas recruitment product <300 characters, email style, casual"
                 limit:  
                   type: integer
@@ -172,12 +177,12 @@ paths:
                   description: The number of leads to find per company. 
                 show_emails:
                   type: boolean
-                  default: true
-                  description: Include email addresses in lead results if available.
+                  default: false
+                  description: Include email addresses in lead results if available. Additional charges apply.
                 show_phone_numbers:
                   type: boolean
-                  default: true
-                  description: Include phone numbers in lead results if available.
+                  default: false
+                  description: Include phone numbers in lead results if available. Additional charges apply.
               required:
                 - company_query
       responses:
@@ -342,7 +347,10 @@ paths:
       tags:
         - Jobs
       description: |
-        Accepts a JSON array of job objects, each with job_id and job_description fields, and indexes them. If job_id already exists, it will be updated. If replace is true, all existing jobs will be replaced with the provided list. If replace is false or omitted, jobs are upserted (added or updated only).
+        Accepts a JSON array of job objects, each with job_id and job_description fields, and adds them to a custom index. Each account can have a single custom index only. 
+        This endpoint is used in conjunction with /v1/find_matching_jobs endpoint. First you need to upsert jobs, then you can use /v1/find_matching_jobs to find jobs relevant to a profile.
+        If `"replace"` is true, all existing jobs will be replaced with the provided list. This means for example that if a job with existing job_id "job-1234" already exists, but it is not provided in the request, then it will be removed from the index.
+        If `"replace"` is false or omitted, jobs are upserted (added or updated only).
       security:
         - bearerAuth: []
       requestBody:
@@ -360,11 +368,11 @@ paths:
                     properties:
                       job_id:
                         type: string
-                        description: Unique identifier for the job
+                        description: Unique identifier for the job. This is used to match jobs in consecutive calls to /v1/upsert_jobs.
                         example: "job-1234"
                       job_description:
                         type: string
-                        description: Description of the job
+                        description: Free form description of the job. This can be full JD or a shorter description.
                         example: "Machine Learning Engineer for an AI startup with leadership skills"
                     required:
                       - job_id
@@ -400,11 +408,11 @@ paths:
 
   /v1/find_matching_jobs:
     post:
-      summary: Find jobs relevant to the provided profile
+      summary: Find jobs relevant to the provided profile. 
       tags:
         - Jobs
       description: |
-        Accepts a profile (arbitrary JSON), and returns a list of jobs relevant to the provided profile. Also accepts optional limit argument. 
+        Accepts a profile (arbitrary JSON), and returns a list of jobs relevant to the provided profile. This endpoint is used in conjunction with /v1/upsert_jobs endpoint. First you need to create/update jobs index with /v1/upsert_jobs, then you can use /v1/find_matching_jobs to find jobs relevant to a profile.
       security:
         - bearerAuth: []
       requestBody:
@@ -438,6 +446,8 @@ paths:
                 limit:
                   type: integer
                   description: Maximum number of jobs to return (1-100)
+                  minimum: 1
+                  maximum: 100
                   example: 10
       responses:
         "200":
@@ -459,7 +469,7 @@ paths:
                       properties:
                         job_id:
                           type: string
-                          description: Unique identifier for the job.
+                          description: Unique identifier for the job. This is the same as job_id passed to /v1/upsert_jobs.
                           example: "job-1234"
                         job_description:
                           type: string
@@ -468,7 +478,7 @@ paths:
                         score:
                           type: number
                           format: float
-                          description: Relevance score for the match (2.0..5.0)
+                          description: Relevance score for the match (2.0..5.0). Higher is better. 
                           example: 2.92
                         insights:
                           type: object
@@ -513,7 +523,7 @@ paths:
       tags:
         - Profile endpoints
       description: |
-        Retrieve a user profile based on the provided linkedin profile ID (docid) as a query parameter.
+        Retrieve enriched user profile based on the provided Linkedin profile ID as a query parameter. Linkedin profile ID is the part that comes after "https://www.linkedin.com/in/" in the profile URL.
       security:
         - bearerAuth: []
       parameters:
@@ -522,28 +532,28 @@ paths:
           required: true
           schema:
             type: string
-          description: The linkedin profile ID of the profile to retrieve.
+          description: The linkedin profile ID of the profile to retrieve. Linkedin profile ID is the part that comes after "https://www.linkedin.com/in/" in the profile URL.
           example: "hrachik"
         - name: high_freshness
           in: query
           required: false
           schema:
             type: boolean
-          description: Enable real-time profile updates for fresher data.
+          description: Enable real-time profile updates for fresher data. This downloads the most recent copies of profiles directly from source websites in realtime (e.g. Linkedin). If you are ok with profiles that may be a few months outdated, turn off high_freshness.
           example: false
         - name: show_emails
           in: query
           required: false
           schema:
             type: boolean
-          description: Include email addresses in the profile if available.
+          description: Include email addresses in the profile if available. Additional charges apply.
           example: false
         - name: show_phone_numbers
           in: query
           required: false
           schema:
             type: boolean
-          description: Include phone numbers in the profile if available.
+          description: Include phone numbers in the profile if available. Additional charges apply.
           example: false
       responses:
         "200":
@@ -580,7 +590,7 @@ components:
         proficiency:
           type: string
           description: "Proficiency level: A1, A2, B1, B2, C1, C2"
-          example: "С1"
+          example: "C1"
     
     FundingRound:
       type: object
@@ -856,7 +866,7 @@ components:
           description: 'List of degrees obtained: "bachelor", "master", "MBA", "doctor", "postdoc"'
           items:
             type: string
-          example: ["Bachelor", "Doctor"]
+          example: ["bachelor", "doctor"]
         major:
           type: string
           description: Major field of study
