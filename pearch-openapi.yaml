@@ -256,6 +256,188 @@ paths:
         "502":
           description: Search Backend Error
 
+  /v2/search/submit:
+    post:
+      operationId: post_v2-search-submit
+      summary: Submit a search task for background execution
+      tags:
+        - Search
+      description: |
+        Submit a search query to be processed asynchronously in the background. This endpoint returns immediately with a task ID that can be used to check the status and retrieve results when ready.
+        
+        This is useful for long-running searches that may take several minutes to complete. The search will continue processing in the background while you can use the task ID to monitor progress and retrieve results.
+        
+        All the same search parameters are supported as the synchronous `/v2/search` endpoint.
+        
+        _Check out official [Python client](https://github.com/Pearch-ai/pearch-client)_
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                query:
+                  type: string
+                  description: The human readable search query string. The query can be a simple search query like "software engineer from Ohio" or a more complex query like "Find me engineers in California speaking at least basic english working in software industry with experience at FAANG with 2+ years of experience and at least 500 followers and at least BS degree". Query parameter can handle full job descriptions, but passing specific subset of important requirements normally works better
+                  example: "Software engineer with Python experience from Florida who is interested in science"
+                  default: "Software engineer with Python experience from Florida who is interested in science"
+                type:
+                  type: string
+                  enum: [fast, pro]
+                  default: "pro"
+                  description: |
+                    The type of search to perform. 
+                    * "fast" is faster but may have less recall. 
+                    * "pro" is slower and more costly, but has higher quality and recall. 
+                insights:
+                  type: boolean
+                  default: true
+                  description: 'Enable detailed insights and analysis for search results. This includes scores for each of query requirements along with quotes from profiles that match subqueries. Check out `insights` output fields for details. This may be helpful if you share search results with users and want to provide deeper explanations of why profiles are relevant. If your product only needs highly relevant profiles without explanations, use `{"insights": false, "profile_scoring": true}`'
+                high_freshness:
+                  type: boolean
+                  default: false
+                  description: Enable real-time profile updates for fresher data. This downloads the most recent copies of profiles directly from source websites in realtime (e.g. Linkedin). If you are ok with profiles that may be a few months outdated, and want to save ~30 seconds, turn off high_freshness.
+                profile_scoring:
+                  type: boolean
+                  default: true
+                  description: Enable profile scoring and reranking for better result quality. This filters out less relevant profiles and produces scores for more relevant once. Scores range from 0.0 to 4.0 where higher is better. 
+                custom_filters:
+                  type: object
+                  description: |
+                    Custom filters in JSON format for advanced filtering. Leave empty to use default filtering logic. 
+                    Format: `{"filter_name1": ["value1", "value2"], "filter_name2": ["value3", "value4"], ...}`. This is applied as boolean filters `(filter_name1=value1 OR filter_name1=value2) AND (filter_name2=value3 OR filter_name2=value4)` etc.
+
+                    The following fields are currently supported: 
+                    * `locations`
+                    * `languages`
+                    * `titles`
+                    * `industries`
+                    * `companies`
+                    * `universities`
+                    * `keywords`
+
+                    Use any string values as is. Pearch.ai internally correctly matches them to profile data. E.g. you may pass `{"industries": "health"}` to filter for profiles in health industry, this will be correctly mapped to pearch.ai internal `healthcare` industry. 
+                    If you want to force no filtering at all (`custom_filters` or default filters), pass empty object `"custom_filters": {}`. This will speed up search, increase recall at some relevancy cost.  
+                  example: {"industries": ["health", "pharma"], "locations": ["San Francisco", "New York"], "titles": ["software engineer", "data scientist"]}
+                  default: null
+                show_emails:
+                  type: boolean
+                  default: false
+                  description: Include email addresses in search results if available. This returns all available emails including personal and work emails. _Additional charges may apply_
+                show_phone_numbers:
+                  type: boolean
+                  default: false
+                  description: Include phone numbers in search results if available. This returns all available phone numbers including personal and work numbers. _Additional charges may apply_
+                limit:
+                  type: integer
+                  minimum: 1
+                  maximum: 1000
+                  default: 10
+                  description: The maximum number of search results to return.
+              required:
+                - query
+      responses:
+        "202":
+          description: Search task submitted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  task_id:
+                    type: string
+                    description: Unique identifier for the submitted search task.
+                    example: "ec191bf9-99ff-4989-8383-c97c71fafb6d"
+                  status:
+                    type: string
+                    description: The current status of the submitted task.
+                    example: "pending"
+                  message:
+                    type: string
+                    description: Human-readable message about the task submission.
+                    example: "Search task submitted successfully"
+        "400":
+          description: Invalid parameter values. JSON body contains the error message.
+        "401":
+          description: Invalid API key
+
+  /v2/search/status/{task_id}:
+    get:
+      operationId: get_v2-search-status
+      summary: Get the status of a submitted search task
+      tags:
+        - Search
+      description: |
+        Check the current status of a search task that was submitted via `/v2/search/submit`. This endpoint returns the current status and, if completed, the search results.
+        
+        The task status can be one of:
+        - `pending`: Task is queued but not yet started
+        - `running`: Task is currently being processed
+        - `completed`: Task has finished successfully and results are available
+        - `failed`: Task failed and error details are provided
+        
+        _Check out official [Python client](https://github.com/Pearch-ai/pearch-client)_
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: task_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The task ID returned from the `/v2/search/submit` endpoint.
+          example: "ec191bf9-99ff-4989-8383-c97c71fafb6d"
+      responses:
+        "200":
+          description: Task status retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  task_id:
+                    type: string
+                    description: The task ID that was queried.
+                    example: "ec191bf9-99ff-4989-8383-c97c71fafb6d"
+                  status:
+                    type: string
+                    description: The current status of the task.
+                    example: "completed"
+                  created_at:
+                    type: string
+                    description: ISO 8601 timestamp when the task was created.
+                    example: "2024-01-15T10:30:00Z"
+                  query:
+                    type: string
+                    description: The search query that was submitted for this task.
+                    example: "software engineer with Python experience from Florida"
+                  result:
+                    type: object
+                    description: The search results if the task is completed. Contains the same structure as the `/v2/search` endpoint response.
+                    additionalProperties: true
+                  duration:
+                    type: number
+                    format: float
+                    description: Time taken to complete the search in seconds (only present when completed).
+                    example: 45.2
+                  error:
+                    type: string
+                    description: Error message if the task failed (only present when status is "failed").
+                    example: "Search backend service unavailable"
+                  started_at:
+                    type: string
+                    description: ISO 8601 timestamp when the task started running (only present when status is "running").
+                    example: "2024-01-15T10:30:05Z"
+        "404":
+          description: Task not found
+        "401":
+          description: Invalid API key
+        "500":
+          description: Database error
+
   /v1/search:                      
     get:
       operationId: get_v1-search

@@ -18,6 +18,9 @@ from .schema import (
     V2SearchCompanyLeadsResponse,
     V2SearchRequest,
     V2SearchResponse,
+    V2SearchSubmitRequest,
+    V2SearchSubmitResponse,
+    V2SearchStatusResponse,
 )
 
 logging.basicConfig(
@@ -233,6 +236,50 @@ class PearchClient:
         )
 
         return V2SearchCompanyLeadsResponse(**response_data)
+
+    def search_submit(self, request: V2SearchSubmitRequest) -> V2SearchSubmitResponse:
+        """
+        Submit a search task for background execution
+
+        Submit a search query to be processed asynchronously. Returns a task ID
+        that can be used to check the status and retrieve results.
+
+        Args:
+            request: Search submit request parameters
+
+        Returns:
+            Search submit response with task ID and status
+        """
+        logger.info(f"Submitting search task with query: {request.query}")
+
+        response_data = self._make_request(
+            method="POST",
+            endpoint="v2/search/submit",
+            data=request.model_dump(exclude_none=True),
+        )
+
+        return V2SearchSubmitResponse(**response_data)
+
+    def get_search_status(self, task_id: str) -> V2SearchStatusResponse:
+        """
+        Get the status of a submitted search task
+
+        Check the current status of a search task and retrieve results if completed.
+
+        Args:
+            task_id: The task ID returned from search_submit
+
+        Returns:
+            Search status response with current status and results if available
+        """
+        logger.info(f"Checking status for search task: {task_id}")
+
+        response_data = self._make_request(
+            method="GET",
+            endpoint=f"v2/search/status/{task_id}",
+        )
+
+        return V2SearchStatusResponse(**response_data)
 
     # V1 API Methods (Legacy)
 
@@ -506,6 +553,50 @@ class AsyncPearchClient:
         )
 
         return V2SearchCompanyLeadsResponse(**response_data)
+
+    async def search_submit(self, request: V2SearchSubmitRequest) -> V2SearchSubmitResponse:
+        """
+        Submit a search task for background execution - async version
+
+        Submit a search query to be processed asynchronously. Returns a task ID
+        that can be used to check the status and retrieve results.
+
+        Args:
+            request: Search submit request parameters
+
+        Returns:
+            Search submit response with task ID and status
+        """
+        logger.info(f"Submitting async search task with query: {request.query}")
+
+        response_data = await self._make_request(
+            method="POST",
+            endpoint="v2/search/submit",
+            data=request.model_dump(exclude_none=True),
+        )
+
+        return V2SearchSubmitResponse(**response_data)
+
+    async def get_search_status(self, task_id: str) -> V2SearchStatusResponse:
+        """
+        Get the status of a submitted search task - async version
+
+        Check the current status of a search task and retrieve results if completed.
+
+        Args:
+            task_id: The task ID returned from search_submit
+
+        Returns:
+            Search status response with current status and results if available
+        """
+        logger.info(f"Checking async status for search task: {task_id}")
+
+        response_data = await self._make_request(
+            method="GET",
+            endpoint=f"v2/search/status/{task_id}",
+        )
+
+        return V2SearchStatusResponse(**response_data)
 
     # V1 API Methods (Legacy)
 

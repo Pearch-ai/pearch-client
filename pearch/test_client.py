@@ -17,6 +17,7 @@ from pearch.schema import (
     V1UpsertJobsRequest,
     V2SearchRequest,
     V2SearchCompanyLeadsRequest,
+    V2SearchSubmitRequest,
     Job,
 )
 
@@ -33,6 +34,8 @@ def generate_curl_command(client_method: str, request: Any) -> str:
         "upsert_jobs": ("POST", "v1/upsert_jobs"),
         "search": ("POST", "v2/search"),
         "search_company_leads": ("POST", "v2/search_company_leads"),
+        "search_submit": ("POST", "v2/search/submit"),
+        "get_search_status": ("GET", "v2/search/status"),
     }
 
     if client_method not in method_mapping:
@@ -42,7 +45,11 @@ def generate_curl_command(client_method: str, request: Any) -> str:
     base_url = os.getenv("PEARCH_API_URL") or "https://api.pearch.ai/"
     api_key = os.getenv("PEARCH_API_KEY")
     token = os.getenv("PEARCH_TEST_KEY")
-    url = f"{base_url.rstrip('/')}/{endpoint}"
+    
+    if client_method == "get_search_status":
+        url = f"{base_url.rstrip('/')}/{endpoint}/<task_id>"
+    else:
+        url = f"{base_url.rstrip('/')}/{endpoint}"
 
     curl_parts = ["curl", "-X", http_method]
     curl_parts.extend(["-H", f"'Authorization: Bearer {api_key}'"])
@@ -149,3 +156,35 @@ async def test_search_company_leads():
         for company_result in response.search_results
         for lead in (company_result.leads or [])
     )
+
+
+@pytest.mark.asyncio
+async def test_search_submit():
+    request = V2SearchSubmitRequest(
+        query="software engineers in California with 5+ years experience",
+        type="pro",
+        insights=True,
+        limit=5,
+        show_emails=True,
+    )
+    generate_curl_command("search_submit", request)
+    response = await AsyncPearchClient().search_submit(request)
+    assert response.task_id
+    assert response.status == "pending"
+    assert "successfully" in response.message.lower()
+
+
+@pytest.mark.asyncio
+async def test_get_search_status():
+    submit_request = V2SearchSubmitRequest(
+        query="test query for status check",
+        type="fast",
+        limit=2,
+    )
+    submit_response = await AsyncPearchClient().search_submit(submit_request)
+    task_id = submit_response.task_id
+    
+    status_response = await AsyncPearchClient().get_search_status(task_id)
+    assert status_response.task_id == task_id
+    assert status_response.status in ["pending", "running", "completed", "failed"]
+    assert status_response.query == "test query for status check"
