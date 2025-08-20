@@ -12,7 +12,7 @@ paths:
   /v2/search: 
     post:
       operationId: post_v2-search
-      summary: Search people profiles
+      summary: Search people profiles (synchronous)
       tags:
         - Search
       description: |        
@@ -259,7 +259,7 @@ paths:
   /v2/search/submit:
     post:
       operationId: post_v2-search-submit
-      summary: Submit a search task for background execution
+      summary: Search people profiles (asynchronous)
       tags:
         - Search
       description: |
@@ -367,7 +367,7 @@ paths:
   /v2/search/status/{task_id}:
     get:
       operationId: get_v2-search-status
-      summary: Get the status of a submitted search task
+      summary: Get the status of asynchronous search task
       tags:
         - Search
       description: |
@@ -441,7 +441,7 @@ paths:
   /v1/search:                      
     get:
       operationId: get_v1-search
-      summary: Search people profiles
+      summary: Search people profiles (deprecated)
       deprecated: true
       tags:
         - Search
