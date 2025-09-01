@@ -78,10 +78,18 @@ paths:
                     If you want to force no filtering at all (`custom_filters` or default filters), pass empty object `"custom_filters": {}`. This will speed up search, increase recall at some relevancy cost.  
                   example: {"industries": ["health", "pharma"], "locations": ["San Francisco", "New York"], "titles": ["software engineer", "data scientist"]}
                   default: null
+                require_emails:
+                  type: boolean
+                  default: false
+                  description: Only return profiles with at least one email address. Profiles will have additional `has_email` field set to true.
                 show_emails:
                   type: boolean
                   default: false
                   description: Include email addresses in search results if available. This returns all available emails including personal and work emails. _Additional charges may apply_
+                require_phone_numbers:
+                  type: boolean
+                  default: false
+                  description: Only return profiles with at least one phone number. Profiles will have additional `has_phone_numbers` field set to true.
                 show_phone_numbers:
                   type: boolean
                   default: false
@@ -149,17 +157,16 @@ paths:
   /v2/search_company_leads:
     post:
       operationId: post_v2-search-company-leads
-      summary: Search for companies and their leads
+      summary: Search companies and leads (synchronous)
       tags:
         - Search
       description: |
-        Endpoint for finding companies and related leads within those companies. Primary use case is for B2B sales, but can also be used for headhunting/executive search. It uses natural language query and returns a list of most relevant companies. 
-        Allows for generation of personalized outreach messages for the identified leads.
+        Endpoint for finding companies and related leads within those companies. Primary use case is for B2B sales, but can also be used for headhunting/executive search. It uses natural language query and returns a list of most relevant companies. Allows for generation of personalized outreach messages for the identified leads. Main difference with [/v2/search](/reference/post_v2-search) is that the search starts with shortlisting relevant companies first, then finding leads who necessarily activaly work at these companies.
         Some recipes:
         - When you only need companies, pass only the company query: `{"company_query": "manufacturers of aviation parts"}`
         - When you need companies and leads, pass both company and lead queries. Note that the lead query shouldn't include company requirements: `{"company_query": "manufacturers of aviation parts", "lead_query": "CTOs and engineering managers"}`
         - When you want to generate personalized outreach messages for the identified leads, pass the outreach message instruction: `{"company_query": "manufacturers of aviation parts", "lead_query": "CTOs and engineering managers", "outreach_message_instruction": "Suggest buying my (Rob) SaaS recruitment product <300 characters, email style, casual, personal touch"}`
-        - if you don't have good intuition about personas to target, use a very broad query like `{..., "lead_query": "people who I can contact regarding partnerships or any c-level (CEO CFO COO CTO CIO CMO CHRO CPO CLO CSO) /founder/director/owner roles"}`
+        - if you don't have good intuition about leads to target, use a very broad lead query like `{..., "lead_query": "people who I can contact regarding partnerships or any c-level (CEO CFO COO CTO CIO CMO CHRO CPO CLO CSO) /founder/director/owner roles"}`
         
         _Check out official [Python client](https://github.com/Pearch-ai/pearch-client)_
       security:
@@ -323,10 +330,18 @@ paths:
                     If you want to force no filtering at all (`custom_filters` or default filters), pass empty object `"custom_filters": {}`. This will speed up search, increase recall at some relevancy cost.  
                   example: {"industries": ["health", "pharma"], "locations": ["San Francisco", "New York"], "titles": ["software engineer", "data scientist"]}
                   default: null
+                require_emails:
+                  type: boolean
+                  default: false
+                  description: Only return profiles with at least one email address. Profiles will have additional `has_email` field set to true.
                 show_emails:
                   type: boolean
                   default: false
                   description: Include email addresses in search results if available. This returns all available emails including personal and work emails. _Additional charges may apply_
+                require_phone_numbers:
+                  type: boolean
+                  default: false
+                  description: Only return profiles with at least one phone number. Profiles will have additional `has_phone_numbers` field set to true.
                 show_phone_numbers:
                   type: boolean
                   default: false
