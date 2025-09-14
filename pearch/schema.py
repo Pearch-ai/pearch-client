@@ -289,8 +289,13 @@ class V2SearchCompanyLeadsRequest(BaseModel):
     outreach_message_instruction: str | None = None
     limit: int | None = Field(default=50, ge=1, le=1000)
     leads_limit: int | None = Field(default=3, ge=1, le=10)
-    show_emails: bool | None = True
-    show_phone_numbers: bool | None = True
+    show_emails: bool | None = False
+    show_phone_numbers: bool | None = False
+    require_emails: bool | None = False
+    require_phone_numbers: bool | None = False
+    high_freshness: bool | None = False
+    company_high_freshness: bool | None = False
+    select_top_leads: bool | None = True
     model_config = ConfigDict(extra="ignore")
 
 

@@ -211,6 +211,26 @@ paths:
                   type: boolean
                   default: false
                   description: Include phone numbers in lead results if available. _Additional charges may apply_.
+                require_emails:
+                  type: boolean
+                  default: false
+                  description: Only return leads with at least one email address. Leads will have additional `has_email` field set to true.
+                require_phone_numbers:
+                  type: boolean
+                  default: false
+                  description: Only return leads with at least one phone number. Leads will have additional `has_phone_numbers` field set to true.
+                high_freshness:
+                  type: boolean
+                  default: false
+                  description: Enable real-time profile updates for fresher lead data. This downloads the most recent copies of profiles directly from source websites in realtime (e.g. Linkedin). If you are ok with profiles that may be a few months outdated, and want to save ~30 seconds, turn off high_freshness.
+                company_high_freshness:
+                  type: boolean
+                  default: false
+                  description: Enable real-time company data updates for fresher company information. This looks up companies on the internet in realtime to get the most current data.
+                select_top_leads:
+                  type: boolean
+                  default: True
+                  description: Enable intelligent selection of top leads per company. This uses AI to select the most relevant and high-quality leads from each company rather than returning all available leads.
               required:
                 - company_query
       responses:
