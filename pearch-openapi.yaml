@@ -78,6 +78,10 @@ paths:
                     If you want to force no filtering at all (`custom_filters` or default filters), pass empty object `"custom_filters": {}`. This will speed up search, increase recall at some relevancy cost.  
                   example: {"industries": ["health", "pharma"], "locations": ["San Francisco", "New York"], "titles": ["software engineer", "data scientist"]}
                   default: null
+                strict_filters:
+                  type: boolean
+                  default: false
+                  description: Be stricter when filtering. If true, titles must match exactly, after expanding abbreviations (e.g. 'CEO' → 'Chief Executive Officer'), or after translation (e.g. 'Ingeniero de software' → 'Software Engineer'). If false, then apply fuzzy matching as well. 
                 require_emails:
                   type: boolean
                   default: false
@@ -350,6 +354,10 @@ paths:
                     If you want to force no filtering at all (`custom_filters` or default filters), pass empty object `"custom_filters": {}`. This will speed up search, increase recall at some relevancy cost.  
                   example: {"industries": ["health", "pharma"], "locations": ["San Francisco", "New York"], "titles": ["software engineer", "data scientist"]}
                   default: null
+                strict_filters:
+                  type: boolean
+                  default: false
+                  description: Be stricter when filtering. If true, titles must match exactly, after expanding abbreviations (e.g. 'CEO' → 'Chief Executive Officer'), or after translation (e.g. 'Ingeniero de software' → 'Software Engineer'). If false, then apply fuzzy matching as well. 
                 require_emails:
                   type: boolean
                   default: false
