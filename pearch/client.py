@@ -18,7 +18,6 @@ from .schema import (
     V2SearchCompanyLeadsResponse,
     V2SearchRequest,
     V2SearchResponse,
-    V2SearchSubmitRequest,
     V2SearchSubmitResponse,
     V2SearchStatusResponse,
 )
@@ -237,7 +236,7 @@ class PearchClient:
 
         return V2SearchCompanyLeadsResponse(**response_data)
 
-    def search_submit(self, request: V2SearchSubmitRequest) -> V2SearchSubmitResponse:
+    def search_submit(self, request: V2SearchRequest) -> V2SearchSubmitResponse:
         """
         Submit a search task for background execution
 
@@ -554,7 +553,7 @@ class AsyncPearchClient:
 
         return V2SearchCompanyLeadsResponse(**response_data)
 
-    async def search_submit(self, request: V2SearchSubmitRequest) -> V2SearchSubmitResponse:
+    async def search_submit(self, request: V2SearchRequest) -> V2SearchSubmitResponse:
         """
         Submit a search task for background execution - async version
 

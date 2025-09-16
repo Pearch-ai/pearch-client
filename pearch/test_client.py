@@ -17,7 +17,6 @@ from pearch.schema import (
     V1UpsertJobsRequest,
     V2SearchRequest,
     V2SearchCompanyLeadsRequest,
-    V2SearchSubmitRequest,
     Job,
 )
 
@@ -160,7 +159,7 @@ async def test_search_company_leads():
 
 @pytest.mark.asyncio
 async def test_search_submit():
-    request = V2SearchSubmitRequest(
+    request = V2SearchRequest(
         query="software engineers in California with 5+ years experience",
         type="pro",
         insights=True,
@@ -176,7 +175,7 @@ async def test_search_submit():
 
 @pytest.mark.asyncio
 async def test_get_search_status():
-    submit_request = V2SearchSubmitRequest(
+    submit_request = V2SearchRequest(
         query="test query for status check",
         type="fast",
         limit=2,

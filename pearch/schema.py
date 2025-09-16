@@ -277,9 +277,12 @@ class V2SearchRequest(BaseModel):
     high_freshness: bool | None = False
     profile_scoring: bool | None = True
     custom_filters: Dict[str, Any] | None = None
+    strict_filters: bool | None = False
+    require_emails: bool | None = False
     show_emails: bool | None = False
+    require_phone_numbers: bool | None = False
     show_phone_numbers: bool | None = False
-    limit: int | None = Field(default=10, ge=1, le=100)
+    limit: int | None = Field(default=10, ge=1, le=1000)
     model_config = ConfigDict(extra="ignore")
 
 
@@ -330,19 +333,6 @@ class V1ProfileRequest(BaseModel):
     high_freshness: bool | None = False
     show_emails: bool | None = False
     show_phone_numbers: bool | None = False
-    model_config = ConfigDict(extra="ignore")
-
-
-class V2SearchSubmitRequest(BaseModel):
-    query: str
-    type: Literal["fast", "pro"] | None = "pro"
-    insights: bool | None = True
-    high_freshness: bool | None = False
-    profile_scoring: bool | None = True
-    custom_filters: Dict[str, Any] | None = None
-    show_emails: bool | None = False
-    show_phone_numbers: bool | None = False
-    limit: int | None = Field(default=10, ge=1, le=100)
     model_config = ConfigDict(extra="ignore")
 
 
