@@ -45,20 +45,20 @@ paths:
                   default: "pro"
                   description: |
                     The type of search to perform. 
-                    * "fast" is faster but may have less recall. 
-                    * "pro" is slower and more costly, but has higher quality and recall. 
+                    * "fast" is faster but may have less recall. **Cost: 1 credit per candidate**
+                    * "pro" is slower and more costly, but has higher quality and recall. **Cost: 5 credits per candidate** 
                 insights:
                   type: boolean
                   default: true
-                  description: 'Enable detailed insights and analysis for search results. This includes scores for each of query requirements along with quotes from profiles that match subqueries. Check out `insights` output fields for details. This may be helpful if you share search results with users and want to provide deeper explanations of why profiles are relevant. If your product only needs highly relevant profiles without explanations, use `{"insights": false, "profile_scoring": true}`'
+                  description: 'Enable detailed insights and analysis for search results. This includes scores for each of query requirements along with quotes from profiles that match subqueries. Check out `insights` output fields for details. This may be helpful if you share search results with users and want to provide deeper explanations of why profiles are relevant. If your product only needs highly relevant profiles without explanations, use `{"insights": false, "profile_scoring": true}` **Cost: 1 credit per candidate**'
                 high_freshness:
                   type: boolean
                   default: false
-                  description: Enable real-time profile updates for fresher data. This downloads the most recent copies of profiles directly from source websites in realtime (e.g. Linkedin). If you are ok with profiles that may be a few months outdated, and want to save ~30 seconds, turn off high_freshness.
+                  description: "Enable real-time profile updates for fresher data. This downloads the most recent copies of profiles directly from source websites in realtime (e.g. Linkedin). If you are ok with profiles that may be a few months outdated, and want to save ~30 seconds, turn off high_freshness. **Cost: 2 credits per candidate**"
                 profile_scoring:
                   type: boolean
                   default: true
-                  description: Enable profile scoring and reranking for better result quality. This filters out less relevant profiles and produces scores for more relevant once. Scores range from 0.0 to 4.0 where higher is better. 
+                  description: "Enable profile scoring and reranking for better result quality. This filters out less relevant profiles and produces scores for more relevant once. Scores range from 0.0 to 4.0 where higher is better. **Cost: 1 credit per candidate**" 
                 custom_filters:
                   type: object
                   description: |
@@ -85,19 +85,19 @@ paths:
                 require_emails:
                   type: boolean
                   default: false
-                  description: Only return profiles with at least one email address. Profiles will have additional `has_email` field set to true.
+                  description: "Only return profiles with at least one email address. Profiles will have additional `has_email` field set to true. **Cost: 1 credit per call**"
                 show_emails:
                   type: boolean
                   default: false
-                  description: Include email addresses in search results if available. This returns all available emails including personal and work emails. _Additional charges may apply_
+                  description: "Include email addresses in search results if available. This returns all available emails including personal and work emails. **Cost: 2 credits per candidate**"
                 require_phone_numbers:
                   type: boolean
                   default: false
-                  description: Only return profiles with at least one phone number. Profiles will have additional `has_phone_numbers` field set to true.
+                  description: "Only return profiles with at least one phone number. Profiles will have additional `has_phone_numbers` field set to true. **Cost: 1 credit per call**"
                 show_phone_numbers:
                   type: boolean
                   default: false
-                  description: Include phone numbers in search results if available. This returns all available phone numbers including personal and work numbers. _Additional charges may apply_
+                  description: "Include phone numbers in search results if available. This returns all available phone numbers including personal and work numbers. **Cost: 14 credits per candidate**"
                 limit:
                   type: integer
                   minimum: 1
@@ -184,16 +184,16 @@ paths:
               properties:
                 company_query:
                   type: string
-                  description: The search query for finding companies.
+                  description: "The search query for finding companies. **Cost: 5 credits per company**"
                   example: "AI startups in San Francisco with 50-200 employees"
                   default: "AI startups in San Francisco with 50-200 employees"
                 lead_query:
                   type: string
-                  description: 'Optional query for finding specific leads within the companies. Do not include company requirements in the lead query. if you don''t have good intuition about personas to target, use a very broad query like `{..., "lead_query": "people who I can contact regarding partnerships or any c-level (CEO CFO COO CTO CIO CMO CHRO CPO CLO CSO) /founder/director/owner roles"}`'
+                  description: 'Optional query for finding specific leads within the companies. Do not include company requirements in the lead query. if you don''t have good intuition about personas to target, use a very broad query like `{..., "lead_query": "people who I can contact regarding partnerships or any c-level (CEO CFO COO CTO CIO CMO CHRO CPO CLO CSO) /founder/director/owner roles"}` **Cost: 2 credits per lead**'
                   example: "CTOs and engineering managers"
                 outreach_message_instruction:
                   type: string
-                  description: Optional instruction for generating personalized outreach messages. This uses LLM to generate a message for each lead. In addition to this instruction the LLM gets full lead's profile and company information as context. 
+                  description: "Optional instruction for generating personalized outreach messages. This uses LLM to generate a message for each lead. In addition to this instruction the LLM gets full lead's profile and company information as context. **Cost: 3 credits per lead**"
                   example: "Suggest buying my saas recruitment product <300 characters, email style, casual"
                 limit:  
                   type: integer
@@ -210,27 +210,27 @@ paths:
                 show_emails:
                   type: boolean
                   default: false
-                  description: Include email addresses in lead results if available. _Additional charges may apply_.
+                  description: "Include email addresses in lead results if available. **Cost: 3 credits per lead**"
                 show_phone_numbers:
                   type: boolean
                   default: false
-                  description: Include phone numbers in lead results if available. _Additional charges may apply_.
+                  description: "Include phone numbers in lead results if available. **Cost: 8 credits per lead**"
                 require_emails:
                   type: boolean
                   default: false
-                  description: Only return leads with at least one email address. Leads will have additional `has_email` field set to true.
+                  description: "Only return leads with at least one email address. Leads will have additional `has_email` field set to true. **Cost: 1 credit per call**"
                 require_phone_numbers:
                   type: boolean
                   default: false
-                  description: Only return leads with at least one phone number. Leads will have additional `has_phone_numbers` field set to true.
+                  description: "Only return leads with at least one phone number. Leads will have additional `has_phone_numbers` field set to true. **Cost: 1 credit per call**"
                 high_freshness:
                   type: boolean
                   default: false
-                  description: Enable real-time profile updates for fresher lead data. This downloads the most recent copies of profiles directly from source websites in realtime (e.g. Linkedin). If you are ok with profiles that may be a few months outdated, and want to save ~30 seconds, turn off high_freshness.
+                  description: "Enable real-time profile updates for fresher lead data. This downloads the most recent copies of profiles directly from source websites in realtime (e.g. Linkedin). If you are ok with profiles that may be a few months outdated, and want to save ~30 seconds, turn off high_freshness. **Cost: 1 credit per lead**"
                 company_high_freshness:
                   type: boolean
                   default: false
-                  description: Enable real-time company data updates for fresher company information. This looks up companies on the internet in realtime to get the most current data.
+                  description: "Enable real-time company data updates for fresher company information. This looks up companies on the internet in realtime to get the most current data. **Cost: 2 credits per company**"
               required:
                 - company_query
       responses:
@@ -317,20 +317,20 @@ paths:
                   default: "pro"
                   description: |
                     The type of search to perform. 
-                    * "fast" is faster but may have less recall. 
-                    * "pro" is slower and more costly, but has higher quality and recall. 
+                    * "fast" is faster but may have less recall. **Cost: 1 credit per candidate**
+                    * "pro" is slower and more costly, but has higher quality and recall. **Cost: 5 credits per candidate** 
                 insights:
                   type: boolean
                   default: true
-                  description: 'Enable detailed insights and analysis for search results. This includes scores for each of query requirements along with quotes from profiles that match subqueries. Check out `insights` output fields for details. This may be helpful if you share search results with users and want to provide deeper explanations of why profiles are relevant. If your product only needs highly relevant profiles without explanations, use `{"insights": false, "profile_scoring": true}`'
+                  description: 'Enable detailed insights and analysis for search results. This includes scores for each of query requirements along with quotes from profiles that match subqueries. Check out `insights` output fields for details. This may be helpful if you share search results with users and want to provide deeper explanations of why profiles are relevant. If your product only needs highly relevant profiles without explanations, use `{"insights": false, "profile_scoring": true}` **Cost: 1 credit per candidate**'
                 high_freshness:
                   type: boolean
                   default: false
-                  description: Enable real-time profile updates for fresher data. This downloads the most recent copies of profiles directly from source websites in realtime (e.g. Linkedin). If you are ok with profiles that may be a few months outdated, and want to save ~30 seconds, turn off high_freshness.
+                  description: "Enable real-time profile updates for fresher data. This downloads the most recent copies of profiles directly from source websites in realtime (e.g. Linkedin). If you are ok with profiles that may be a few months outdated, and want to save ~30 seconds, turn off high_freshness. **Cost: 2 credits per candidate**"
                 profile_scoring:
                   type: boolean
                   default: true
-                  description: Enable profile scoring and reranking for better result quality. This filters out less relevant profiles and produces scores for more relevant once. Scores range from 0.0 to 4.0 where higher is better. 
+                  description: "Enable profile scoring and reranking for better result quality. This filters out less relevant profiles and produces scores for more relevant once. Scores range from 0.0 to 4.0 where higher is better. **Cost: 1 credit per candidate**" 
                 custom_filters:
                   type: object
                   description: |
@@ -357,19 +357,19 @@ paths:
                 require_emails:
                   type: boolean
                   default: false
-                  description: Only return profiles with at least one email address. Profiles will have additional `has_email` field set to true.
+                  description: "Only return profiles with at least one email address. Profiles will have additional `has_email` field set to true. **Cost: 1 credit per call**"
                 show_emails:
                   type: boolean
                   default: false
-                  description: Include email addresses in search results if available. This returns all available emails including personal and work emails. _Additional charges may apply_
+                  description: "Include email addresses in search results if available. This returns all available emails including personal and work emails. **Cost: 2 credits per candidate**"
                 require_phone_numbers:
                   type: boolean
                   default: false
-                  description: Only return profiles with at least one phone number. Profiles will have additional `has_phone_numbers` field set to true.
+                  description: "Only return profiles with at least one phone number. Profiles will have additional `has_phone_numbers` field set to true. **Cost: 1 credit per call**"
                 show_phone_numbers:
                   type: boolean
                   default: false
-                  description: Include phone numbers in search results if available. This returns all available phone numbers including personal and work numbers. _Additional charges may apply_
+                  description: "Include phone numbers in search results if available. This returns all available phone numbers including personal and work numbers. **Cost: 14 credits per candidate**"
                 limit:
                   type: integer
                   minimum: 1
@@ -610,7 +610,7 @@ paths:
               properties:
                 jobs:
                   type: array
-                  description: List of job objects to be upserted.
+                  description: "List of job objects to be upserted. **Cost: 1 credit per job**"
                   items:
                     type: object
                     properties:
@@ -667,6 +667,8 @@ paths:
         This endpoint is used in conjunction with `/v1/find_matching_jobs` endpoint. 
         1. First you need to upsert jobs with [/v1/upsert_jobs](/reference/post_v1-upsert-jobs)
         2. Then you can use [/v1/find_matching_jobs](/reference/post_v1-find-matching-jobs) to find jobs relevant to a profile.        
+
+        **Cost: 1 credit per found job**
 
         _Check out official [Python client](https://github.com/Pearch-ai/pearch-client)_
       security:
@@ -845,21 +847,21 @@ paths:
           required: false
           schema:
             type: boolean
-          description: Enable real-time profile updates for fresher data. This downloads the most recent copies of profiles directly from source websites in realtime (e.g. Linkedin). If you are ok with profiles that may be a few months outdated, turn off high_freshness.
+          description: "Enable real-time profile updates for fresher data. This downloads the most recent copies of profiles directly from source websites in realtime (e.g. Linkedin). If you are ok with profiles that may be a few months outdated, turn off high_freshness. **Cost: 2 credits per candidate**"
           example: false
         - name: show_emails
           in: query
           required: false
           schema:
             type: boolean
-          description: Include email addresses in the profile if available. _Additional charges may apply_.
+          description: "Include email addresses in the profile if available. **Cost: 2 credits per candidate**"
           example: false
         - name: show_phone_numbers
           in: query
           required: false
           schema:
             type: boolean
-          description: Include phone numbers in the profile if available. _Additional charges may apply_.
+          description: "Include phone numbers in the profile if available. **Cost: 14 credits per candidate**"
           example: false
       responses:
         "200":
