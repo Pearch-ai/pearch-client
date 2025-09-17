@@ -10,6 +10,8 @@ from .schema import (
     V1FindMatchingJobsResponse,
     V1ProfileRequest,
     V1ProfileResponse,
+    V1SearchHistoryRequest,
+    V1SearchHistoryResponse,
     V1SearchRequest,
     V1ProSearchResponse,
     V1UpsertJobsRequest,
@@ -376,6 +378,29 @@ class PearchClient:
 
         return V1ProfileResponse(**response_data)
 
+    def search_history(self, request: V1SearchHistoryRequest) -> V1SearchHistoryResponse:
+        """
+        Retrieve search history for the authenticated user
+
+        Get a list of previous search API calls including their parameters,
+        results, and metadata.
+
+        Args:
+            request: Search history request with limit parameter
+
+        Returns:
+            Search history response with list of previous search calls
+        """
+        logger.info(f"Retrieving search history with limit: {request.limit}")
+
+        response_data = self._make_request(
+            method="GET",
+            endpoint="v1/search_history",
+            params=request.model_dump(exclude_none=True),
+        )
+
+        return V1SearchHistoryResponse(**response_data)
+
 
 class AsyncPearchClient:
     """
@@ -683,3 +708,26 @@ class AsyncPearchClient:
             params=request.model_dump(exclude_none=True),
         )
         return V1ProfileResponse(**response_data)
+
+    async def search_history(self, request: V1SearchHistoryRequest) -> V1SearchHistoryResponse:
+        """
+        Retrieve search history for the authenticated user - async version
+
+        Get a list of previous search API calls including their parameters,
+        results, and metadata.
+
+        Args:
+            request: Search history request with limit parameter
+
+        Returns:
+            Search history response with list of previous search calls
+        """
+        logger.info(f"Retrieving search history async with limit: {request.limit}")
+
+        response_data = await self._make_request(
+            method="GET",
+            endpoint="v1/search_history",
+            params=request.model_dump(exclude_none=True),
+        )
+
+        return V1SearchHistoryResponse(**response_data)

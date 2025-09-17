@@ -353,3 +353,26 @@ class V2SearchStatusResponse(BaseModel):
     error: str | None = None
     started_at: str | None = None
     model_config = ConfigDict(extra="ignore")
+
+
+class SearchHistoryEntry(BaseModel):
+    uuid: str | None = None
+    path: str | None = None
+    parameters: Dict[str, Any] | None = None
+    items_count: int | None = None
+    created_at: str | None = None
+    response_time: float | None = None
+    response_status: int | None = None
+    error_message: str | None = None
+    task_status: str | None = None
+    model_config = ConfigDict(extra="ignore")
+
+
+class V1SearchHistoryRequest(BaseModel):
+    limit: int | None = Field(default=10, ge=1, le=1000)
+    model_config = ConfigDict(extra="ignore")
+
+
+class V1SearchHistoryResponse(BaseModel):
+    search_history: List[SearchHistoryEntry] | None = Field(default_factory=list)
+    model_config = ConfigDict(extra="ignore")

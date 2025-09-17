@@ -13,6 +13,7 @@ from pearch.client import AsyncPearchClient
 from pearch.schema import (
     V1FindMatchingJobsRequest,
     V1ProfileRequest,
+    V1SearchHistoryRequest,
     V1SearchRequest,
     V1UpsertJobsRequest,
     V2SearchRequest,
@@ -29,6 +30,7 @@ def generate_curl_command(client_method: str, request: Any) -> str:
     method_mapping = {
         "find_matching_jobs": ("POST", "v1/find_matching_jobs"),
         "get_profile": ("GET", "v1/profile"),
+        "search_history": ("GET", "v1/search_history"),
         "search_v1": ("GET", "v1/search"),
         "upsert_jobs": ("POST", "v1/upsert_jobs"),
         "search": ("POST", "v2/search"),
@@ -187,3 +189,12 @@ async def test_get_search_status():
     assert status_response.task_id == task_id
     assert status_response.status in ["pending", "running", "completed", "failed"]
     assert status_response.query == "test query for status check"
+
+
+@pytest.mark.asyncio
+async def test_search_history():
+    request = V1SearchHistoryRequest(limit=5)
+    generate_curl_command("search_history", request)
+    response = await AsyncPearchClient().search_history(request)
+    assert response.search_history is not None
+    assert isinstance(response.search_history, list)

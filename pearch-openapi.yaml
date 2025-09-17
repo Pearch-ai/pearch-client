@@ -773,6 +773,53 @@ paths:
         "401":
           description: Invalid API key
 
+  /v1/search_history:
+    get:
+      operationId: get_v1-search-history
+      summary: Get search history
+      tags:
+        - Search
+      description: |
+        Retrieve the search history for the authenticated user. Returns a list of previous search API calls including their parameters, results, and metadata.
+        
+        This endpoint returns history for the following search endpoints:
+        - `/v1/search`
+        - `/v2/search`
+        - `/v2/search/submit`
+        - `/v2/search_company_leads`
+        
+        _Check out official [Python client](https://github.com/Pearch-ai/pearch-client)_
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 10
+          description: The maximum number of search history entries to return.
+          example: 10
+      responses:
+        "200":
+          description: Search history retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  search_history:
+                    type: array
+                    description: List of search history entries ordered by creation date (most recent first).
+                    items:
+                      $ref: '#/components/schemas/SearchHistoryEntry'
+        "400":
+          description: Invalid parameter values. 
+        "401":
+          description: Invalid API key
+
   /v1/profile:
     get:
       operationId: get_v1-profile
@@ -1435,6 +1482,50 @@ components:
           format: float
           description: Relevance score for the company match (0..100). 100 means the company is a perfect match for the query.
           example: 85
+
+    SearchHistoryEntry:
+      type: object
+      description: A single search history entry representing a previous API call
+      properties:
+        uuid:
+          type: string
+          description: Unique identifier for the API call
+          example: "ec191bf9-99ff-4989-8383-c97c71fafb6d"
+        path:
+          type: string
+          description: The API endpoint path that was called
+          example: "/v2/search"
+        parameters:
+          type: object
+          description: The parameters that were sent with the API call
+          additionalProperties: true
+          example: {"query": "software engineer", "limit": 10, "type": "pro"}
+        items_count:
+          type: integer
+          description: Number of items returned in the search results
+          example: 15
+        created_at:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp when the API call was made
+          example: "2024-01-15T10:30:00Z"
+        response_time:
+          type: number
+          format: float
+          description: Response time in seconds for the API call
+          example: 2.45
+        response_status:
+          type: integer
+          description: HTTP response status code
+          example: 200
+        error_message:
+          type: string
+          description: Error message if the API call failed
+          example: "Invalid query parameter"
+        task_status:
+          type: string
+          description: Status of the task (for async endpoints)
+          example: "completed"
 
   securitySchemes:
     bearerAuth:
