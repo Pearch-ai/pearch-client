@@ -159,6 +159,47 @@ class Profile(BaseModel):
 
     model_config = ConfigDict(extra="ignore")
 
+    def get_all_emails(self) -> List[str]:
+        """
+        Get all email addresses from the profile.
+        
+        Returns:
+            List of unique email addresses from all email fields
+        """
+        all_emails = []
+        
+        # Add from main emails list
+        if self.emails:
+            all_emails.extend(self.emails)
+        
+        # Add best emails if not None
+        if self.best_personal_email:
+            all_emails.append(self.best_personal_email)
+        if self.best_business_email:
+            all_emails.append(self.best_business_email)
+        
+        # Add from personal emails
+        if self.personal_emails:
+            all_emails.extend(self.personal_emails)
+        
+        # Add from business emails
+        if self.business_emails:
+            all_emails.extend(self.business_emails)
+        
+        # Return unique emails while preserving order
+        seen = set()
+        unique_emails = []
+        for email in all_emails:
+            if email and email not in seen:
+                seen.add(email)
+                unique_emails.append(email)
+        
+        return unique_emails
+
+
+    def all_phone_numbers(self) -> List[str]:
+        return [phone for phone in self.phone_numbers if phone]
+    
 
 class QueryInsight(BaseModel):
     match_level: str | None = None
@@ -169,7 +210,7 @@ class QueryInsight(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
 
-class Insighter(BaseModel):
+class Insights(BaseModel):
     overall_summary: str | None = None
     query_insights: List[QueryInsight] | None = Field(default_factory=list)
     model_config = ConfigDict(extra="ignore")
@@ -178,7 +219,7 @@ class Insighter(BaseModel):
 class ScoredProfile(BaseModel):
     docid: str
     profile: Profile | None = None
-    insighter: Insighter | None = None
+    insights: Insights | None = None
     score: int | None = None
     outreach_message: str | None = None
     model_config = ConfigDict(extra="ignore")
@@ -219,6 +260,7 @@ class V2SearchResponse(BaseModel):
     status: str | None = None
     total_estimate: int | None = None
     credits_remaining: int | None = None
+    credits_used: int | None = None
     search_results: List[ScoredProfile] | None = Field(default_factory=list)
     model_config = ConfigDict(extra="ignore")
 
@@ -232,6 +274,7 @@ class V2SearchCompanyLeadsResponse(BaseModel):
     status: str | None = None
     total_estimate: int | None = None
     credits_remaining: int | None = None
+    credits_used: int | None = None
     model_config = ConfigDict(extra="ignore")
 
 
@@ -243,6 +286,8 @@ class V1ProSearchResponse(BaseModel):
     status: str | None = None
     total_results: int | None = None
     progress: float | None = None
+    credits_remaining: int | None = None
+    credits_used: int | None = None
     execution_details: List[ExecutionDetail] | None = Field(default_factory=list)
     search_results: List[ScoredProfile] | None = Field(default_factory=list)
     model_config = ConfigDict(extra="ignore")
@@ -252,18 +297,24 @@ class V1UpsertJobsResponse(BaseModel):
     uuid: str | None = None
     status: str | None = None
     processed_count: int | None = None
+    credits_remaining: int | None = None
+    credits_used: int | None = None
     model_config = ConfigDict(extra="ignore")
 
 
 class V1FindMatchingJobsResponse(BaseModel):
     uuid: str | None = None
     jobs: List[JobMatch] | None = Field(default_factory=list)
+    credits_remaining: int | None = None
+    credits_used: int | None = None
     model_config = ConfigDict(extra="ignore")
 
 
 class V1ProfileResponse(BaseModel):
     uuid: str | None = None
     profile: Profile | None = None
+    credits_remaining: int | None = None
+    credits_used: int | None = None
     model_config = ConfigDict(extra="ignore")
 
 
@@ -348,14 +399,16 @@ class V2SearchStatusResponse(BaseModel):
     status: str
     created_at: str | None = None
     query: str | None = None
-    result: Dict[str, Any] | None = None
+    result: V2SearchResponse | None = None
     duration: float | None = None
     error: str | None = None
     started_at: str | None = None
+    credits_used: int | None = None
+    credits_remaining: int | None = None
     model_config = ConfigDict(extra="ignore")
 
 
-class SearchHistoryEntry(BaseModel):
+class ApiCallHistoryEntry(BaseModel):
     uuid: str | None = None
     path: str | None = None
     parameters: Dict[str, Any] | None = None
@@ -365,14 +418,15 @@ class SearchHistoryEntry(BaseModel):
     response_status: int | None = None
     error_message: str | None = None
     task_status: str | None = None
+    credits_used: int | None = None
     model_config = ConfigDict(extra="ignore")
 
 
-class V1SearchHistoryRequest(BaseModel):
+class V1ApiCallHistoryRequest(BaseModel):
     limit: int | None = Field(default=10, ge=1, le=1000)
     model_config = ConfigDict(extra="ignore")
 
 
-class V1SearchHistoryResponse(BaseModel):
-    search_history: List[SearchHistoryEntry] | None = Field(default_factory=list)
+class V1ApiCallHistoryResponse(BaseModel):
+    api_call_history: List[ApiCallHistoryEntry] | None = Field(default_factory=list)
     model_config = ConfigDict(extra="ignore")

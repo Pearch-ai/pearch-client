@@ -1,6 +1,6 @@
 import logging
 import os
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 import httpx
 
@@ -10,8 +10,8 @@ from .schema import (
     V1FindMatchingJobsResponse,
     V1ProfileRequest,
     V1ProfileResponse,
-    V1SearchHistoryRequest,
-    V1SearchHistoryResponse,
+    V1ApiCallHistoryRequest,
+    V1ApiCallHistoryResponse,
     V1SearchRequest,
     V1ProSearchResponse,
     V1UpsertJobsRequest,
@@ -378,28 +378,28 @@ class PearchClient:
 
         return V1ProfileResponse(**response_data)
 
-    def search_history(self, request: V1SearchHistoryRequest) -> V1SearchHistoryResponse:
+    def api_call_history(self, request: V1ApiCallHistoryRequest) -> V1ApiCallHistoryResponse:
         """
-        Retrieve search history for the authenticated user
+        Retrieve API call history for the authenticated user
 
-        Get a list of previous search API calls including their parameters,
+        Get a list of previous API calls including their parameters,
         results, and metadata.
 
         Args:
-            request: Search history request with limit parameter
+            request: API call history request with limit parameter
 
         Returns:
-            Search history response with list of previous search calls
+            API call history response with list of previous API calls
         """
-        logger.info(f"Retrieving search history with limit: {request.limit}")
+        logger.info(f"Retrieving API call history with limit: {request.limit}")
 
         response_data = self._make_request(
             method="GET",
-            endpoint="v1/search_history",
+            endpoint="v1/api_call_history",
             params=request.model_dump(exclude_none=True),
         )
 
-        return V1SearchHistoryResponse(**response_data)
+        return V1ApiCallHistoryResponse(**response_data)
 
 
 class AsyncPearchClient:
@@ -624,7 +624,7 @@ class AsyncPearchClient:
 
     # V1 API Methods (Legacy)
 
-    async def search_v1(self, request: V1SearchRequest) -> V1ProSearchResponse:
+    async def search_v1(self, request: V1SearchRequest) -> List[Profile]:
         """
         Execute a search query (v1 legacy endpoint) - async version
 
@@ -641,10 +641,7 @@ class AsyncPearchClient:
             endpoint="v1/search",
             params=request.model_dump(exclude_none=True),
         )
-        if request.type == "fast":
-            return [Profile(**result) for result in response_data]
-        else:
-            return V1ProSearchResponse(**response_data)
+        return [Profile(**result) for result in response_data]
 
     async def upsert_jobs(self, request: V1UpsertJobsRequest) -> V1UpsertJobsResponse:
         """
@@ -709,25 +706,25 @@ class AsyncPearchClient:
         )
         return V1ProfileResponse(**response_data)
 
-    async def search_history(self, request: V1SearchHistoryRequest) -> V1SearchHistoryResponse:
+    async def api_call_history(self, request: V1ApiCallHistoryRequest) -> V1ApiCallHistoryResponse:
         """
-        Retrieve search history for the authenticated user - async version
+        Retrieve API call history for the authenticated user - async version
 
-        Get a list of previous search API calls including their parameters,
+        Get a list of previous API calls including their parameters,
         results, and metadata.
 
         Args:
-            request: Search history request with limit parameter
+            request: API call history request with limit parameter
 
         Returns:
-            Search history response with list of previous search calls
+            API call history response with list of previous API calls
         """
-        logger.info(f"Retrieving search history async with limit: {request.limit}")
+        logger.info(f"Retrieving API call history async with limit: {request.limit}")
 
         response_data = await self._make_request(
             method="GET",
-            endpoint="v1/search_history",
+            endpoint="v1/api_call_history",
             params=request.model_dump(exclude_none=True),
         )
 
-        return V1SearchHistoryResponse(**response_data)
+        return V1ApiCallHistoryResponse(**response_data)

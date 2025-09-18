@@ -85,7 +85,7 @@ paths:
                 require_emails:
                   type: boolean
                   default: false
-                  description: "Only return profiles with at least one email address. Profiles will have additional `has_email` field set to true. **Cost: 1 credit per call**"
+                  description: "Only return profiles with at least one email address. Profiles will have additional `has_email` field set to true. **Cost: 1 credit per candidate**"
                 show_emails:
                   type: boolean
                   default: false
@@ -93,7 +93,7 @@ paths:
                 require_phone_numbers:
                   type: boolean
                   default: false
-                  description: "Only return profiles with at least one phone number. Profiles will have additional `has_phone_numbers` field set to true. **Cost: 1 credit per call**"
+                  description: "Only return profiles with at least one phone number. Profiles will have additional `has_phone_numbers` field set to true. **Cost: 1 credit per candidate**"
                 show_phone_numbers:
                   type: boolean
                   default: false
@@ -218,11 +218,11 @@ paths:
                 require_emails:
                   type: boolean
                   default: false
-                  description: "Only return leads with at least one email address. Leads will have additional `has_email` field set to true. **Cost: 1 credit per call**"
+                  description: "Only return leads with at least one email address. Leads will have additional `has_email` field set to true. **Cost: 1 credit per candidate**"
                 require_phone_numbers:
                   type: boolean
                   default: false
-                  description: "Only return leads with at least one phone number. Leads will have additional `has_phone_numbers` field set to true. **Cost: 1 credit per call**"
+                  description: "Only return leads with at least one phone number. Leads will have additional `has_phone_numbers` field set to true. **Cost: 1 credit per candidate**"
                 high_freshness:
                   type: boolean
                   default: false
@@ -357,7 +357,7 @@ paths:
                 require_emails:
                   type: boolean
                   default: false
-                  description: "Only return profiles with at least one email address. Profiles will have additional `has_email` field set to true. **Cost: 1 credit per call**"
+                  description: "Only return profiles with at least one email address. Profiles will have additional `has_email` field set to true. **Cost: 1 credit per candidate**"
                 show_emails:
                   type: boolean
                   default: false
@@ -365,7 +365,7 @@ paths:
                 require_phone_numbers:
                   type: boolean
                   default: false
-                  description: "Only return profiles with at least one phone number. Profiles will have additional `has_phone_numbers` field set to true. **Cost: 1 credit per call**"
+                  description: "Only return profiles with at least one phone number. Profiles will have additional `has_phone_numbers` field set to true. **Cost: 1 credit per candidate**"
                 show_phone_numbers:
                   type: boolean
                   default: false
@@ -775,16 +775,16 @@ paths:
         "401":
           description: Invalid API key
 
-  /v1/search_history:
+  /v1/api_call_history:
     get:
-      operationId: get_v1-search-history
-      summary: Get search history
+      operationId: get_v1-api-call-history
+      summary: Get API call history
       tags:
         - Search
       description: |
-        Retrieve the search history for the authenticated user. Returns a list of previous search API calls including their parameters, results, and metadata.
+        Retrieve the API call history for the authenticated user. Returns a list of previous API calls including their parameters, results, and metadata.
         
-        This endpoint returns history for the following search endpoints:
+        This endpoint returns history for the following endpoints:
         - `/v1/search`
         - `/v2/search`
         - `/v2/search/submit`
@@ -802,21 +802,21 @@ paths:
             minimum: 1
             maximum: 1000
             default: 10
-          description: The maximum number of search history entries to return.
+          description: The maximum number of API call history entries to return.
           example: 10
       responses:
         "200":
-          description: Search history retrieved successfully
+          description: API call history retrieved successfully
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  search_history:
+                  api_call_history:
                     type: array
-                    description: List of search history entries ordered by creation date (most recent first).
+                    description: List of API call history entries ordered by creation date (most recent first).
                     items:
-                      $ref: '#/components/schemas/SearchHistoryEntry'
+                      $ref: '#/components/schemas/ApiCallHistoryEntry'
         "400":
           description: Invalid parameter values. 
         "401":
@@ -1419,7 +1419,7 @@ components:
           type: string
           description: Unique document ID of the candidate profile.
           example: "jason-tysl"
-        insighter:
+        insights:
           type: object
           description: Analysis and insights relevant to the query.
           properties:
@@ -1485,9 +1485,9 @@ components:
           description: Relevance score for the company match (0..100). 100 means the company is a perfect match for the query.
           example: 85
 
-    SearchHistoryEntry:
+    ApiCallHistoryEntry:
       type: object
-      description: A single search history entry representing a previous API call
+      description: A single API call history entry representing a previous API call
       properties:
         uuid:
           type: string
@@ -1528,6 +1528,10 @@ components:
           type: string
           description: Status of the task (for async endpoints)
           example: "completed"
+        credits_used:
+          type: integer
+          description: Number of credits used for the API call
+          example: 10
 
   securitySchemes:
     bearerAuth:
