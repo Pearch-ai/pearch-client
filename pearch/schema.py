@@ -253,6 +253,7 @@ class JobMatch(BaseModel):
 
 class V2SearchResponse(BaseModel):
     uuid: str | None = None
+    thread_id: str | None = None
     query: str | None = None
     user: str | None = None
     created_at: float | None = None
@@ -322,7 +323,8 @@ class V1ProfileResponse(BaseModel):
 
 
 class V2SearchRequest(BaseModel):
-    query: str
+    query: str | None = None
+    thread_id: str | None = None
     type: Literal["fast", "pro"] | None = "pro"
     insights: bool | None = True
     high_freshness: bool | None = False

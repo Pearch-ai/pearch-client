@@ -512,17 +512,17 @@ class AsyncPearchClient:
             raise PearchAuthenticationError(
                 "Invalid API key",
                 status_code=401,
-                response_data=response.json() if response.content else {},
+                response_data=response.content,
             )
         elif response.status_code == 400:
-            error_data = response.json() if response.content else {}
+            error_data = response.content
             raise PearchValidationError(
                 f"Invalid request parameters: {error_data}",
                 status_code=400,
                 response_data=error_data,
             )
         elif response.status_code >= 400:
-            error_data = response.json() if response.content else {}
+            error_data = response.content
             raise PearchAPIError(
                 f"API request failed with status {response.status_code}: {error_data}",
                 status_code=response.status_code,

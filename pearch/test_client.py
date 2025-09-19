@@ -168,7 +168,7 @@ def validate_credits(request: V2SearchRequest, response: V2SearchResponse | V2Se
 
 @pytest.mark.asyncio
 async def test_v2_pro_search_generic():
-    request = V2SearchRequest(
+    first_request = V2SearchRequest(
         query="Find me engineers in California speaking at least basic english working in software industry with experience at FAANG with 2+ years of experience and at least 500 followers and at least BS degree",
         limit=2,
         show_emails=True,
@@ -179,10 +179,21 @@ async def test_v2_pro_search_generic():
         require_emails=True,
         require_phone_numbers=True,        
     )
-    generate_curl_command("search", request)
-    response: V2SearchResponse = await AsyncPearchClient().search(request)
+    generate_curl_command("search", first_request)
+    response: V2SearchResponse = await AsyncPearchClient().search(first_request)
     assert any(result.profile.linkedin_slug for result in response.search_results)
-    validate_credits(request, response)
+    validate_credits(first_request, response)
+
+    # "show more"
+    second_request = V2SearchRequest(
+        limit=4,
+        thread_id=response.thread_id,
+    )
+    generate_curl_command("search", second_request)
+    response: V2SearchResponse = await AsyncPearchClient().search(second_request)
+    assert len(response.search_results) == 4
+    response.search_results = response.search_results[2:4]
+    validate_credits(first_request, response)
 
 @pytest.mark.asyncio
 async def test_v2_pro_search_narrow():
@@ -305,24 +316,42 @@ async def test_search_company_leads():
 @pytest.mark.asyncio
 async def test_get_search_status():
     start_time = time.time()
-    submit_request = V2SearchRequest(
-        query="test query for status check",
+    first_submit_request = V2SearchRequest(
+        query="software engineer",
         type="fast",
         limit=2,
     )
-    submit_response = await AsyncPearchClient().search_submit(submit_request)
+    submit_response = await AsyncPearchClient().search_submit(first_submit_request)
+    task_id = submit_response.task_id
+    assert submit_response.status == "pending"    
+    status_response = None
+    while time.time() - start_time < 180:
+        generate_curl_command("get_search_status", {"task_id": task_id})
+        status_response: V2SearchStatusResponse = await AsyncPearchClient().get_search_status(task_id)
+        assert status_response.task_id == task_id
+        assert status_response.status in ["pending", "running", "completed"]
+        assert status_response.query == "software engineer"
+        if status_response.status == "completed":
+            validate_credits(first_submit_request, status_response.result)
+            break
+        await asyncio.sleep(5)
+
+    second_submit_request = V2SearchRequest(
+        thread_id=status_response.result.thread_id,
+        limit=4,  # "show more"
+    )
+    submit_response = await AsyncPearchClient().search_submit(second_submit_request)
     task_id = submit_response.task_id
     assert submit_response.status == "pending"    
     while time.time() - start_time < 180:
         generate_curl_command("get_search_status", {"task_id": task_id})
         status_response = await AsyncPearchClient().get_search_status(task_id)
-        assert status_response.task_id == task_id
-        assert status_response.status in ["pending", "running", "completed"]
-        assert status_response.query == "test query for status check"
+        assert status_response.status != "failed"
         if status_response.status == "completed":
-            validate_credits(submit_request, status_response.result)
+            status_response.result.search_results = status_response.result.search_results[2:4]
+            validate_credits(first_submit_request, status_response.result)
             break
-        await asyncio.sleep(1)
+        await asyncio.sleep(5)
 
 
 @pytest.mark.asyncio
