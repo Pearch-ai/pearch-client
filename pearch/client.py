@@ -386,17 +386,20 @@ class PearchClient:
         results, and metadata.
 
         Args:
-            request: API call history request with limit parameter
+            request: API call history request with limit and optional paths parameters
 
         Returns:
-            API call history response with list of previous API calls
+            API call history response with list of previous API calls and total credits used
         """
         logger.info(f"Retrieving API call history with limit: {request.limit}")
 
+        params = request.model_dump(exclude_none=True)
+        if params.get("paths"):
+            params["paths"] = ",".join(params["paths"])
         response_data = self._make_request(
             method="GET",
             endpoint="v1/api_call_history",
-            params=request.model_dump(exclude_none=True),
+            params=params,
         )
 
         return V1ApiCallHistoryResponse(**response_data)
@@ -714,17 +717,20 @@ class AsyncPearchClient:
         results, and metadata.
 
         Args:
-            request: API call history request with limit parameter
+            request: API call history request with limit and optional paths parameters
 
         Returns:
-            API call history response with list of previous API calls
+            API call history response with list of previous API calls and total credits used
         """
         logger.info(f"Retrieving API call history async with limit: {request.limit}")
 
+        params = request.model_dump(exclude_none=True)
+        if params.get("paths"):
+            params["paths"] = ",".join(params["paths"])
         response_data = await self._make_request(
             method="GET",
             endpoint="v1/api_call_history",
-            params=request.model_dump(exclude_none=True),
+            params=params,
         )
 
         return V1ApiCallHistoryResponse(**response_data)

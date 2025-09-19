@@ -426,9 +426,12 @@ class ApiCallHistoryEntry(BaseModel):
 
 class V1ApiCallHistoryRequest(BaseModel):
     limit: int | None = Field(default=10, ge=1, le=1000)
+    paths: List[str] | None = None
     model_config = ConfigDict(extra="ignore")
 
 
 class V1ApiCallHistoryResponse(BaseModel):
     api_call_history: List[ApiCallHistoryEntry] | None = Field(default_factory=list)
+    user: str | None = None
+    total_credits_used: int | None = None
     model_config = ConfigDict(extra="ignore")

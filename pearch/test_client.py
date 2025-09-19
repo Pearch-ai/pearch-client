@@ -356,8 +356,9 @@ async def test_get_search_status():
 
 @pytest.mark.asyncio
 async def test_api_call_history():
-    request = V1ApiCallHistoryRequest(limit=5)
+    request = V1ApiCallHistoryRequest(limit=100)
     generate_curl_command("api_call_history", request)
     response = await AsyncPearchClient().api_call_history(request)
     assert response.api_call_history is not None
-    assert isinstance(response.api_call_history, list) 
+    assert len(response.api_call_history) > 0
+    assert response.total_credits_used > 0

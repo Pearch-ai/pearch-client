@@ -804,6 +804,17 @@ paths:
             default: 10
           description: The maximum number of API call history entries to return.
           example: 10
+        - name: paths
+          in: query
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+          style: form
+          explode: false
+          description: List of API endpoint paths to filter the history by. If provided, only API calls to the specified paths will be returned.
+          example: ["/v2/search", "/v2/search_company_leads"]
       responses:
         "200":
           description: API call history retrieved successfully
@@ -817,6 +828,14 @@ paths:
                     description: List of API call history entries ordered by creation date (most recent first).
                     items:
                       $ref: '#/components/schemas/ApiCallHistoryEntry'
+                  user:
+                    type: string
+                    description: Email address of the authenticated user.
+                    example: "dev@dev.co"
+                  total_credits_used:
+                    type: integer
+                    description: Total credits used across all returned API calls.
+                    example: 150
         "400":
           description: Invalid parameter values. 
         "401":
