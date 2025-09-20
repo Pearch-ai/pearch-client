@@ -166,6 +166,30 @@ def validate_credits(request: V2SearchRequest, response: V2SearchResponse | V2Se
     assert response.credits_used == expected_credits    
 
 
+
+@pytest.mark.asyncio
+async def test_v2_fast_search():
+    first_request = V2SearchRequest(
+        query="Find me engineers in California speaking at least basic english working in software industry with experience at FAANG with 2+ years of experience and at least 500 followers and at least BS degree",
+        type="fast",
+        limit=2,
+        show_emails=True,
+        show_phone_numbers=True,
+        insights=True,
+        high_freshness=True,
+        profile_scoring=True,
+        require_emails=True,
+        require_phone_numbers=True,        
+    )
+    generate_curl_command("search", first_request)
+    response: V2SearchResponse = await AsyncPearchClient().search(first_request)
+    assert len(response.search_results) == 2
+    assert any(result.profile.linkedin_slug for result in response.search_results)
+    assert all(len(result.profile.get_all_emails()) > 0 for result in response.search_results)
+    assert all(len(result.profile.all_phone_numbers()) > 0 for result in response.search_results)
+    validate_credits(first_request, response)
+
+
 @pytest.mark.asyncio
 async def test_v2_pro_search_generic():
     first_request = V2SearchRequest(
@@ -181,7 +205,10 @@ async def test_v2_pro_search_generic():
     )
     generate_curl_command("search", first_request)
     response: V2SearchResponse = await AsyncPearchClient().search(first_request)
+    assert len(response.search_results) == 2
     assert any(result.profile.linkedin_slug for result in response.search_results)
+    assert all(len(result.profile.get_all_emails()) > 0 for result in response.search_results)
+    assert all(len(result.profile.all_phone_numbers()) > 0 for result in response.search_results)
     validate_credits(first_request, response)
 
     # "show more"
