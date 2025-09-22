@@ -22,6 +22,8 @@ paths:
         - For highest quality results (1-3 minutes) use pro search with insights and profile scoring enabled: `{"query": "<YOUR QUERY HERE>", "type": "pro", "insights": true, "profile_scoring": true}`
         - If you have "broad" queries where you expect many results (>1000) to be returned, then "fast" search may work well for you and save some costs and time. `{"query": "<YOUR QUERY HERE>", "type": "fast", "insights": true, "profile_scoring": true}`
         - If you want results very fast, then enforce no filtering by passing empty `custom_filters` and turn of `insights` and `profile_scoring`: `{"query": "<YOUR QUERY HERE>", "type": "fast", "insights": false, "profile_scoring": false, "custom_filters": {}}`
+        - If you want to implement pagination, pass the `thread_id` of the previous request to the next request with increased `limit`. 
+
         Check out other parameters below to adjust speed vs quality and additional data that can be returned by the endpoint. 
 
         _Check out official [Python client](https://github.com/Pearch-ai/pearch-client)_
@@ -39,6 +41,10 @@ paths:
                   description: The human readable search query string. The query can be a simple search query like "software engineer from Ohio" or a more complex query like "Find me engineers in California speaking at least basic english working in software industry with experience at FAANG with 2+ years of experience and at least 500 followers and at least BS degree". Query parameter can handle full job descriptions, but passing specific subset of important requirements normally works better
                   example: "Software engineer with Python experience from Florida who is interested in science"
                   default: "Software engineer with Python experience from Florida who is interested in science"
+                thread_id:
+                  type: string
+                  description: Unique identifier for the thread. This is returned by every `/v2/search` call and used to run follow up queries on the same thread. Currently only `limit` is supported as a parameter if `thread_id` is provided. Pass `thread_id` to get more results. You are only charged for additional results, not for the initial request. Running search with `thread_id` and same `limit` as previous request will return the same results as the previous request without additional charges.
+                  example: "ec191bf9-99ff-4989-8383-c97c71fafb6d"
                 type:
                   type: string
                   enum: [fast, pro]
@@ -117,6 +123,10 @@ paths:
                   uuid:
                     type: string
                     description: Unique identifier for the query (thread ID).
+                    example: "ec191bf9-99ff-4989-8383-c97c71fafb6d"
+                  thread_id:
+                    type: string
+                    description: Unique identifier for the thread. This is used to run follow up queries on the same thread.
                     example: "ec191bf9-99ff-4989-8383-c97c71fafb6d"
                   query:
                     type: string
