@@ -20,6 +20,7 @@ from pearch.schema import (
     V1SearchRequest,
     V1UpsertJobsRequest,
     V1UpsertJobsResponse,
+    V1UserResponse,
     V2SearchCompanyLeadsResponse,
     V2SearchRequest,
     V2SearchCompanyLeadsRequest,
@@ -38,6 +39,7 @@ def generate_curl_command(client_method: str, request: Any) -> str:
         "find_matching_jobs": ("POST", "v1/find_matching_jobs"),
         "get_profile": ("GET", "v1/profile"),
         "api_call_history": ("GET", "v1/api_call_history"),
+        "get_user": ("GET", "v1/user"),
         "search_v1": ("GET", "v1/search"),
         "upsert_jobs": ("POST", "v1/upsert_jobs"),
         "search": ("POST", "v2/search"),
@@ -69,7 +71,7 @@ def generate_curl_command(client_method: str, request: Any) -> str:
     if http_method == "POST" and hasattr(request, "model_dump"):
         request_json = json.dumps(request.model_dump(exclude_none=True))
         curl_parts.extend(["-d", f"'{request_json}'"])
-    elif http_method == "GET" and hasattr(request, "model_dump"):
+    elif http_method == "GET" and request is not None and hasattr(request, "model_dump"):
         params = request.model_dump(exclude_none=True)
         query_string = "&".join([f"{k}={v}" for k, v in params.items()])
         if query_string:
@@ -389,3 +391,18 @@ async def test_api_call_history():
     assert response.api_call_history is not None
     assert len(response.api_call_history) > 0
     assert response.total_credits_used > 0
+
+
+@pytest.mark.asyncio
+async def test_get_user():
+    generate_curl_command("get_user", None)
+    response: V1UserResponse = await AsyncPearchClient().get_user()
+    assert response.user is not None
+    assert response.user.email is not None
+    assert response.user.api_key is not None
+    assert response.credits_remaining is not None
+    assert response.pricing is not None
+    assert len(response.pricing) > 0
+    assert all(pricing.id.endswith("_cost") for pricing in response.pricing)
+    assert all(pricing.credits is not None for pricing in response.pricing)
+    assert all(pricing.description is not None for pricing in response.pricing)

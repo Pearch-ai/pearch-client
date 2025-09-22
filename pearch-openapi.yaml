@@ -777,10 +777,10 @@ paths:
 
   /v1/api_call_history:
     get:
-      operationId: get_v1-api-call-history
+      operationId: v1-api-call-history
       summary: Get API call history
       tags:
-        - Search
+        - Account
       description: |
         Retrieve the API call history for the authenticated user. Returns a list of previous API calls including their parameters, results, and metadata.
         
@@ -902,6 +902,72 @@ paths:
           description: Profile not found
         "400":
           description: Invalid parameter values. JSON body contains the error message.
+
+  /v1/user:
+    get:
+      operationId: get_v1-user
+      summary: Get account information
+      tags:
+        - Account
+      description: |
+        Retrieve information about the authenticated user including their account details, remaining credits, and current pricing configuration for different operations.
+        
+        This endpoint provides:
+        - User account information (email, API key details)
+        - Current credit balance
+        - Pricing details for all available operations with descriptions
+        
+        _Check out official [Python client](https://github.com/Pearch-ai/pearch-client)_
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: User information retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    type: object
+                    description: User account information
+                    properties:
+                      api_key:
+                        type: string
+                        description: User's API key
+                        example: "pk_abc123"
+                      email:
+                        type: string
+                        description: User's email address
+                        example: "user@example.com"
+                      sub_client:
+                        type: object
+                        description: Sub-client configuration object if applicable
+                        additionalProperties: true
+                  credits_remaining:
+                    type: integer
+                    description: Number of credits remaining for the user
+                    example: 950
+                  pricing:
+                    type: array
+                    description: List of pricing information for different operations
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          description: Identifier for the pricing item
+                          example: "pro_search_cost"
+                        credits:
+                          type: number
+                          description: Credit cost for this operation
+                          example: 5
+                        description:
+                          type: string
+                          description: Description of what this pricing item covers
+                          example: "Cost per candidate for pro search"
+        "401":
+          description: Invalid API key
 
 components:
   schemas:

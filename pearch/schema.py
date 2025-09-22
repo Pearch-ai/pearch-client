@@ -435,3 +435,24 @@ class V1ApiCallHistoryResponse(BaseModel):
     user: str | None = None
     total_credits_used: int | None = None
     model_config = ConfigDict(extra="ignore")
+
+
+class UserInfo(BaseModel):
+    api_key: str | None = None
+    email: str | None = None
+    sub_client: Any | None = None
+    model_config = ConfigDict(extra="ignore")
+
+
+class PricingInfo(BaseModel):
+    id: str
+    credits: float | int
+    description: str | None = None
+    model_config = ConfigDict(extra="ignore")
+
+
+class V1UserResponse(BaseModel):
+    user: UserInfo | None = None
+    credits_remaining: int | None = None
+    pricing: List[PricingInfo] | None = Field(default_factory=list)
+    model_config = ConfigDict(extra="ignore")

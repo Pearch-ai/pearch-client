@@ -16,6 +16,7 @@ from .schema import (
     V1ProSearchResponse,
     V1UpsertJobsRequest,
     V1UpsertJobsResponse,
+    V1UserResponse,
     V2SearchCompanyLeadsRequest,
     V2SearchCompanyLeadsResponse,
     V2SearchRequest,
@@ -404,6 +405,26 @@ class PearchClient:
 
         return V1ApiCallHistoryResponse(**response_data)
 
+    def get_user(self) -> V1UserResponse:
+        """
+        Get user information, remaining credits, and pricing details
+
+        Retrieves information about the authenticated user including their
+        email, API key details, remaining credits, and current pricing
+        configuration for different operations.
+
+        Returns:
+            User response with user info, credits remaining, and pricing details
+        """
+        logger.info("Retrieving user information")
+
+        response_data = self._make_request(
+            method="GET",
+            endpoint="v1/user"
+        )
+
+        return V1UserResponse(**response_data)
+
 
 class AsyncPearchClient:
     """
@@ -734,3 +755,23 @@ class AsyncPearchClient:
         )
 
         return V1ApiCallHistoryResponse(**response_data)
+
+    async def get_user(self) -> V1UserResponse:
+        """
+        Get user information, remaining credits, and pricing details - async version
+
+        Retrieves information about the authenticated user including their
+        email, API key details, remaining credits, and current pricing
+        configuration for different operations.
+
+        Returns:
+            User response with user info, credits remaining, and pricing details
+        """
+        logger.info("Retrieving user information async")
+
+        response_data = await self._make_request(
+            method="GET",
+            endpoint="v1/user"
+        )
+
+        return V1UserResponse(**response_data)
