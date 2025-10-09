@@ -359,6 +359,7 @@ async def test_search_company_leads():
     )
     generate_curl_command("search_company_leads", request)
     response = await AsyncPearchClient().search_company_leads(request)
+    assert any(company_result.score > 0 for company_result in response.search_results)
     assert any(
         lead.profile.linkedin_slug
         for company_result in response.search_results
