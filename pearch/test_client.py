@@ -149,6 +149,7 @@ async def test_upsert_jobs():
     credits2 = await get_credits()
     assert credits1 - credits2 >= response.credits_used, "Difference in credits should be greater than credits_used"
 
+ 
 def validate_credits(request: V2SearchRequest, response: V2SearchResponse | V2SearchStatusResponse):
     expected_credits = 0   
     for result in response.search_results:

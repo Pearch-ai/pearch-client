@@ -197,6 +197,10 @@ paths:
                   description: "The search query for finding companies. **Cost: 5 credits per company**"
                   example: "AI startups in San Francisco with 50-200 employees"
                   default: "AI startups in San Francisco with 50-200 employees"
+                thread_id:
+                  type: string
+                  description: "Unique identifier for the thread. This is returned by every `/v2/search_company_leads` call and used to run follow up queries on the same thread. Pass `thread_id` to get more results. You are only charged for additional results, not for the initial request. Running search with `thread_id` and same `limit` as previous request will return the same results as the previous request without additional charges."
+                  example: "ec191bf9-99ff-4989-8383-c97c71fafb6d"
                 lead_query:
                   type: string
                   description: 'Optional query for finding specific leads within the companies. Do not include company requirements in the lead query. if you don''t have good intuition about personas to target, use a very broad query like `{..., "lead_query": "people who I can contact regarding partnerships or any c-level (CEO CFO COO CTO CIO CMO CHRO CPO CLO CSO) /founder/director/owner roles"}` **Cost: 2 credits per lead**'
@@ -251,6 +255,14 @@ paths:
               schema:
                 type: object
                 properties:
+                  uuid:
+                    type: string
+                    description: Unique identifier for this search request.
+                    example: "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+                  thread_id:
+                    type: string
+                    description: Thread identifier that can be used for follow-up searches.
+                    example: "ec191bf9-99ff-4989-8383-c97c71fafb6d"
                   query:
                     type: string
                     description: The complete search query that was processed.

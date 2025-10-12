@@ -267,6 +267,8 @@ class V2SearchResponse(BaseModel):
 
 
 class V2SearchCompanyLeadsResponse(BaseModel):
+    uuid: str | None = None
+    thread_id: str | None = None
     query: str | None = None
     search_results: List[CompanyLeadResult] | None = Field(default_factory=list)
     created_at: float | None = None
@@ -341,6 +343,7 @@ class V2SearchRequest(BaseModel):
 
 class V2SearchCompanyLeadsRequest(BaseModel):
     company_query: str
+    thread_id: str | None = None
     lead_query: str | None = None
     outreach_message_instruction: str | None = None
     limit: int | None = Field(default=50, ge=1, le=1000)
