@@ -372,6 +372,13 @@ class Job(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
 
+class ListedJob(BaseModel):
+    job_id: str
+    job_description: str
+    created_at: str | None = None
+    model_config = ConfigDict(extra="ignore")
+
+
 class V1UpsertJobsRequest(BaseModel):
     jobs: List[Job]
     replace: bool | None = False
@@ -451,6 +458,32 @@ class PricingInfo(BaseModel):
     id: str
     credits: float | int
     description: str | None = None
+    model_config = ConfigDict(extra="ignore")
+
+
+class V1ListJobsRequest(BaseModel):
+    limit: int | None = Field(default=100, ge=1, le=1000)
+    model_config = ConfigDict(extra="ignore")
+
+
+class V1ListJobsResponse(BaseModel):
+    status: str | None = None
+    jobs: List[ListedJob] | None = Field(default_factory=list)
+    total_count: int | None = None
+    returned_count: int | None = None
+    model_config = ConfigDict(extra="ignore")
+
+
+class V1DeleteJobsRequest(BaseModel):
+    job_ids: List[str]
+    model_config = ConfigDict(extra="ignore")
+
+
+class V1DeleteJobsResponse(BaseModel):
+    uuid: str | None = None
+    status: str | None = None
+    deleted_count: int | None = None
+    errors: List[str] | None = Field(default_factory=list)
     model_config = ConfigDict(extra="ignore")
 
 

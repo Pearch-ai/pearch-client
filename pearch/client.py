@@ -16,6 +16,10 @@ from .schema import (
     V1ProSearchResponse,
     V1UpsertJobsRequest,
     V1UpsertJobsResponse,
+    V1ListJobsRequest,
+    V1ListJobsResponse,
+    V1DeleteJobsRequest,
+    V1DeleteJobsResponse,
     V1UserResponse,
     V2SearchCompanyLeadsRequest,
     V2SearchCompanyLeadsResponse,
@@ -330,6 +334,46 @@ class PearchClient:
         )
 
         return V1UpsertJobsResponse(**response_data)
+
+    def list_jobs(self, request: V1ListJobsRequest) -> V1ListJobsResponse:
+        """
+        List all jobs in the user's job index
+        
+        Args:
+            request: List jobs request with optional limit
+            
+        Returns:
+            List jobs response with job data
+        """
+        logger.info(f"Listing jobs with limit: {request.limit}")
+        
+        response_data = self._make_request(
+            method="GET",
+            endpoint="v1/list_jobs",
+            params=request.model_dump(exclude_none=True),
+        )
+        
+        return V1ListJobsResponse(**response_data)
+    
+    def delete_jobs(self, request: V1DeleteJobsRequest) -> V1DeleteJobsResponse:
+        """
+        Delete jobs from the user's job index
+        
+        Args:
+            request: Delete jobs request with job IDs to delete
+            
+        Returns:
+            Delete jobs response with deletion status
+        """
+        logger.info(f"Deleting {len(request.job_ids)} jobs")
+        
+        response_data = self._make_request(
+            method="POST",
+            endpoint="v1/delete_jobs",
+            data=request.model_dump(exclude_none=True),
+        )
+        
+        return V1DeleteJobsResponse(**response_data)
 
     def find_matching_jobs(
         self, request: V1FindMatchingJobsRequest
@@ -688,6 +732,46 @@ class AsyncPearchClient:
         )
 
         return V1UpsertJobsResponse(**response_data)
+
+    async def list_jobs(self, request: V1ListJobsRequest) -> V1ListJobsResponse:
+        """
+        List all jobs in the user's job index - async version
+        
+        Args:
+            request: List jobs request with optional limit
+            
+        Returns:
+            List jobs response with job data
+        """
+        logger.info(f"Listing jobs async with limit: {request.limit}")
+        
+        response_data = await self._make_request(
+            method="GET",
+            endpoint="v1/list_jobs",
+            params=request.model_dump(exclude_none=True),
+        )
+        
+        return V1ListJobsResponse(**response_data)
+    
+    async def delete_jobs(self, request: V1DeleteJobsRequest) -> V1DeleteJobsResponse:
+        """
+        Delete jobs from the user's job index - async version
+        
+        Args:
+            request: Delete jobs request with job IDs to delete
+            
+        Returns:
+            Delete jobs response with deletion status
+        """
+        logger.info(f"Deleting {len(request.job_ids)} jobs async")
+        
+        response_data = await self._make_request(
+            method="POST",
+            endpoint="v1/delete_jobs",
+            data=request.model_dump(exclude_none=True),
+        )
+        
+        return V1DeleteJobsResponse(**response_data)
 
     async def find_matching_jobs(
         self, request: V1FindMatchingJobsRequest

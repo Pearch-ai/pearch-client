@@ -797,6 +797,128 @@ paths:
         "401":
           description: Invalid API key
 
+  /v1/list_jobs:
+    get:
+      operationId: get_v1-list-jobs
+      summary: List jobs
+      tags:
+        - Jobs
+      description: |
+        Retrieve a list of all jobs currently indexed for the authenticated user. This endpoint returns job metadata including job IDs, descriptions, and creation timestamps.        
+        The results are ordered by creation date (most recent first) and can be limited using the `limit` parameter.
+        
+        _Check out official [Python client](https://github.com/Pearch-ai/pearch-client)_
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 100
+          description: Maximum number of jobs to return
+          example: 50
+      responses:
+        "200":
+          description: Jobs list retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    description: Status of the operation
+                    example: "success"
+                  jobs:
+                    type: array
+                    description: List of job objects in the user's index
+                    items:
+                      type: object
+                      properties:
+                        job_id:
+                          type: string
+                          description: Unique identifier for the job
+                          example: "engineer-001"
+                        job_description:
+                          type: string
+                          description: Job description text
+                          example: "Senior Software Engineer for AI startup"
+                        created_at:
+                          type: string
+                          format: date-time
+                          description: ISO 8601 timestamp when job was created
+                          example: "2024-01-15T10:30:45"
+                  total_count:
+                    type: integer
+                    description: Total number of jobs in the user's index
+                    example: 150
+                  returned_count:
+                    type: integer
+                    description: Number of jobs returned in this response
+                    example: 50
+        "400":
+          description: Invalid parameter values
+        "401":
+          description: Invalid API key
+
+  /v1/delete_jobs:
+    post:
+      operationId: post_v1-delete-jobs
+      summary: Delete jobs
+      tags:
+        - Jobs
+      description: |
+        Delete specific jobs from the user's job index by providing a list of job IDs. This operation permanently removes the specified jobs from your index.        
+        _Check out official [Python client](https://github.com/Pearch-ai/pearch-client)_
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                job_ids:
+                  type: array
+                  description: List of job IDs to delete
+                  items:
+                    type: string
+                  example: ["job-001", "job-002", "old-position-123"]
+                  minItems: 1
+              required:
+                - job_ids
+      responses:
+        "200":
+          description: Jobs deletion completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    description: Status of the operation
+                    example: "success"
+                  deleted_count:
+                    type: integer
+                    description: Number of jobs actually deleted (may be less than requested if some job IDs don't exist)
+                    example: 2
+                  errors:
+                    type: array
+                    description: List of error messages if any occurred during deletion
+                    items:
+                      type: string
+                    example: []
+        "400":
+          description: Invalid request data (e.g., empty job_ids list, invalid format)
+        "401":
+          description: Invalid API key
+
   /v1/api_call_history:
     get:
       operationId: v1-api-call-history

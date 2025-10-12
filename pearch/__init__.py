@@ -12,9 +12,12 @@ from .schema import (
     V1ProfileRequest,
     V1SearchRequest,
     V1UpsertJobsRequest,
+    V1ListJobsRequest,
+    V1DeleteJobsRequest,
     V2SearchRequest,
     V2SearchCompanyLeadsRequest,
     Job,
+    ListedJob,
 )
 
 __version__ = "0.1.0"
@@ -28,7 +31,10 @@ __all__ = [
     "V1ProfileRequest",
     "V1SearchRequest",
     "V1UpsertJobsRequest",
+    "V1ListJobsRequest",
+    "V1DeleteJobsRequest",
     "V2SearchRequest",
     "V2SearchCompanyLeadsRequest",
     "Job",
+    "ListedJob",
 ]

@@ -69,11 +69,20 @@ with PearchClient() as client:
     results = client.search(V2SearchRequest(query=QUERY))
 ```
 
+## Job Management
+
+The Pearch client provides comprehensive job management capabilities:
+
+- **Upload/Update Jobs** (`/v1/upsert_jobs`) - Add or update job listings in your index
+- **List Jobs** (`/v1/list_jobs`) - Retrieve all jobs with pagination and metadata  
+- **Delete Jobs** (`/v1/delete_jobs`) - Remove specific jobs by ID
+- **Find Matching Jobs** (`/v1/find_matching_jobs`) - Discover relevant jobs for candidate profiles
+
 ### Index jobs (/v1/upsert_jobs)
 
 ```python
 from pearch.client import PearchClient
-from pearch.schema import V1UpsertJobsRequest, V1FindMatchingJobsRequest, Job
+from pearch.schema import V1UpsertJobsRequest, V1FindMatchingJobsRequest, V1ListJobsRequest, V1DeleteJobsRequest, Job
 
 # Upload or update job listings
 with PearchClient() as client:
@@ -118,6 +127,67 @@ INFO - httpx - _client.py:1025 - HTTP Request: POST https://api.pearch.ai/v1/fin
 83 {"job_id":"83","job_description":"We are seeking a Senior Silicon Design Enginee
 84 {"job_id":"84","job_description":"Join a leading enterprise in the medical imagi
 ```
+
+### List jobs (/v1/list_jobs)
+
+```python
+from pearch.client import PearchClient
+from pearch.schema import V1ListJobsRequest
+
+# List all jobs in your index
+with PearchClient() as client:
+    response = client.list_jobs(V1ListJobsRequest(limit=10))
+    print(f"Total jobs: {response.total_count}")
+    print(f"Returned jobs: {response.returned_count}")
+    
+    for job in response.jobs:
+        print(f"Job ID: {job.job_id}")
+        print(f"Description: {job.job_description}")
+        print(f"Created: {job.created_at}")
+        print("---")
+```
+
+Output:
+```bash
+INFO - pearch.client - client.py:344 - Listing jobs with limit: 10
+INFO - httpx - _client.py:1025 - HTTP Request: GET https://api.pearch.ai/v1/list_jobs?limit=10 "HTTP/1.1 200 OK"
+Total jobs: 25
+Returned jobs: 10
+Job ID: test_job_1
+Description: Senior Software Engineer for AI startup in LA
+Created: 2024-01-15T10:30:45
+---
+Job ID: test_job_2
+Description: Frontend Developer with React experience
+Created: 2024-01-15T09:15:22
+---
+```
+
+### Delete jobs (/v1/delete_jobs)
+
+```python
+from pearch.client import PearchClient
+from pearch.schema import V1DeleteJobsRequest
+
+# Delete specific jobs by their IDs
+with PearchClient() as client:
+    response = client.delete_jobs(V1DeleteJobsRequest(
+        job_ids=["test_job_1", "test_job_2"]
+    ))
+    print(f"Status: {response.status}")
+    print(f"Deleted count: {response.deleted_count}")
+    if response.errors:
+        print(f"Errors: {response.errors}")
+```
+
+Output:
+```bash
+INFO - pearch.client - client.py:368 - Deleting 2 jobs
+INFO - httpx - _client.py:1025 - HTTP Request: POST https://api.pearch.ai/v1/delete_jobs "HTTP/1.1 200 OK"
+Status: success
+Deleted count: 2
+```
+ 
 
 ### Enrich profile (/v1/profile)
 

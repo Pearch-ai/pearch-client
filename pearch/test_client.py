@@ -20,6 +20,10 @@ from pearch.schema import (
     V1SearchRequest,
     V1UpsertJobsRequest,
     V1UpsertJobsResponse,
+    V1ListJobsRequest,
+    V1ListJobsResponse,
+    V1DeleteJobsRequest,
+    V1DeleteJobsResponse,
     V1UserResponse,
     V2SearchCompanyLeadsResponse,
     V2SearchRequest,
@@ -42,6 +46,8 @@ def generate_curl_command(client_method: str, request: Any) -> str:
         "get_user": ("GET", "v1/user"),
         "search_v1": ("GET", "v1/search"),
         "upsert_jobs": ("POST", "v1/upsert_jobs"),
+        "list_jobs": ("GET", "v1/list_jobs"),
+        "delete_jobs": ("POST", "v1/delete_jobs"),
         "search": ("POST", "v2/search"),
         "search_company_leads": ("POST", "v2/search_company_leads"),
         "search_submit": ("POST", "v2/search/submit"),
@@ -134,20 +140,74 @@ async def test_v1_fast_search():
 @pytest.mark.asyncio
 async def test_upsert_jobs():
     credits1 = await get_credits()
+    
+    # Upsert 3 jobs
     request = V1UpsertJobsRequest(
         jobs=[
             Job(
-                job_id="1",
-                job_description="software engineer in test for la ai startup",
+                job_id="test_job_1",
+                job_description="Senior Software Engineer for AI startup in LA",
+            ),
+            Job(
+                job_id="test_job_2", 
+                job_description="Frontend Developer with React experience",
+            ),
+            Job(
+                job_id="test_job_3",
+                job_description="DevOps Engineer with AWS and Kubernetes skills",
             )
         ]
     )
     generate_curl_command("upsert_jobs", request)
     response: V1UpsertJobsResponse = await AsyncPearchClient().upsert_jobs(request)
-    assert response.credits_used == 1
+    assert response.credits_used == 3
     assert "success" in response.status.lower()
     credits2 = await get_credits()
     assert credits1 - credits2 >= response.credits_used, "Difference in credits should be greater than credits_used"
+
+    # List jobs to confirm all 3 jobs were created
+    list_request = V1ListJobsRequest(limit=100)
+    generate_curl_command("list_jobs", list_request)
+    list_response: V1ListJobsResponse = await AsyncPearchClient().list_jobs(list_request)
+    assert "success" in list_response.status.lower()
+    
+    # Check that our test jobs exist
+    test_job_ids = {"test_job_1", "test_job_2", "test_job_3"}
+    found_job_ids = {job.job_id for job in list_response.jobs if job.job_id in test_job_ids}
+    assert len(found_job_ids) == 3, f"Expected 3 test jobs, found: {found_job_ids}"
+    assert found_job_ids == test_job_ids, "All 3 test jobs should be present"
+    
+    # Get initial count for comparison after deletion
+    initial_total_count = list_response.total_count
+    
+    # Delete 2 jobs: one with correct ID and one with incorrect ID
+    delete_request = V1DeleteJobsRequest(job_ids=["test_job_1", "nonexistent_job_id"])
+    generate_curl_command("delete_jobs", delete_request)
+    delete_response: V1DeleteJobsResponse = await AsyncPearchClient().delete_jobs(delete_request)
+    assert "success" in delete_response.status.lower()
+    assert delete_response.deleted_count == 1, "Only 1 job should be deleted (the existing one)"
+    
+    # List jobs again to confirm only test_job_1 was deleted
+    list_request2 = V1ListJobsRequest(limit=100)
+    generate_curl_command("list_jobs", list_request2)
+    list_response2: V1ListJobsResponse = await AsyncPearchClient().list_jobs(list_request2)
+    assert "success" in list_response2.status.lower()
+    
+    # Check remaining test jobs
+    remaining_test_job_ids = {job.job_id for job in list_response2.jobs if job.job_id in test_job_ids}
+    expected_remaining = {"test_job_2", "test_job_3"}
+    assert remaining_test_job_ids == expected_remaining, f"Expected jobs {expected_remaining}, found: {remaining_test_job_ids}"
+    assert "test_job_1" not in remaining_test_job_ids, "test_job_1 should be deleted"
+    
+    # Verify total count decreased by 1
+    assert list_response2.total_count == initial_total_count - 1, "Total count should decrease by 1"
+    
+    # Clean up: delete remaining test jobs
+    cleanup_request = V1DeleteJobsRequest(job_ids=["test_job_2", "test_job_3"])
+    generate_curl_command("delete_jobs", cleanup_request)
+    cleanup_response: V1DeleteJobsResponse = await AsyncPearchClient().delete_jobs(cleanup_request)
+    assert "success" in cleanup_response.status.lower()
+    assert cleanup_response.deleted_count == 2, "Both remaining test jobs should be deleted"
 
  
 def validate_credits(request: V2SearchRequest, response: V2SearchResponse | V2SearchStatusResponse):
