@@ -106,7 +106,7 @@ async def test_find_matching_jobs():
     assert any(job.job_id for job in response.jobs)
     assert response.credits_used == len(response.jobs) * 1
     credits2 = await get_credits()
-    assert credits1 - credits2 >= response.credits_used, "Difference in credits should be at least credits_used"
+    assert credits1 - credits2 == response.credits_used, "Credits check failed"
 
 @pytest.mark.asyncio
 async def test_profile():
@@ -117,7 +117,7 @@ async def test_profile():
     assert "vlad" in response.profile.first_name.lower()
     assert response.credits_used == 2 + 2 * (0 if not response.profile.get_all_emails() else 1) + 14 * (0 if not response.profile.all_phone_numbers() else 1)
     credits2 = await get_credits()
-    assert credits1 - credits2 >= response.credits_used, "Difference in credits should be at least credits_used"
+    assert credits1 - credits2 == response.credits_used, "Credits check failed"
 
     request = V1ProfileRequest(docid="victorsunden", show_emails=True, high_freshness=True, show_phone_numbers=True)
     generate_curl_command("get_profile", request)
@@ -125,7 +125,7 @@ async def test_profile():
     assert "victor" in response.profile.first_name.lower()
     assert response.credits_used == 2 + 2 * (0 if not response.profile.get_all_emails() else 1) + 14 * (0 if not response.profile.all_phone_numbers() else 1)
     credits3 = await get_credits()
-    assert credits2 - credits3 >= response.credits_used, "Difference in credits should be at least credits_used"
+    assert credits2 - credits3 == response.credits_used, "Credits check failed"
 
 @pytest.mark.asyncio
 async def test_v1_fast_search():
@@ -135,7 +135,7 @@ async def test_v1_fast_search():
     response = await AsyncPearchClient().search_v1(request)
     assert any(result.linkedin_slug for result in response)
     credits2 = await get_credits()
-    assert credits1 - credits2 >= len(response) * 1, "Difference in credits should be greater than len(response) * 1"
+    assert credits1 - credits2 == len(response) * 1, "Credits check failed"
 
 @pytest.mark.asyncio
 async def test_upsert_jobs():
@@ -163,7 +163,7 @@ async def test_upsert_jobs():
     assert response.credits_used == 3
     assert "success" in response.status.lower()
     credits2 = await get_credits()
-    assert credits1 - credits2 >= response.credits_used, "Difference in credits should be greater than credits_used"
+    assert credits1 - credits2 == response.credits_used, "Credits check failed"
 
     # List jobs to confirm all 3 jobs were created
     list_request = V1ListJobsRequest(limit=100)
@@ -201,13 +201,7 @@ async def test_upsert_jobs():
     
     # Verify total count decreased by 1
     assert list_response2.total_count == initial_total_count - 1, "Total count should decrease by 1"
-    
-    # Clean up: delete remaining test jobs
-    cleanup_request = V1DeleteJobsRequest(job_ids=["test_job_2", "test_job_3"])
-    generate_curl_command("delete_jobs", cleanup_request)
-    cleanup_response: V1DeleteJobsResponse = await AsyncPearchClient().delete_jobs(cleanup_request)
-    assert "success" in cleanup_response.status.lower()
-    assert cleanup_response.deleted_count == 2, "Both remaining test jobs should be deleted"
+     
 
  
 def validate_credits(request: V2SearchRequest, response: V2SearchResponse | V2SearchStatusResponse):
@@ -268,11 +262,12 @@ async def test_v2_fast_search():
     assert all(len(result.profile.all_phone_numbers()) > 0 for result in response.search_results)
     validate_credits(first_request, response)
     credits2 = await get_credits()
-    assert credits1 - credits2 >= response.credits_used, "Difference in credits should be at least credits_used"
+    assert credits1 - credits2 == response.credits_used, "Credits check failed"
 
 @pytest.mark.asyncio
 async def test_v2_pro_search_generic():
     credits1 = await get_credits()
+    logger.info(f"Credits1: {credits1}")
     first_request = V2SearchRequest(
         query="Find me engineers in California speaking at least basic english working in software industry with experience at FAANG with 2+ years of experience and at least 500 followers and at least BS degree",
         limit=2,
@@ -292,7 +287,8 @@ async def test_v2_pro_search_generic():
     assert all(len(result.profile.all_phone_numbers()) > 0 for result in response.search_results)
     validate_credits(first_request, response)
     credits2 = await get_credits()
-    assert credits1 - credits2 >= response.credits_used, "Difference in credits should be at least credits_used"
+    logger.info(f"Credits2: {credits2}")
+    assert credits1 - credits2 == response.credits_used, "Credits check failed"
 
     # "show more"
     second_request = V2SearchRequest(
@@ -305,7 +301,8 @@ async def test_v2_pro_search_generic():
     response.search_results = response.search_results[2:4]
     validate_credits(first_request, response)
     credits3 = await get_credits()
-    assert credits2 - credits3 >= response.credits_used, "Difference in credits should be at least credits_used"
+    logger.info(f"Credits3: {credits3}")
+    assert credits2 - credits3 == response.credits_used, "Credits check failed"
 
 @pytest.mark.asyncio
 async def test_v2_pro_search_narrow():
@@ -316,7 +313,7 @@ async def test_v2_pro_search_narrow():
     assert response.search_results[0].profile.linkedin_slug is not None
     validate_credits(request, response)
     credits2 = await get_credits()
-    assert credits1 - credits2 >= response.credits_used, "Difference in credits should be at least credits_used"
+    assert credits1 - credits2 == response.credits_used, "Credits check failed"
 
 def validate_company_leads_credits(request: V2SearchCompanyLeadsRequest, response: V2SearchCompanyLeadsResponse):
     expected_credits = 0
@@ -428,7 +425,7 @@ async def test_search_company_leads():
     )
     validate_company_leads_credits(request, response)
     credits2 = await get_credits()
-    assert credits1 - credits2 >= response.credits_used, "Difference in credits should be at least credits_used"
+    assert credits1 - credits2 == response.credits_used, "Credits check failed"
 
 @pytest.mark.asyncio
 async def test_get_search_status():
@@ -452,7 +449,7 @@ async def test_get_search_status():
         if status_response.status == "completed":
             validate_credits(first_submit_request, status_response.result)
             credits2 = await get_credits()
-            assert credits1 - credits2 >= status_response.credits_used, "Difference in credits should be at least credits_used"
+            assert credits1 - credits2 == status_response.credits_used, "Credits check failed"
             break
         await asyncio.sleep(5)
 
@@ -471,7 +468,7 @@ async def test_get_search_status():
             status_response.result.search_results = status_response.result.search_results[2:4]
             validate_credits(first_submit_request, status_response.result)
             credits3 = await get_credits()
-            assert credits2 - credits3 >= status_response.credits_used, "Difference in credits should be at least credits_used"
+            assert credits2 - credits3 == status_response.credits_used, "Credits check failed"
             break
         await asyncio.sleep(5)
 
