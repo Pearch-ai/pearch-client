@@ -43,7 +43,7 @@ paths:
                   default: "Software engineer with Python experience from Florida who is interested in science"
                 thread_id:
                   type: string
-                  description: Unique identifier for the thread. This is returned by every `/v2/search` call and used to run follow up queries on the same thread. Currently only `limit` is supported as a parameter if `thread_id` is provided. Pass `thread_id` to get more results. You are only charged for additional results, not for the initial request. Running search with `thread_id` and same `limit` as previous request will return the same results as the previous request without additional charges.
+                  description: Unique identifier for the thread. This is returned by every `/v2/search` call and is used to run follow-up queries on the same thread. There are now two alternative ways to call with `thread_id`: (1) with an increased `limit` and an empty or omitted `query`, to request more results (in this case results are appended, and you are only charged for additional, new results) or (2) with a new `query` to perform a follow-up conversational search; in this case, the new query should only specify additional requirements or changes as in a natural conversation, and the results are replaced instead of appended. Running a search with the same `thread_id` and same `limit` as the previous request will return the same results as before without incurring additional charges.
                   example: "ec191bf9-99ff-4989-8383-c97c71fafb6d"
                 type:
                   type: string

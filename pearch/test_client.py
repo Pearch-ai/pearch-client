@@ -304,6 +304,20 @@ async def test_v2_pro_search_generic():
     logger.info(f"Credits3: {credits3}")
     assert credits2 - credits3 == response.credits_used, "Credits check failed"
 
+    # follow up query
+    third_request = V2SearchRequest(
+        thread_id=response.thread_id,
+        query="who are at least 30 years old",
+        limit=2,
+    )
+    generate_curl_command("search", third_request)
+    response: V2SearchResponse = await AsyncPearchClient().search(third_request)
+    assert len(response.search_results) == 2
+    validate_credits(first_request, response)
+    credits4 = await get_credits()
+    logger.info(f"Credits4: {credits4}")
+    assert credits3 - credits4 == response.credits_used, "Credits check failed"
+
 @pytest.mark.asyncio
 async def test_v2_pro_search_narrow():
     credits1 = await get_credits()
@@ -411,7 +425,7 @@ async def test_search_company_leads():
         company_query="ats companies",
         lead_query="c-levels and founders",
         outreach_message_instruction="<300 characters, email style, casual",
-        limit=12,
+        limit=20,
         leads_limit=2,
         show_emails=True,
     )
