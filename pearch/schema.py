@@ -336,6 +336,7 @@ class V2SearchRequest(BaseModel):
     require_emails: bool | None = False
     show_emails: bool | None = False
     require_phone_numbers: bool | None = False
+    require_phones_or_emails: bool | None = False
     show_phone_numbers: bool | None = False
     limit: int | None = Field(default=10, ge=1, le=1000)
     model_config = ConfigDict(extra="ignore")
@@ -352,6 +353,7 @@ class V2SearchCompanyLeadsRequest(BaseModel):
     show_phone_numbers: bool | None = False
     require_emails: bool | None = False
     require_phone_numbers: bool | None = False
+    require_phones_or_emails: bool | None = False
     high_freshness: bool | None = False
     company_high_freshness: bool | None = False
     select_top_leads: bool | None = True
@@ -408,7 +410,7 @@ class V2SearchSubmitResponse(BaseModel):
 
 class V2SearchStatusResponse(BaseModel):
     task_id: str
-    status: str
+    status: str | None = None
     created_at: str | None = None
     query: str | None = None
     result: V2SearchResponse | None = None

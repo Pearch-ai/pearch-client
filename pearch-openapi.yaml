@@ -100,6 +100,10 @@ paths:
                   type: boolean
                   default: false
                   description: "Only return profiles with at least one phone number. Profiles will have additional `has_phone_numbers` field set to true. **Cost: 1 credit per candidate**"
+                require_phones_or_emails:
+                  type: boolean
+                  default: false
+                  description: "Only return profiles with at least one phone number OR at least one email address. Useful when you need contact information but either email or phone is acceptable. **Cost: 1 credit per candidate**"
                 show_phone_numbers:
                   type: boolean
                   default: false
@@ -406,6 +410,10 @@ paths:
                   type: boolean
                   default: false
                   description: "Only return profiles with at least one phone number. Profiles will have additional `has_phone_numbers` field set to true. **Cost: 1 credit per candidate**"
+                require_phones_or_emails:
+                  type: boolean
+                  default: false
+                  description: "Only return profiles with at least one phone number OR at least one email address. Useful when you need contact information but either email or phone is acceptable. **Cost: 1 credit per candidate**"
                 show_phone_numbers:
                   type: boolean
                   default: false

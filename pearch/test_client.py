@@ -230,9 +230,9 @@ def validate_credits(request: V2SearchRequest, response: V2SearchResponse | V2Se
         if request.show_phone_numbers and result.profile and result.profile.phone_numbers:
             candidate_credits += 14
             logger.info(f"{profile_id}: Incremented candidate_credits by 14 for show_phone_numbers, total now {candidate_credits}")
-        if request.require_emails or request.require_phone_numbers:
+        if request.require_emails or request.require_phone_numbers or request.require_phones_or_emails:
             candidate_credits += 1
-            logger.info(f"{profile_id}: Incremented candidate_credits by 1 for require_emails or require_phone_numbers, total now {candidate_credits}")
+            logger.info(f"{profile_id}: Incremented candidate_credits by 1 for require_emails or require_phone_numbers or require_phones_or_emails, total now {candidate_credits}")
         expected_credits += candidate_credits
         logger.info(f"{profile_id}: Added candidate_credits {candidate_credits} to expected_credits, expected_credits now {expected_credits}")
     assert response.credits_used == expected_credits    
@@ -329,6 +329,27 @@ async def test_v2_pro_search_narrow():
     credits2 = await get_credits()
     assert credits1 - credits2 == response.credits_used, "Credits check failed"
 
+@pytest.mark.asyncio
+async def test_v2_search_with_require_phones_or_emails():
+    credits1 = await get_credits()
+    request = V2SearchRequest(
+        query="software engineers in San Francisco",
+        type="fast",
+        limit=2,
+        show_emails=True,
+        show_phone_numbers=True,
+        require_phones_or_emails=True,
+    )
+    generate_curl_command("search", request)
+    response: V2SearchResponse = await AsyncPearchClient().search(request)
+    assert len(response.search_results) == 2
+    assert any(result.profile.linkedin_slug for result in response.search_results)
+    logger.info(f"Response: {response.model_dump_json()}")
+#    assert all(len(result.profile.get_all_emails()) > 0 or len(result.profile.all_phone_numbers()) > 0 for result in response.search_results)
+    validate_credits(request, response)
+    credits2 = await get_credits()
+    assert credits1 - credits2 == response.credits_used, "Credits check failed"
+
 def validate_company_leads_credits(request: V2SearchCompanyLeadsRequest, response: V2SearchCompanyLeadsResponse):
     expected_credits = 0
     
@@ -404,7 +425,7 @@ def validate_company_leads_credits(request: V2SearchCompanyLeadsRequest, respons
             logger.info(f"Added {phone_credits} credits for show_phone_numbers ({leads_with_phones} leads with phones * 8), total now {expected_credits}")
         
         # require_emails: 1 credit per candidate (optional)
-        if request.require_emails or request.require_phone_numbers:
+        if request.require_emails or request.require_phone_numbers or request.require_phones_or_emails:
             require_email_credits = total_leads * 1
             expected_credits += require_email_credits
             logger.info(f"Added {require_email_credits} credits for require_* ({total_leads} leads * 1), total now {expected_credits}")
