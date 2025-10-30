@@ -60,7 +60,7 @@ paths:
                 high_freshness:
                   type: boolean
                   default: false
-                  description: "Enable real-time profile updates for fresher data. This downloads the most recent copies of profiles directly from source websites in realtime (e.g. Linkedin). If you are ok with profiles that may be a few months outdated, and want to save ~30 seconds, turn off high_freshness. **Cost: 2 credits per candidate**"
+                  description: "Enable real-time profile updates for fresher data. This downloads the most recent copies of profiles directly from source websites in realtime (e.g. Linkedin). Scraped results are cached for up to 24 hours. If you are ok with profiles that may be a few months outdated, and want to save ~30 seconds, turn off high_freshness. **Cost: 2 credits per candidate**"
                 profile_scoring:
                   type: boolean
                   default: true
@@ -1036,7 +1036,7 @@ paths:
           required: false
           schema:
             type: boolean
-          description: "Enable real-time profile updates for fresher data. This downloads the most recent copies of profiles directly from source websites in realtime (e.g. Linkedin). If you are ok with profiles that may be a few months outdated, turn off high_freshness. **Cost: 2 credits per candidate**"
+          description: "Enable real-time profile updates for fresher data. This downloads the most recent copies of profiles directly from source websites in realtime (e.g. Linkedin). Scraped results are cached for up to 24 hours. If you are ok with profiles that may be a few months outdated, turn off high_freshness. **Cost: 2 credits per candidate**"
           example: false
         - name: show_emails
           in: query
