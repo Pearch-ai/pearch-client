@@ -208,6 +208,114 @@ INFO - httpx - _client.py:1025 - HTTP Request: GET https://api.pearch.ai/v1/prof
 Profile: {"uuid":"1f3cca0a-06b2-4679-95eb-d9b1075a2764","profile":{"docid":"vslaykovsky","linkedin_slug":"vslaykovsky","first_name":"Vlad","middle_name":null,"last_name":"Sly","picture_url":"https://media.licdn.com/dms/image/v2/C4D03AQE9ZowG0kPs6A/profile-displayphoto-shrink_200_200/profile-displayphoto-shrink_200_200/0/1538525794823?e=2147483647&v=beta&t=hZOiV9Po50zLV9blRTbra2IfeXvSdkeuJyhFJ4rmr9k","title":"Machine Learning Researcher + Kaggle Grandmaster, top10","summary":"Machine Learning Researcher with extensive experience in industry. Fluent in Python, multiple years of experience building scalable backend systems in C/C++, Java and PHP.","gender":null,"is_decision_maker":1.0,"languages":[{"language":"English","proficiency":"C1"},{"language":"Russian","proficiency":"C2"}],"inferred_languages":[],"location":"Bristol, England, United Kingdom","is_top_universities":false,"is_opentowork":null,"is_hiring":null,"total_experience_years":22.0,"estimated_age":43.0,"expertise":["machine learning","
 ```
 
+## OpenAI-Compatible Chat Completions (/v1/chat/completions)
+
+The Pearch API provides an OpenAI-compatible chat completions endpoint that supports streaming search results. This endpoint accepts the standard OpenAI format and returns search results in a streaming format.
+
+### Basic Usage
+
+```python
+from openai import OpenAI
+
+client = OpenAI(
+    base_url="https://api.pearch.ai/",
+    api_key="your-api-key"
+)
+
+# Streaming search
+stream = client.chat.completions.create(
+    model="pearch",
+    stream=True,
+    messages=[{"role": "user", "content": "software engineers at Google with 10 years of experience"}],
+    extra_body={
+        "limit": 5,
+        "type": "fast"
+    }
+)
+
+for chunk in stream:
+    if chunk.choices and len(chunk.choices) > 0:
+        delta = chunk.choices[0].delta
+        if delta and delta.content:
+            print(delta.content, end="", flush=True)
+        if chunk.choices[0].finish_reason is not None:
+            print(f"\nFinished: {chunk.choices[0].finish_reason}")
+```
+
+### Streaming Options
+
+The endpoint supports several streaming modes via `extra_body`:
+
+- **`stream_profiles`**: Control how profiles are streamed
+  - `"full"`: Stream each profile as it's found
+  - `"batch"`: Stream profiles in batches
+  - `None`: Don't stream profiles (default)
+
+- **`profiles_batch_size`**: Number of profiles per batch (default: 10)
+
+- **`final_result`**: Include full result in final chunk (default: True)
+
+### Advanced Parameters
+
+All search parameters can be passed via `extra_body`:
+
+```python
+stream = client.chat.completions.create(
+    model="pearch",
+    stream=True,
+    messages=[{"role": "user", "content": "software engineers in California"}],
+    extra_body={
+        "limit": 10,
+        "type": "pro",  # or "fast"
+        "stream_profiles": "batch",
+        "profiles_batch_size": 5,
+        "final_result": True,
+        "insights": True,
+        "high_freshness": True,
+        "show_emails": True,
+        "show_phone_numbers": True,
+        "require_emails": True,
+        "require_phone_numbers": True,
+        "profile_scoring": True,
+        "strict_filters": False,
+        "custom_filters": {}
+    }
+)
+```
+
+### Thread Continuation
+
+You can continue a search thread by passing `thread_id`:
+
+```python
+# First request
+stream1 = client.chat.completions.create(
+    model="pearch",
+    stream=True,
+    messages=[{"role": "user", "content": "software engineers at Google"}],
+    extra_body={"limit": 5, "type": "fast"}
+)
+
+# Extract thread_id from final chunk
+thread_id = None
+for chunk in stream1:
+    if chunk.choices and chunk.choices[0].finish_reason is not None:
+        # Extract thread_id from chunk summary if available
+        break
+
+# Continue with same thread
+stream2 = client.chat.completions.create(
+    model="pearch",
+    stream=True,
+    messages=[{"role": "user", "content": "who are at least 30 years old"}],
+    extra_body={"limit": 5, "thread_id": thread_id, "type": "fast"}
+)
+```
+
+### Note on Streaming
+
+**Important**: The `/v1/chat/completions` endpoint always returns a streaming response (SSE format), even when `stream=False` is specified. You should always use `stream=True` and process the response as a stream.
+
 ## Testing 
 
 These tests hit pearch API, so they require PEARCH_API_KEY and may incur costs. See `pearch/test_client.py`. 

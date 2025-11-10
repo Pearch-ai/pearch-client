@@ -32,10 +32,12 @@ dependencies = [
 test = [
     "pytest>=7.0.0",
     "pytest-dotenv",
+    "openai>=1.0.0",
 ]
 dev = [
     "pytest>=7.0.0",
     "pytest-dotenv",
+    "openai>=1.0.0",
 ]
 
 [project.urls]

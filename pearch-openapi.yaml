@@ -181,6 +181,167 @@ paths:
         "400":
           description: Invalid parameter values. JSON body contains the error message.
 
+  /v2/search/stream:
+    post:
+      operationId: post_v2-search-stream
+      summary: Search people profiles (streaming)
+      tags:
+        - Search
+      description: |
+        Streaming version of the search endpoint. Returns results in real-time using Server-Sent Events (SSE) format. 
+        This endpoint accepts the same parameters as `/v2/search` but streams results as they become available.
+        
+        The response is a text/event-stream that contains:
+        - Stage updates (start/end events for search stages)
+        - Profile updates (if `stream_profiles` is enabled)
+        - LLM content chunks (optional)
+        - Final result with summary
+        
+        Use this endpoint when you want to show progress to users in real-time or when you need to process results as they arrive.
+        
+        **Note**: This endpoint always returns a streaming response (SSE format).
+        
+        **OpenAI Compatibility**: This endpoint is compatible with the OpenAI Python library. You can use it with the OpenAI client by setting `base_url` to your Pearch API endpoint and using the standard OpenAI chat completions format. The endpoint also supports OpenAI-compatible endpoints `/chat/completions` and `/v1/chat/completions` which accept the OpenAI format directly.
+        
+        Example with OpenAI library:
+        ```python
+        from openai import OpenAI
+        
+        client = OpenAI(
+            base_url="https://api.pearch.ai/",
+            api_key="your-api-key"
+        )
+        
+        stream = client.chat.completions.create(
+            model="pearch",
+            stream=True,
+            messages=[{"role": "user", "content": "software engineers at Google"}],
+            extra_body={"limit": 5, "type": "fast"}
+        )
+        ```
+        
+        _Check out official [Python client](https://github.com/Pearch-ai/pearch-client)_
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                query:
+                  type: string
+                  description: The human readable search query string.
+                  example: "Software engineer with Python experience from Florida"
+                thread_id:
+                  type: string
+                  description: "Unique identifier for the thread. Used for continuation and follow-up queries."
+                  example: "ec191bf9-99ff-4989-8383-c97c71fafb6d"
+                uuid:
+                  type: string
+                  description: "UUID from a previous API call. Used to resolve thread_id for continuation."
+                  example: "ec191bf9-99ff-4989-8383-c97c71fafb6d"
+                type:
+                  type: string
+                  enum: [fast, pro]
+                  default: "pro"
+                  description: |
+                    The type of search to perform. 
+                    * "fast" is faster but may have less recall. **Cost: 1 credit per candidate**
+                    * "pro" is slower and more costly, but has higher quality and recall. **Cost: 5 credits per candidate**
+                stream_profiles:
+                  type: string
+                  enum: [none, full, batch]
+                  default: null
+                  description: |
+                    Control how profiles are streamed:
+                    * `"none"` or `null`: Don't stream profiles (default)
+                    * `"full"`: Stream each profile as it's found
+                    * `"batch"`: Stream profiles in batches
+                profiles_batch_size:
+                  type: integer
+                  minimum: 1
+                  default: 10
+                  description: Number of profiles per batch when `stream_profiles` is set to `"batch"`.
+                final_result:
+                  type: boolean
+                  default: true
+                  description: Include full result in final chunk. If false, only summary is included.
+                id_source:
+                  type: string
+                  enum: [uuid, thread_id]
+                  default: "uuid"
+                  description: Source for completion ID in stream chunks. Use "uuid" for unique per-request ID or "thread_id" for thread-based ID.
+                insights:
+                  type: boolean
+                  default: true
+                  description: 'Enable detailed insights and analysis for search results. **Cost: 1 credit per candidate**'
+                high_freshness:
+                  type: boolean
+                  default: false
+                  description: "Enable real-time profile updates for fresher data. **Cost: 2 credits per candidate**"
+                profile_scoring:
+                  type: boolean
+                  default: true
+                  description: "Enable profile scoring and reranking for better result quality. **Cost: 1 credit per candidate**"
+                custom_filters:
+                  type: object
+                  description: Custom filters in JSON format for advanced filtering.
+                  additionalProperties: true
+                strict_filters:
+                  type: boolean
+                  default: false
+                  description: Be stricter when filtering.
+                require_emails:
+                  type: boolean
+                  default: false
+                  description: "Only return profiles with at least one email address. **Cost: 1 credit per candidate**"
+                show_emails:
+                  type: boolean
+                  default: false
+                  description: "Include email addresses in search results if available. **Cost: 2 credits per candidate**"
+                require_phone_numbers:
+                  type: boolean
+                  default: false
+                  description: "Only return profiles with at least one phone number. **Cost: 1 credit per candidate**"
+                require_phones_or_emails:
+                  type: boolean
+                  default: false
+                  description: "Only return profiles with at least one phone number OR at least one email address. **Cost: 1 credit per candidate**"
+                show_phone_numbers:
+                  type: boolean
+                  default: false
+                  description: "Include phone numbers in search results if available. **Cost: 14 credits per candidate**"
+                limit:
+                  type: integer
+                  minimum: 1
+                  maximum: 1000
+                  default: 10
+                  description: The maximum number of search results to return.
+              required:
+                - query
+      responses:
+        "200":
+          description: Streaming search response (Server-Sent Events)
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                description: |
+                  Server-Sent Events stream containing:
+                  - Stage updates (on_node_start, on_node_end)
+                  - Profile updates (if stream_profiles enabled)
+                  - LLM content chunks
+                  - Final result with summary
+                  - [DONE] marker at the end
+        "400":
+          description: Invalid parameter values. JSON body contains the error message.
+        "401":
+          description: Invalid API key
+        "404":
+          description: Thread not found (when using thread_id or uuid)
+
   /v2/search_company_leads:
     post:
       operationId: post_v2-search-company-leads

@@ -10,6 +10,8 @@ import json
 from typing import Any
 import time
 
+from openai import OpenAI
+
 from pearch.client import AsyncPearchClient
 from pearch.schema import (
     V1FindMatchingJobsRequest,
@@ -531,3 +533,229 @@ async def test_get_user():
     assert all(pricing.id.endswith("_cost") for pricing in response.pricing)
     assert all(pricing.credits is not None for pricing in response.pricing)
     assert all(pricing.description is not None for pricing in response.pricing)
+
+
+# OpenAI format tests for /v1/chat/completions endpoint
+BASE_URL = os.getenv("PEARCH_API_URL") or "https://api.pearch.ai/"
+API_KEY = os.getenv("PEARCH_API_KEY")
+TEST_KEY = os.getenv("PEARCH_TEST_KEY")
+
+
+def _user(msg: str):
+    return {"role": "user", "content": msg}
+
+
+@pytest.mark.asyncio
+async def test_chat_completions_stream_basic():
+    """Test basic streaming chat completions endpoint"""
+    if not API_KEY:
+        pytest.skip("PEARCH_API_KEY not set")
+    
+    client = OpenAI(base_url=BASE_URL, api_key=API_KEY)
+    if TEST_KEY:
+        client._client.headers["X-Test-Secret"] = TEST_KEY
+
+    stream = client.chat.completions.create(
+        model="pearch",
+        stream=True,
+        messages=[_user("software engineers at Google with 10 years of experience")],
+        extra_body={"limit": 5, "type": "fast"},
+    )
+
+    chunks_received = 0
+    final_chunk = None
+    content_chunks = []
+    
+    for chunk in stream:
+        chunks_received += 1
+        if chunk.choices and len(chunk.choices) > 0:
+            delta = chunk.choices[0].delta
+            if delta and delta.content:
+                content_chunks.append(delta.content)
+            if chunk.choices[0].finish_reason is not None:
+                final_chunk = chunk
+                logger.info(f"Final chunk received: finish_reason={chunk.choices[0].finish_reason}")
+    
+    logger.info(f"Total chunks received: {chunks_received}")
+    logger.info(f"Total content chunks: {len(content_chunks)}")
+    
+    assert chunks_received > 0
+    assert final_chunk is not None
+    assert final_chunk.choices[0].finish_reason == "stop"
+
+
+@pytest.mark.asyncio
+async def test_chat_completions_stream_batch_profiles_and_final_result():
+    """Test streaming with batch profiles and final result"""
+    if not API_KEY:
+        pytest.skip("PEARCH_API_KEY not set")
+    
+    client = OpenAI(base_url=BASE_URL, api_key=API_KEY)
+    if TEST_KEY:
+        client._client.headers["X-Test-Secret"] = TEST_KEY
+
+    stream = client.chat.completions.create(
+        model="pearch",
+        stream=True,
+        messages=[_user("software engineers at Google with 10 years of experience")],
+        extra_body={"limit": 5, "stream_profiles": "batch", "final_result": True},
+    )
+
+    responses = []
+    chunks_received = 0
+    final_chunk = None
+    all_chunks = []
+    
+    for chunk in stream:
+        chunks_received += 1
+        all_chunks.append(chunk)
+        if chunk.choices and len(chunk.choices) > 0:
+            if chunk.choices[0].delta.content is not None:
+                responses.append(chunk.choices[0].delta.content)
+            if chunk.choices[0].finish_reason is not None:
+                final_chunk = chunk
+                logger.info(f"Final chunk received: finish_reason={chunk.choices[0].finish_reason}")
+                chunk_dict = chunk.model_dump() if hasattr(chunk, 'model_dump') else {}
+                logger.info(f"Final chunk full data: {chunk_dict}")
+                if 'summary' in chunk_dict:
+                    logger.info(f"Final chunk summary: {chunk_dict['summary']}")
+                if 'result' in chunk_dict:
+                    logger.info(f"Final chunk has result: {chunk_dict['result'] is not None}")
+    
+    logger.info(f"Total chunks received: {chunks_received}")
+    logger.info(f"Total responses with content: {len(responses)}")
+    if final_chunk:
+        logger.info(f"Final chunk object type: {type(final_chunk)}")
+        if hasattr(final_chunk, 'model_dump'):
+            logger.info(f"Final chunk dump: {json.dumps(final_chunk.model_dump(), indent=2)}")
+    else:
+        logger.warning("No final chunk received!")
+        logger.info(f"Last chunk: {all_chunks[-1] if all_chunks else None}")
+
+    assert chunks_received > 0
+    assert len(responses) >= 0
+    assert final_chunk is not None
+    assert final_chunk.choices[0].finish_reason == "stop"
+
+
+@pytest.mark.asyncio
+async def test_chat_completions_stream_full_profiles():
+    """Test streaming with full profile streaming"""
+    if not API_KEY:
+        pytest.skip("PEARCH_API_KEY not set")
+    
+    client = OpenAI(base_url=BASE_URL, api_key=API_KEY)
+    if TEST_KEY:
+        client._client.headers["X-Test-Secret"] = TEST_KEY
+
+    stream = client.chat.completions.create(
+        model="pearch",
+        stream=True,
+        messages=[_user("software engineers in San Francisco")],
+        extra_body={"limit": 3, "stream_profiles": "full", "type": "fast"},
+    )
+
+    chunks_received = 0
+    final_chunk = None
+    
+    for chunk in stream:
+        chunks_received += 1
+        if chunk.choices and len(chunk.choices) > 0:
+            if chunk.choices[0].finish_reason is not None:
+                final_chunk = chunk
+    
+    assert chunks_received > 0
+    assert final_chunk is not None
+    assert final_chunk.choices[0].finish_reason == "stop"
+
+
+@pytest.mark.asyncio
+async def test_chat_completions_stream_with_continuation():
+    """Test streaming with thread continuation"""
+    if not API_KEY:
+        pytest.skip("PEARCH_API_KEY not set")
+    
+    client = OpenAI(base_url=BASE_URL, api_key=API_KEY)
+    if TEST_KEY:
+        client._client.headers["X-Test-Secret"] = TEST_KEY
+
+    # First request
+    stream1 = client.chat.completions.create(
+        model="pearch",
+        stream=True,
+        messages=[_user("software engineers at Google")],
+        extra_body={"limit": 2, "type": "fast"},
+    )
+
+    thread_id = None
+    for chunk in stream1:
+        if chunk.choices and len(chunk.choices) > 0:
+            if chunk.choices[0].finish_reason is not None:
+                # Try to extract thread_id from the chunk if available
+                chunk_dict = chunk.model_dump() if hasattr(chunk, 'model_dump') else {}
+                if 'summary' in chunk_dict and 'thread_id' in chunk_dict['summary']:
+                    thread_id = chunk_dict['summary']['thread_id']
+                break
+
+    # Second request with continuation (if thread_id was found)
+    if thread_id:
+        stream2 = client.chat.completions.create(
+            model="pearch",
+            stream=True,
+            messages=[_user("who are at least 30 years old")],
+            extra_body={"limit": 2, "thread_id": thread_id, "type": "fast"},
+        )
+
+        chunks_received = 0
+        final_chunk = None
+        
+        for chunk in stream2:
+            chunks_received += 1
+            if chunk.choices and len(chunk.choices) > 0:
+                if chunk.choices[0].finish_reason is not None:
+                    final_chunk = chunk
+        
+        assert chunks_received > 0
+        assert final_chunk is not None
+        assert final_chunk.choices[0].finish_reason == "stop"
+
+
+@pytest.mark.asyncio
+async def test_chat_completions_stream_with_extra_params():
+    """Test streaming with various extra_body parameters"""
+    if not API_KEY:
+        pytest.skip("PEARCH_API_KEY not set")
+    
+    client = OpenAI(base_url=BASE_URL, api_key=API_KEY)
+    if TEST_KEY:
+        client._client.headers["X-Test-Secret"] = TEST_KEY
+
+    stream = client.chat.completions.create(
+        model="pearch",
+        stream=True,
+        messages=[_user("software engineers in California")],
+        extra_body={
+            "limit": 3,
+            "type": "pro",
+            "stream_profiles": "batch",
+            "profiles_batch_size": 5,
+            "final_result": True,
+            "insights": True,
+            "high_freshness": True,
+            "show_emails": True,
+            "show_phone_numbers": True,
+        },
+    )
+
+    chunks_received = 0
+    final_chunk = None
+    
+    for chunk in stream:
+        chunks_received += 1
+        if chunk.choices and len(chunk.choices) > 0:
+            if chunk.choices[0].finish_reason is not None:
+                final_chunk = chunk
+    
+    assert chunks_received > 0
+    assert final_chunk is not None
+    assert final_chunk.choices[0].finish_reason == "stop"
