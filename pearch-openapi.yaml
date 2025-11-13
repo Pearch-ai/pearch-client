@@ -26,6 +26,8 @@ paths:
 
         Check out other parameters below to adjust speed vs quality and additional data that can be returned by the endpoint. 
 
+        **Cost: (number of profiles returned) × (sum of credits for each of `type`, `insights`, `profile_scoring`, `high_freshness`, `show_emails`, `show_phone_numbers`)**
+
         _Check out official [Python client](https://github.com/Pearch-ai/pearch-client)_
       security:
         - bearerAuth: []
@@ -95,7 +97,7 @@ paths:
                 show_emails:
                   type: boolean
                   default: false
-                  description: "Include email addresses in search results if available. This returns all available emails including personal and work emails. **Cost: 2 credits per candidate**"
+                  description: "Include email addresses in search results if available. This returns all available emails including personal and work emails. **Cost: 2 credits per candidate, only charged if the candidate has at least one email address**"
                 require_phone_numbers:
                   type: boolean
                   default: false
@@ -107,7 +109,7 @@ paths:
                 show_phone_numbers:
                   type: boolean
                   default: false
-                  description: "Include phone numbers in search results if available. This returns all available phone numbers including personal and work numbers. **Cost: 14 credits per candidate**"
+                  description: "Include phone numbers in search results if available. This returns all available phone numbers including personal and work numbers. **Cost: 14 credits per candidate, only charged if the candidate has at least one phone number**"
                 limit:
                   type: integer
                   minimum: 1
@@ -219,6 +221,8 @@ paths:
             extra_body={"limit": 5, "type": "fast"}
         )
         ```
+
+        **Cost: (number of profiles returned) × (sum of credits for each of `type`, `insights`, `profile_scoring`, `high_freshness`, `show_emails`, `show_phone_numbers`)**
         
         _Check out official [Python client](https://github.com/Pearch-ai/pearch-client)_
       security:
@@ -356,6 +360,8 @@ paths:
         - When you want to generate personalized outreach messages for the identified leads, pass the outreach message instruction: `{"company_query": "manufacturers of aviation parts", "lead_query": "CTOs and engineering managers", "outreach_message_instruction": "Suggest buying my (Rob) SaaS recruitment product <300 characters, email style, casual, personal touch"}`
         - if you don't have good intuition about leads to target, use a very broad lead query like `{..., "lead_query": "people who I can contact regarding partnerships or any c-level (CEO CFO COO CTO CIO CMO CHRO CPO CLO CSO) /founder/director/owner roles"}`
         
+        **Cost: (number of companies returned) × (5 + `company_high_freshness` if enabled) + (number of leads returned) × (2 + sum of credits for `outreach_message_instruction`, `show_emails`, `show_phone_numbers`, `require_emails`, `require_phone_numbers`, `high_freshness`)** 
+
         _Check out official [Python client](https://github.com/Pearch-ai/pearch-client)_
       security:
         - bearerAuth: []
@@ -500,6 +506,8 @@ paths:
         This is useful for long-running searches that may take several minutes to complete. The search will continue processing in the background while you can use the task ID to monitor progress and retrieve results.
         
         All the same search parameters are supported as the synchronous `/v2/search` endpoint.
+
+        **Cost: (number of profiles returned) × (sum of credits for each of `type`, `insights`, `profile_scoring`, `high_freshness`, `show_emails`, `show_phone_numbers`)**
         
         _Check out official [Python client](https://github.com/Pearch-ai/pearch-client)_
       security:
@@ -626,6 +634,8 @@ paths:
         - `running`: Task is currently being processed
         - `completed`: Task has finished successfully and results are available
         - `failed`: Task failed and error details are provided
+
+        **Cost: 0 credits**
         
         _Check out official [Python client](https://github.com/Pearch-ai/pearch-client)_
       security:
@@ -694,8 +704,12 @@ paths:
       tags:
         - Search
       description: |
-        **Deprecated!** Don't use this endpoint. Use [/v2/search](/reference/post_v2-search) instead.
-        Submit a new search query or check the status of an existing query. Parameter are accepted both as query parameters with GET request and as JSON body with POST request.
+        **Deprecated!** Don't use this endpoint. Use [/v2/search](/reference/post_v2-search) instead!
+
+        Run a search query. Parameter are accepted both as query parameters with GET request and as JSON body with POST request.
+
+        **Cost: 1 credits per candidate if `type='fast'`, 7 credits per candidate if `type='pro'` + 2 credits per candidate if `require_emails` is true**
+
 
         _Check out official [Python client](https://github.com/Pearch-ai/pearch-client)_
       security:
@@ -806,6 +820,8 @@ paths:
         This endpoint is used in conjunction with `/v1/find_matching_jobs` endpoint. 
         1. First you need to upsert jobs with [/v1/upsert_jobs](/reference/post_v1-upsert-jobs)
         2. Then you can use [/v1/find_matching_jobs](/reference/post_v1-find-matching-jobs) to find jobs relevant to a profile.        
+
+        **Cost: 1 credit per job**
 
         _Check out official [Python client](https://github.com/Pearch-ai/pearch-client)_
       security:
@@ -994,6 +1010,8 @@ paths:
         Retrieve a list of all jobs currently indexed for the authenticated user. This endpoint returns job metadata including job IDs, descriptions, and creation timestamps.        
         The results are ordered by creation date (most recent first) and can be limited using the `limit` parameter.
         
+        **Cost: 0 credits**
+
         _Check out official [Python client](https://github.com/Pearch-ai/pearch-client)_
       security:
         - bearerAuth: []
@@ -1060,6 +1078,9 @@ paths:
         - Jobs
       description: |
         Delete specific jobs from the user's job index by providing a list of job IDs. This operation permanently removes the specified jobs from your index.        
+
+        **Cost: 0 credits**
+
         _Check out official [Python client](https://github.com/Pearch-ai/pearch-client)_
       security:
         - bearerAuth: []
@@ -1120,6 +1141,8 @@ paths:
         - `/v2/search`
         - `/v2/search/submit`
         - `/v2/search_company_leads`
+
+        **Cost: 0 credits**
         
         _Check out official [Python client](https://github.com/Pearch-ai/pearch-client)_
       security:
@@ -1181,6 +1204,8 @@ paths:
       description: |
         Retrieve enriched user profile based on the provided Linkedin profile ID as a query parameter. Linkedin profile ID is the part that comes after `https://www.linkedin.com/in/` in the profile URL.
 
+        **Cost: 1 credit + extra credits for each of `high_freshness`, `show_emails` and `show_phone_numbers` parameters if enabled**
+
         _Check out official [Python client](https://github.com/Pearch-ai/pearch-client)_
       security:
         - bearerAuth: []
@@ -1197,21 +1222,21 @@ paths:
           required: false
           schema:
             type: boolean
-          description: "Enable real-time profile updates for fresher data. This downloads the most recent copies of profiles directly from source websites in realtime (e.g. Linkedin). Scraped results are cached for up to 24 hours. If you are ok with profiles that may be a few months outdated, turn off high_freshness. **Cost: 2 credits per candidate**"
+          description: "Enable real-time profile updates for fresher data. This downloads the most recent copies of profiles directly from source websites in realtime (e.g. Linkedin). Scraped results are cached for up to 24 hours. If you are ok with profiles that may be a few months outdated, turn off high_freshness. **Cost: 2 credits**"
           example: false
         - name: show_emails
           in: query
           required: false
           schema:
             type: boolean
-          description: "Include email addresses in the profile if available. **Cost: 2 credits per candidate**"
+          description: "Include email addresses in the profile if available. **Cost: 2 credits, only charged if the profile has at least one email address**"
           example: false
         - name: show_phone_numbers
           in: query
           required: false
           schema:
             type: boolean
-          description: "Include phone numbers in the profile if available. **Cost: 14 credits per candidate**"
+          description: "Include phone numbers in the profile if available. **Cost: 14 credits, only charged if the profile has at least one phone number**"
           example: false
       responses:
         "200":
@@ -1247,6 +1272,8 @@ paths:
         - User account information (email, API key details)
         - Current credit balance
         - Pricing details for all available operations with descriptions
+
+        **Cost: 0 credits**
         
         _Check out official [Python client](https://github.com/Pearch-ai/pearch-client)_
       security:
