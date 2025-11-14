@@ -1204,7 +1204,7 @@ paths:
       description: |
         Retrieve enriched user profile based on the provided Linkedin profile ID as a query parameter. Linkedin profile ID is the part that comes after `https://www.linkedin.com/in/` in the profile URL.
 
-        **Cost: 1 credit + extra credits for each of `high_freshness`, `show_emails` and `show_phone_numbers` parameters if enabled**
+        **Cost: 1 credit + extra credits for each of `high_freshness`, `show_emails`, `show_phone_numbers` and `with_profile` parameters if enabled**
 
         _Check out official [Python client](https://github.com/Pearch-ai/pearch-client)_
       security:
@@ -1237,6 +1237,13 @@ paths:
           schema:
             type: boolean
           description: "Include phone numbers in the profile if available. **Cost: 14 credits, only charged if the profile has at least one phone number**"
+          example: false
+        - name: with_profile
+          in: query
+          required: false
+          schema:
+            type: boolean
+          description: "Include full profile data in the response. **Cost: 1 credit**"
           example: false
       responses:
         "200":

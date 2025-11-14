@@ -398,6 +398,7 @@ class V1ProfileRequest(BaseModel):
     high_freshness: bool | None = False
     show_emails: bool | None = False
     show_phone_numbers: bool | None = False
+    with_profile: bool | None = False
     model_config = ConfigDict(extra="ignore")
 
 

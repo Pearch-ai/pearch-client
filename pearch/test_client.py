@@ -113,19 +113,18 @@ async def test_find_matching_jobs():
 @pytest.mark.asyncio
 async def test_profile():
     credits1 = await get_credits()
-    request = V1ProfileRequest(docid="vslaykovsky", show_emails=True, high_freshness=True, show_phone_numbers=True)
+    request = V1ProfileRequest(docid="vslaykovsky", show_emails=True, show_phone_numbers=True)
     generate_curl_command("get_profile", request)
     response: V1ProfileResponse = await AsyncPearchClient().get_profile(request)
-    assert "vlad" in response.profile.first_name.lower()
-    assert response.credits_used == 2 + 2 * (0 if not response.profile.get_all_emails() else 1) + 14 * (0 if not response.profile.all_phone_numbers() else 1)
+    assert response.credits_used == 2 * (0 if not response.profile.get_all_emails() else 1) + 14 * (0 if not response.profile.all_phone_numbers() else 1)
     credits2 = await get_credits()
     assert credits1 - credits2 == response.credits_used, "Credits check failed"
 
-    request = V1ProfileRequest(docid="victorsunden", show_emails=True, high_freshness=True, show_phone_numbers=True)
+    request = V1ProfileRequest(docid="victorsunden", show_emails=True, high_freshness=True, show_phone_numbers=True, with_profile=True)
     generate_curl_command("get_profile", request)
     response: V1ProfileResponse = await AsyncPearchClient().get_profile(request)
     assert "victor" in response.profile.first_name.lower()
-    assert response.credits_used == 2 + 2 * (0 if not response.profile.get_all_emails() else 1) + 14 * (0 if not response.profile.all_phone_numbers() else 1)
+    assert response.credits_used == 2 + 2 * (0 if not response.profile.get_all_emails() else 1) + 14 * (0 if not response.profile.all_phone_numbers() else 1) + 1
     credits3 = await get_credits()
     assert credits2 - credits3 == response.credits_used, "Credits check failed"
 
