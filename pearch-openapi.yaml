@@ -143,6 +143,10 @@ paths:
                     type: integer
                     description: The estimated total number of search results available.
                     example: 1000
+                  total_estimate_is_lower_bound:
+                    type: boolean
+                    description: Indicates whether the total_estimate is a lower bound. If true, there may be more results available than the estimate suggests.
+                    example: false
                   credits_remaining:
                     type: integer
                     description: Number of credits remaining for the user.
@@ -511,6 +515,10 @@ paths:
                     type: integer
                     description: The estimated total number of companies available.
                     example: 500
+                  total_estimate_is_lower_bound:
+                    type: boolean
+                    description: Indicates whether the total_estimate is a lower bound. If true, there may be more companies available than the estimate suggests.
+                    example: false
                   credits_remaining:
                     type: integer
                     description: Number of credits remaining for the user.

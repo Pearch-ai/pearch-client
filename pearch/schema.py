@@ -260,6 +260,7 @@ class V2SearchResponse(BaseModel):
     duration: float | None = None
     status: str | None = None
     total_estimate: int | None = None
+    total_estimate_is_lower_bound: bool | None = None
     credits_remaining: int | None = None
     credits_used: int | None = None
     search_results: List[ScoredProfile] | None = Field(default_factory=list)
@@ -276,6 +277,7 @@ class V2SearchCompanyLeadsResponse(BaseModel):
     user: str | None = None
     status: str | None = None
     total_estimate: int | None = None
+    total_estimate_is_lower_bound: bool | None = None
     credits_remaining: int | None = None
     credits_used: int | None = None
     model_config = ConfigDict(extra="ignore")
