@@ -70,6 +70,55 @@ with PearchClient() as client:
     results = client.search(V2SearchRequest(query=QUERY))
 ```
 
+## Custom Filters
+
+Use structured `CustomFilters` for type-safe filtering with IDE autocomplete:
+
+```python
+from pearch.client import PearchClient
+from pearch import V2SearchRequest, CustomFilters
+
+with PearchClient() as client:
+    # Create structured filters with type hints and validation
+    filters = CustomFilters(
+        locations=["San Francisco", "New York"],
+        industries=["health", "pharma"],
+        titles=["software engineer", "data scientist"],
+        min_total_experience_years=5,
+        max_total_experience_years=15,
+        studied_at_top_universities=True,
+        has_startup_experience=True,
+        degrees=["bachelor", "master"],
+        specialization_categories=["Computer Science & IT", "Engineering"],
+        min_linkedin_followers=500,
+        gender="male"
+    )
+    
+    results = client.search(V2SearchRequest(
+        query="senior engineer with ML experience",
+        custom_filters=filters,
+        limit=20
+    ))
+```
+
+Available filter fields:
+- **Array filters**: `locations`, `languages`, `titles`, `industries`, `companies`, `universities`, `keywords`, `degrees`, `specialization_categories`
+- **Numeric ranges**: `min/max_linkedin_followers`, `min/max_total_experience_years`, `min/max_estimated_age`, `min/max_current_experience_years`
+- **Boolean filters**: `studied_at_top_universities`, `has_startup_experience`, `has_saas_experience`, `has_b2b_experience`, `has_b2c_experience`
+- **Exact match**: `first_name`, `middle_name`, `last_name`, `gender`
+
+Alternatively, use a plain dictionary for backward compatibility:
+
+```python
+results = client.search(V2SearchRequest(
+    query="software engineer",
+    custom_filters={
+        "locations": ["San Francisco"],
+        "min_total_experience_years": 3
+    }
+))
+```
+
 ## Job Management
 
 The Pearch client provides comprehensive job management capabilities:

@@ -324,6 +324,50 @@ class V1ProfileResponse(BaseModel):
 # Request parameter classes for each endpoint
 
 
+class CustomFilters(BaseModel):
+    locations: List[str] | None = None
+    languages: List[str] | None = None
+    titles: List[str] | None = None
+    industries: List[str] | None = None
+    companies: List[str] | None = None
+    universities: List[str] | None = None
+    keywords: List[str] | None = None
+    min_linkedin_followers: int | None = None
+    max_linkedin_followers: int | None = None
+    min_total_experience_years: float | None = None
+    max_total_experience_years: float | None = None
+    min_estimated_age: float | None = None
+    max_estimated_age: float | None = None
+    studied_at_top_universities: bool | None = None
+    first_name: str | None = None
+    middle_name: str | None = None
+    last_name: str | None = None
+    gender: Literal["male", "female"] | None = None
+    has_startup_experience: bool | None = None
+    has_saas_experience: bool | None = None
+    has_b2b_experience: bool | None = None
+    has_b2c_experience: bool | None = None
+    min_current_experience_years: float | None = None
+    max_current_experience_years: float | None = None
+    degrees: List[Literal["bachelor", "master", "MBA", "doctor", "postdoc"]] | None = None
+    specialization_categories: List[Literal[
+        "Business & Management",
+        "Finance",
+        "Engineering",
+        "Computer Science & IT",
+        "Health & Medicine",
+        "Social Sciences",
+        "Natural Sciences",
+        "Mathematics",
+        "Education",
+        "Communication & Media",
+        "Arts, Design & Architecture",
+        "Humanities & Liberal Arts",
+        "Law & Criminal Justice"
+    ]] | None = None
+    model_config = ConfigDict(extra="forbid")
+
+
 class V2SearchRequest(BaseModel):
     query: str | None = None
     thread_id: str | None = None
@@ -331,7 +375,7 @@ class V2SearchRequest(BaseModel):
     insights: bool | None = True
     high_freshness: bool | None = False
     profile_scoring: bool | None = True
-    custom_filters: Dict[str, Any] | None = None
+    custom_filters: CustomFilters | None = None
     strict_filters: bool | None = False
     require_emails: bool | None = False
     show_emails: bool | None = False

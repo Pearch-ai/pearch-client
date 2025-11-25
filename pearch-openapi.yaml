@@ -68,24 +68,7 @@ paths:
                   default: true
                   description: "Enable profile scoring and reranking for better result quality. This filters out less relevant profiles and produces scores for more relevant once. Scores range from 0.0 to 4.0 where higher is better. **Cost: 1 credit per candidate**" 
                 custom_filters:
-                  type: object
-                  description: |
-                    Custom filters in JSON format for advanced filtering. Leave empty to use default filtering logic. 
-                    Format: `{"filter_name1": ["value1", "value2"], "filter_name2": ["value3", "value4"], ...}`. This is applied as boolean filters `(filter_name1=value1 OR filter_name1=value2) AND (filter_name2=value3 OR filter_name2=value4)` etc.
-
-                    The following fields are currently supported: 
-                    * `locations`
-                    * `languages`
-                    * `titles`
-                    * `industries`
-                    * `companies`
-                    * `universities`
-                    * `keywords`
-
-                    Use any string values as is. Pearch.ai internally correctly matches them to profile data. E.g. you may pass `{"industries": "health"}` to filter for profiles in health industry, this will be correctly mapped to pearch.ai internal `healthcare` industry. 
-                    If you want to force no filtering at all (`custom_filters` or default filters), pass empty object `"custom_filters": {}`. This will speed up search, increase recall at some relevancy cost.  
-                  example: {"industries": ["health", "pharma"], "locations": ["San Francisco", "New York"], "titles": ["software engineer", "data scientist"]}
-                  default: null
+                  $ref: '#/components/schemas/CustomFilters'
                 strict_filters:
                   type: boolean
                   default: false
@@ -245,7 +228,7 @@ paths:
         - `insights`: Enable detailed insights (1 credit/candidate)
         - `high_freshness`: Enable real-time updates (2 credits/candidate)
         - `profile_scoring`: Enable profile scoring (1 credit/candidate)
-        - `custom_filters`: Custom filters in JSON format for advanced filtering (object with fields: locations, languages, titles, industries, companies, universities, keywords)
+        - `custom_filters`: Custom filters in JSON format for advanced filtering (see CustomFilters schema for all available fields including locations, languages, titles, industries, companies, universities, keywords, experience ranges, age ranges, follower counts, degrees, and more)
         - `strict_filters`: Be stricter when filtering (boolean, default: false)
         - `require_emails`: Only return profiles with at least one email address (1 credit/candidate)
         - `show_emails`: Include email addresses (2 credits/candidate, only if available)
@@ -352,9 +335,7 @@ paths:
                       default: true
                       description: "Enable profile scoring and reranking. **Cost: 1 credit per candidate**"
                     custom_filters:
-                      type: object
-                      description: Custom filters in JSON format.
-                      additionalProperties: true
+                      $ref: '#/components/schemas/CustomFilters'
                     strict_filters:
                       type: boolean
                       default: false
@@ -601,24 +582,7 @@ paths:
                   default: true
                   description: "Enable profile scoring and reranking for better result quality. This filters out less relevant profiles and produces scores for more relevant once. Scores range from 0.0 to 4.0 where higher is better. **Cost: 1 credit per candidate**" 
                 custom_filters:
-                  type: object
-                  description: |
-                    Custom filters in JSON format for advanced filtering. Leave empty to use default filtering logic. 
-                    Format: `{"filter_name1": ["value1", "value2"], "filter_name2": ["value3", "value4"], ...}`. This is applied as boolean filters `(filter_name1=value1 OR filter_name1=value2) AND (filter_name2=value3 OR filter_name2=value4)` etc.
-
-                    The following fields are currently supported: 
-                    * `locations`
-                    * `languages`
-                    * `titles`
-                    * `industries`
-                    * `companies`
-                    * `universities`
-                    * `keywords`
-
-                    Use any string values as is. Pearch.ai internally correctly matches them to profile data. E.g. you may pass `{"industries": "health"}` to filter for profiles in health industry, this will be correctly mapped to pearch.ai internal `healthcare` industry. 
-                    If you want to force no filtering at all (`custom_filters` or default filters), pass empty object `"custom_filters": {}`. This will speed up search, increase recall at some relevancy cost.  
-                  example: {"industries": ["health", "pharma"], "locations": ["San Francisco", "New York"], "titles": ["software engineer", "data scientist"]}
-                  default: null
+                  $ref: '#/components/schemas/CustomFilters'
                 strict_filters:
                   type: boolean
                   default: false
@@ -1392,6 +1356,161 @@ paths:
 
 components:
   schemas:
+    
+    CustomFilters:
+      type: object
+      description: |
+        Custom filters in JSON format for advanced filtering. Leave empty to use default filtering logic. 
+        Format: `{"filter_name1": ["value1", "value2"], "filter_name2": ["value3", "value4"], ...}`. This is applied as boolean filters `(filter_name1=value1 OR filter_name1=value2) AND (filter_name2=value3 OR filter_name2=value4)` etc.
+        
+        Use any string values as is. Pearch.ai internally correctly matches them to profile data. E.g. you may pass `{"industries": "health"}` to filter for profiles in health industry, this will be correctly mapped to pearch.ai internal `healthcare` industry. 
+        If you want to force no filtering at all (`custom_filters` or default filters), pass empty object `"custom_filters": {}`. This will speed up search, increase recall at some relevancy cost.
+      properties:
+        locations:
+          type: array
+          items:
+            type: string
+          description: Filter by location (e.g., "San Francisco", "New York", "California", "United States")
+          example: ["San Francisco", "New York"]
+        languages:
+          type: array
+          items:
+            type: string
+          description: Filter by languages spoken (e.g., "English", "Spanish", "French")
+          example: ["English", "Spanish"]
+        titles:
+          type: array
+          items:
+            type: string
+          description: Filter by job titles (e.g., "Software Engineer", "Data Scientist", "CEO")
+          example: ["software engineer", "data scientist"]
+        industries:
+          type: array
+          items:
+            type: string
+          description: Filter by industries (e.g., "health", "pharma", "technology", "finance")
+          example: ["health", "pharma"]
+        companies:
+          type: array
+          items:
+            type: string
+          description: Filter by company names (e.g., "Google", "Microsoft", "Amazon")
+          example: ["Google", "Microsoft"]
+        universities:
+          type: array
+          items:
+            type: string
+          description: Filter by universities attended (e.g., "Stanford University", "MIT", "Harvard")
+          example: ["Stanford University", "MIT"]
+        keywords:
+          type: array
+          items:
+            type: string
+          description: Filter by keywords in full profile description
+          example: ["machine learning", "python", "leadership"]
+        min_linkedin_followers:
+          type: integer
+          description: Minimum number of LinkedIn followers
+          example: 500
+        max_linkedin_followers:
+          type: integer
+          description: Maximum number of LinkedIn followers
+          example: 10000
+        min_total_experience_years:
+          type: number
+          description: Minimum total years of professional experience
+          example: 5
+        max_total_experience_years:
+          type: number
+          description: Maximum total years of professional experience
+          example: 15
+        min_estimated_age:
+          type: number
+          description: Minimum estimated age
+          example: 25
+        max_estimated_age:
+          type: number
+          description: Maximum estimated age
+          example: 45
+        studied_at_top_universities:
+          type: boolean
+          description: Filter for candidates who attended top-tier universities
+          example: true
+        first_name:
+          type: string
+          description: Filter by first name (exact match)
+          example: "John"
+        middle_name:
+          type: string
+          description: Filter by middle name (exact match)
+          example: "Michael"
+        last_name:
+          type: string
+          description: Filter by last name (exact match)
+          example: "Smith"
+        gender:
+          type: string
+          enum: [male, female]
+          description: Filter by gender
+          example: "male"
+        has_startup_experience:
+          type: boolean
+          description: Filter for candidates who have worked at startups
+          example: true
+        has_saas_experience:
+          type: boolean
+          description: Filter for candidates who have worked at SaaS companies
+          example: true
+        has_b2b_experience:
+          type: boolean
+          description: Filter for candidates who have worked at B2B companies
+          example: true
+        has_b2c_experience:
+          type: boolean
+          description: Filter for candidates who have worked at B2C companies
+          example: true
+        min_current_experience_years:
+          type: number
+          description: Minimum years in current role
+          example: 1
+        max_current_experience_years:
+          type: number
+          description: Maximum years in current role
+          example: 5
+        degrees:
+          type: array
+          items:
+            type: string
+            enum: [bachelor, master, MBA, doctor, postdoc]
+          description: Filter by degree types
+          example: ["bachelor", "master"]
+        specialization_categories:
+          type: array
+          items:
+            type: string
+            enum:
+              - "Business & Management"
+              - "Finance"
+              - "Engineering"
+              - "Computer Science & IT"
+              - "Health & Medicine"
+              - "Social Sciences"
+              - "Natural Sciences"
+              - "Mathematics"
+              - "Education"
+              - "Communication & Media"
+              - "Arts, Design & Architecture"
+              - "Humanities & Liberal Arts"
+              - "Law & Criminal Justice"
+          description: "Filter by specialization categories. Allowed values include: Business & Management, Finance, Engineering, Computer Science & IT, Health & Medicine, Social Sciences, Natural Sciences, Mathematics, Education, Communication & Media, Arts, Design & Architecture, Humanities & Liberal Arts, Law & Criminal Justice."
+          example: ["Computer Science & IT", "Engineering"]
+      additionalProperties: false
+      example:
+        industries: ["health", "pharma"]
+        locations: ["San Francisco", "New York"]
+        titles: ["software engineer", "data scientist"]
+        min_total_experience_years: 5
+        studied_at_top_universities: true
       
     Language:
       type: object

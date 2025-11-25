@@ -8,6 +8,7 @@ from .client import (
     PearchValidationError,
 )
 from .schema import (
+    CustomFilters,
     V1FindMatchingJobsRequest,
     V1ProfileRequest,
     V1SearchRequest,
@@ -27,6 +28,7 @@ __all__ = [
     "PearchAPIError",
     "PearchAuthenticationError",
     "PearchValidationError",
+    "CustomFilters",
     "V1FindMatchingJobsRequest",
     "V1ProfileRequest",
     "V1SearchRequest",
