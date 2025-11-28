@@ -1966,11 +1966,11 @@ components:
           example: true
         is_opentowork:
           type: boolean
-          description: Whether the candidate is open to work opportunities.
+          description: Whether the candidate is open to work opportunities.Only when realtime profiles are enabled.
           example: false
         is_hiring:
           type: boolean
-          description: Whether the candidate is currently hiring.
+          description: Whether the candidate is currently hiring.Only when realtime profiles are enabled.
           example: false
         total_experience_years:
           type: number
