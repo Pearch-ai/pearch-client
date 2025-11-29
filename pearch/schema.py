@@ -451,6 +451,7 @@ class V1ProfileRequest(BaseModel):
 
 class V2SearchSubmitResponse(BaseModel):
     task_id: str
+    thread_id: str | None = None
     status: str
     message: str
     model_config = ConfigDict(extra="ignore")

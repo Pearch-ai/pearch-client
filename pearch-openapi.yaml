@@ -560,11 +560,11 @@ paths:
       tags:
         - Search
       description: |
-        Submit a search query to be processed asynchronously in the background. This endpoint returns immediately with a task ID that can be used to check the status and retrieve results when ready.
+        Submit a search query to be processed asynchronously in the background. This endpoint returns immediately with a task ID and thread ID that can be used to check the status, retrieve results when ready, and paginate through search results.
         
-        This is useful for long-running searches that may take several minutes to complete. The search will continue processing in the background while you can use the task ID to monitor progress and retrieve results.
+        This is useful for long-running searches that may take several minutes to complete. The search will continue processing in the background while you can use the task ID to monitor progress and retrieve results. The thread ID can be used for pagination and follow-up searches by passing it in subsequent requests to either `/v2/search` or `/v2/search/submit`.
         
-        All the same search parameters are supported as the synchronous `/v2/search` endpoint.
+        All the same search parameters are supported as the synchronous `/v2/search` endpoint, including `thread_id` for continuation and pagination.
 
         **Cost: (number of profiles returned) × (sum of credits for each of `type`, `insights`, `profile_scoring`, `high_freshness`, `show_emails`, `show_phone_numbers`)**
         
@@ -583,6 +583,10 @@ paths:
                   description: The human readable search query string. The query can be a simple search query like "software engineer from Ohio" or a more complex query like "Find me engineers in California speaking at least basic english working in software industry with experience at FAANG with 2+ years of experience and at least 500 followers and at least BS degree". Query parameter can handle full job descriptions, but passing specific subset of important requirements normally works better
                   example: "Software engineer with Python experience from Florida who is interested in science"
                   default: "Software engineer with Python experience from Florida who is interested in science"
+                thread_id:
+                  type: string
+                  description: "Unique identifier for the thread. This is returned by every `/v2/search` and `/v2/search/submit` call and is used to run follow-up queries on the same thread. There are now two alternative ways to call with `thread_id`: (1) with an increased `limit` and an empty or omitted `query`, to request more results (in this case results are appended, and you are only charged for additional, new results) or (2) with a new `query` to perform a follow-up conversational search; in this case, the new query should only specify additional requirements or changes as in a natural conversation, and the results are replaced instead of appended. Running a search with the same `thread_id` and same `limit` as the previous request will return the same results as before without incurring additional charges."
+                  example: "ec191bf9-99ff-4989-8383-c97c71fafb6d"
                 type:
                   type: string
                   enum: [fast, pro]
@@ -641,8 +645,6 @@ paths:
                     type: string
                   description: List of profile docids to exclude from search results. Use this to filter out profiles that have already been seen or contacted.
                   example: ["johndoe", "janedoe"]
-              required:
-                - query
       responses:
         "202":
           description: Search task submitted successfully
@@ -655,6 +657,10 @@ paths:
                     type: string
                     description: Unique identifier for the submitted search task.
                     example: "ec191bf9-99ff-4989-8383-c97c71fafb6d"
+                  thread_id:
+                    type: string
+                    description: Thread ID for the search session, can be used for pagination and follow up searches using /v2/search or /v2/search/submit. If the search is still in progress, then running /v2/search,/v2/search/submit with this thread_id will return HTTP 202 status code. 
+                    example: "550e8400-e29b-41d4-a716-446655440000"
                   status:
                     type: string
                     description: The current status of the submitted task.

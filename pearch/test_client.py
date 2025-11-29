@@ -445,6 +445,7 @@ async def test_get_search_status():
     generate_curl_command("search_submit", first_submit_request)
     submit_response = await AsyncPearchClient().search_submit(first_submit_request)
     task_id = submit_response.task_id
+    thread_id = submit_response.thread_id
     assert submit_response.status == "pending"    
     status_response = None
     while time.time() - start_time < 180:
@@ -461,7 +462,7 @@ async def test_get_search_status():
         await asyncio.sleep(5)
 
     second_submit_request = V2SearchRequest(
-        thread_id=status_response.result.thread_id,
+        thread_id=thread_id,
         limit=4,  # "show more"
     )
     generate_curl_command("search_submit", second_submit_request)

@@ -248,13 +248,14 @@ class PearchClient:
         Submit a search task for background execution
 
         Submit a search query to be processed asynchronously. Returns a task ID
-        that can be used to check the status and retrieve results.
+        and thread ID that can be used to check the status, retrieve results,
+        and paginate through search results.
 
         Args:
             request: Search submit request parameters
 
         Returns:
-            Search submit response with task ID and status
+            Search submit response with task ID, thread ID, and status
         """
         logger.info(f"Submitting search task with query: {request.query}")
 
@@ -651,13 +652,14 @@ class AsyncPearchClient:
         Submit a search task for background execution - async version
 
         Submit a search query to be processed asynchronously. Returns a task ID
-        that can be used to check the status and retrieve results.
+        and thread ID that can be used to check the status, retrieve results,
+        and paginate through search results.
 
         Args:
             request: Search submit request parameters
 
         Returns:
-            Search submit response with task ID and status
+            Search submit response with task ID, thread ID, and status
         """
         logger.info(f"Submitting async search task with query: {request.query}")
 
