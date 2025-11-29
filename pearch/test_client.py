@@ -442,6 +442,7 @@ async def test_get_search_status():
         type="fast",
         limit=2,
     )
+    generate_curl_command("search_submit", first_submit_request)
     submit_response = await AsyncPearchClient().search_submit(first_submit_request)
     task_id = submit_response.task_id
     assert submit_response.status == "pending"    
@@ -463,6 +464,7 @@ async def test_get_search_status():
         thread_id=status_response.result.thread_id,
         limit=4,  # "show more"
     )
+    generate_curl_command("search_submit", second_submit_request)
     submit_response = await AsyncPearchClient().search_submit(second_submit_request)
     task_id = submit_response.task_id
     assert submit_response.status == "pending"    

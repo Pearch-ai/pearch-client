@@ -16,6 +16,10 @@ paths:
       tags:
         - Search
       description: |        
+        
+        - Test this endpoint in the [playground](https://chat.pearch.ai/api-search/new)
+        - Check out official [Python client](https://github.com/Pearch-ai/pearch-client)        
+        
         Run a search query. This accepts a natural language query as `query` parameter along with additional settings. It returns a list of profiles that match the query and orders them by relevance.
         The query can be a simple search query like "software engineer from Ohio" or a more complex query like "Find me engineers in California speaking at least basic english working in software industry with experience at FAANG with 2+ years of experience and at least 500 followers and at least BS degree".
         Use parameters to control tradeoffs between speed and quality. Here are some recipes:        
@@ -28,7 +32,6 @@ paths:
 
         **Cost: (number of profiles returned) × (sum of credits for each of `type`, `insights`, `profile_scoring`, `high_freshness`, `show_emails`, `show_phone_numbers`)**
 
-        _Check out official [Python client](https://github.com/Pearch-ai/pearch-client)_
       security:
         - bearerAuth: []
       requestBody:
@@ -401,6 +404,10 @@ paths:
       tags:
         - Search
       description: |
+        
+        - Test this endpoint in the [playground](https://chat.pearch.ai/api-leads-search/new)
+        - Check out official [Python client](https://github.com/Pearch-ai/pearch-client)        
+        
         Endpoint for finding companies and related leads within those companies. Primary use case is for B2B sales, but can also be used for headhunting/executive search. It uses natural language query and returns a list of most relevant companies. Allows for generation of personalized outreach messages for the identified leads. Main difference with [/v2/search](/reference/post_v2-search) is that the search starts with shortlisting relevant companies first, then finding leads who necessarily activaly work at these companies.
         Some recipes:
         - When you only need companies, pass only the company query: `{"company_query": "manufacturers of aviation parts"}`
@@ -1243,11 +1250,13 @@ paths:
       tags:
         - Enrichment
       description: |
+
+        - Test this endpoint in the [playground](https://chat.pearch.ai/api-enrichment)
+        - Check out official [Python client](https://github.com/Pearch-ai/pearch-client)        
+        
         Retrieve enriched user profile based on the provided Linkedin profile ID as a query parameter. Linkedin profile ID is the part that comes after `https://www.linkedin.com/in/` in the profile URL.
 
         **Cost: 1 credit + extra credits for each of `high_freshness`, `show_emails`, `show_phone_numbers` and `with_profile` parameters if enabled**
-
-        _Check out official [Python client](https://github.com/Pearch-ai/pearch-client)_
       security:
         - bearerAuth: []
       parameters:
