@@ -539,42 +539,101 @@ async def test_chat_completions_stream_with_continuation():
             "profiles_batch_size": 5,
             "final_result": True,
             "insights": True,
-            "high_freshness": True,
             "show_emails": True,
-            "show_phone_numbers": True,
             },
     )
 
     thread_id = None
-    for chunk in stream1:
+    n_chunks = 0
+    title_mappings = None
+    profiles = None
+    query = None
+    messages = []
+    company_mappings = None
+    important_keywords = None
+    query_short = None
+    credits_used = None
+    total_estimate = None
+    total_estimate_is_lower_bound = None
+
+    for i, chunk in enumerate(stream1):
+        chunk_dict = chunk.model_dump() if hasattr(chunk, 'model_dump') else {}
+        import json
+        logger.info(f"Chunk {i}: {str(chunk_dict)[:300]}")
+        n_chunks += 1
+        thread_id = chunk.id
+        delta_content = None
         if chunk.choices and len(chunk.choices) > 0:
+            delta_content = chunk.choices[0].delta.content
+            if delta_content:
+                js = json.loads(delta_content)
+                if js['type'] == 'title_mappings':
+                    title_mappings = js['data']
+                elif js['type'] == 'profiles':
+                    profiles = js['data']
+                elif js['type'] == 'query':
+                    query = js['data']
+                elif js['type'] == 'messages':
+                    messages = js['data']
+                elif js['type'] == 'company_mappings':
+                    company_mappings = js['data']
+                elif js['type'] == 'important_keywords':
+                    important_keywords = js['data']
+                elif js['type'] == 'query_short':
+                    query_short = js['data']
+                elif js['type'] == 'credits_used':
+                    credits_used = js['data']
+                elif js['type'] == 'total_estimate':
+                    total_estimate = js['data']
+                elif js['type'] == 'total_estimate_is_lower_bound':
+                    total_estimate_is_lower_bound = js['data']
             if chunk.choices[0].finish_reason is not None:
-                # Try to extract thread_id from the chunk if available
-                chunk_dict = chunk.model_dump() if hasattr(chunk, 'model_dump') else {}
-                if 'summary' in chunk_dict and 'thread_id' in chunk_dict['summary']:
-                    thread_id = chunk_dict['summary']['thread_id']
                 break
 
+    # assert title_mappings is not None
+    assert len(profiles) == 2
+    assert query == 'Software engineers working at Google'
+    assert messages is not None
+    assert company_mappings is not None
+    assert important_keywords is not None
+    assert query_short == 'Software engineers at Google'
+    assert credits_used is not None
+    assert total_estimate is not None
+    # assert total_estimate_is_lower_bound is not None
+    assert thread_id is not None
+
     # Second request with continuation (if thread_id was found)
-    if thread_id:
-        stream2 = client.chat.completions.create(
-            model="pearch",
-            stream=True,
-            messages=[_user("who are at least 30 years old")],
-            extra_body={"limit": 2, "thread_id": thread_id, "type": "fast"},
-        )
-
-        chunks_received = 0
-        final_chunk = None
-        
-        for chunk in stream2:
-            chunks_received += 1
-            if chunk.choices and len(chunk.choices) > 0:
-                if chunk.choices[0].finish_reason is not None:
-                    final_chunk = chunk
-        
-        assert chunks_received > 0
-        assert final_chunk is not None
-        assert final_chunk.choices[0].finish_reason == "stop"
-
+    stream2 = client.chat.completions.create(
+        model="pearch",
+        stream=True,
+        messages=[_user("who are at least 30 years old")],
+        extra_body={"limit": 2, "thread_id": thread_id, "type": "fast"},
+    )
  
+    query = None
+    query_short = None
+    profiles = None
+
+    for i, chunk in enumerate(stream2):
+        chunk_dict = chunk.model_dump() if hasattr(chunk, 'model_dump') else {}
+        import json
+        logger.info(f"Chunk {i}: {str(chunk_dict)[:300]}")
+        n_chunks += 1
+        thread_id = chunk.id
+        delta_content = None
+        if chunk.choices and len(chunk.choices) > 0:
+            delta_content = chunk.choices[0].delta.content
+            if delta_content:
+                js = json.loads(delta_content)
+                if js['type'] == 'profiles':
+                    profiles = js['data']
+                elif js['type'] == 'query':
+                    query = js['data']
+                elif js['type'] == 'query_short':
+                    query_short = js['data']
+            if chunk.choices[0].finish_reason is not None:
+                break
+
+    assert len(profiles) == 2
+    assert query == 'Software engineers working at Google who are at least 30 years old'
+    assert query_short == 'Software engineers at Google, 30+ years old'
