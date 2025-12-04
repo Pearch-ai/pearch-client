@@ -91,6 +91,8 @@ class Education(BaseModel):
     specialization: str | None = None
     degree: List[str] | None = None
     major: str | None = None
+    start_date: Date | None = None
+    end_date: Date | None = None
     model_config = ConfigDict(extra="ignore")
 
 

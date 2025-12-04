@@ -1866,6 +1866,16 @@ components:
           type: string
           description: Major field of study
           example: "Computer Science"
+        start_date:
+          type: string
+          format: date
+          description: Start date of the education
+          example: "2018-09-01"
+        end_date:
+          type: string
+          format: date
+          description: End date of the education
+          example: "2022-06-01"
 
     Certification:
       type: object
