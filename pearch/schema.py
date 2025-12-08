@@ -387,6 +387,7 @@ class V2SearchRequest(BaseModel):
     require_phones_or_emails: bool | None = False
     show_phone_numbers: bool | None = False
     limit: int | None = Field(default=10, ge=1, le=1000)
+    offset: int | None = Field(default=0, ge=0)
     docid_blacklist: List[str] | None = None
     model_config = ConfigDict(extra="ignore")
 

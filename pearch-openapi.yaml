@@ -102,6 +102,11 @@ paths:
                   maximum: 1000
                   default: 10
                   description: The maximum number of search results to return.
+                offset:
+                  type: integer
+                  minimum: 0
+                  default: 0
+                  description: The number of search results to skip before returning results. Used for pagination in combination with limit.
                 docid_blacklist:
                   type: array
                   items:
@@ -639,6 +644,11 @@ paths:
                   maximum: 1000
                   default: 10
                   description: The maximum number of search results to return.
+                offset:
+                  type: integer
+                  minimum: 0
+                  default: 0
+                  description: The number of search results to skip before returning results. Used for pagination in combination with limit.
                 docid_blacklist:
                   type: array
                   items:

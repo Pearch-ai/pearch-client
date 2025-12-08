@@ -592,11 +592,11 @@ async def test_chat_completions_stream_with_continuation():
 
     # assert title_mappings is not None
     assert len(profiles) == 2
-    assert query == 'Software engineers working at Google'
+    assert query == 'software engineers at Google'
     assert messages is not None
     assert company_mappings is not None
     assert important_keywords is not None
-    assert query_short == 'Software engineers at Google'
+    assert query_short == 'software engineers at Google'
     assert credits_used is not None
     assert total_estimate is not None
     # assert total_estimate_is_lower_bound is not None
