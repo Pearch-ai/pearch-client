@@ -389,6 +389,7 @@ class V2SearchRequest(BaseModel):
     limit: int | None = Field(default=10, ge=1, le=1000)
     offset: int | None = Field(default=0, ge=0)
     docid_blacklist: List[str] | None = None
+    docid_whitelist: List[str] | None = None
     model_config = ConfigDict(extra="ignore")
 
 

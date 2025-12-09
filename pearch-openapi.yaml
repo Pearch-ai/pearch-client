@@ -113,6 +113,12 @@ paths:
                     type: string
                   description: List of profile docids to exclude from search results. Use this to filter out profiles that have already been seen or contacted.
                   example: ["johndoe", "janedoe"]
+                docid_whitelist:
+                  type: array
+                  items:
+                    type: string
+                  description: List of profile docids to limit search results to. Only profiles with these docids will be returned.
+                  example: ["johndoe", "janedoe"]
               required:
                 - query
       responses:
@@ -254,6 +260,7 @@ paths:
         - `require_phones_or_emails`: Only return profiles with at least one phone number OR email address (1 credit/candidate)
         - `show_phone_numbers`: Include phone numbers (14 credits/candidate, only if available)
         - `docid_blacklist`: List of profile docids to exclude from search results
+        - `docid_whitelist`: List of profile docids to limit search results to
         
         **Cost: (number of profiles returned) × (sum of credits for each of `type`, `insights`, `profile_scoring`, `high_freshness`, `show_emails`, `show_phone_numbers`)**
         
@@ -654,6 +661,12 @@ paths:
                   items:
                     type: string
                   description: List of profile docids to exclude from search results. Use this to filter out profiles that have already been seen or contacted.
+                  example: ["johndoe", "janedoe"]
+                docid_whitelist:
+                  type: array
+                  items:
+                    type: string
+                  description: List of profile docids to limit search results to. Only profiles with these docids will be returned.
                   example: ["johndoe", "janedoe"]
       responses:
         "202":
