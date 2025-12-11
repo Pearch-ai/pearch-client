@@ -24,8 +24,8 @@ paths:
         The query can be a simple search query like "software engineer from Ohio" or a more complex query like "Find me engineers in California speaking at least basic english working in software industry with experience at FAANG with 2+ years of experience and at least 500 followers and at least BS degree".
         Use parameters to control tradeoffs between speed and quality. Here are some recipes:        
         - For highest quality results (1-3 minutes) use pro search with insights and profile scoring enabled: `{"query": "<YOUR QUERY HERE>", "type": "pro", "insights": true, "profile_scoring": true}`
-        - If you have "broad" queries where you expect many results (>1000) to be returned, then "fast" search may work well for you and save some costs and time. `{"query": "<YOUR QUERY HERE>", "type": "fast", "insights": true, "profile_scoring": true}`
-        - If you want results very fast, then enforce no filtering by passing empty `custom_filters` and turn of `insights` and `profile_scoring`: `{"query": "<YOUR QUERY HERE>", "type": "fast", "insights": false, "profile_scoring": false, "custom_filters": {}}`
+        - For medium to high quality results with time constraints (<30s) use "fast" search. `{"query": "<YOUR QUERY HERE>", "type": "fast", "insights": true, "profile_scoring": true}`
+        - If you want results very fast (<5s), then enforce no filtering by passing empty `custom_filters` and turn of `insights` and `profile_scoring`: `{"query": "<YOUR QUERY HERE>", "type": "fast", "insights": false, "profile_scoring": false, "custom_filters": {}}`
         - If you want to implement pagination, pass the `thread_id` of the previous request to the next request with increased `limit`. 
 
         Check out other parameters below to adjust speed vs quality and additional data that can be returned by the endpoint. 
@@ -56,7 +56,7 @@ paths:
                   default: "pro"
                   description: |
                     The type of search to perform. 
-                    * "fast" is faster but may have less recall. **Cost: 1 credit per candidate**
+                    * "fast" search is best for medium to high quality results with time constraints (<30s). **Cost: 1 credit per candidate**
                     * "pro" is slower and more costly, but has higher quality and recall. **Cost: 5 credits per candidate** 
                 insights:
                   type: boolean
@@ -605,7 +605,7 @@ paths:
                   default: "pro"
                   description: |
                     The type of search to perform. 
-                    * "fast" is faster but may have less recall. **Cost: 1 credit per candidate**
+                    * "fast" search is best for medium to high quality results with time constraints (<30s). **Cost: 1 credit per candidate**
                     * "pro" is slower and more costly, but has higher quality and recall. **Cost: 5 credits per candidate** 
                 insights:
                   type: boolean
