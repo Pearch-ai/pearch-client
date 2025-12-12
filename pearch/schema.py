@@ -375,7 +375,7 @@ class CustomFilters(BaseModel):
 class V2SearchRequest(BaseModel):
     query: str | None = None
     thread_id: str | None = None
-    type: Literal["fast", "pro"] | None = "pro"
+    type: Literal["superfast", "fast", "pro"] | None = "pro"
     insights: bool | None = True
     high_freshness: bool | None = False
     profile_scoring: bool | None = True
@@ -477,6 +477,7 @@ class V2SearchStatusResponse(BaseModel):
 
 class ApiCallHistoryEntry(BaseModel):
     uuid: str | None = None
+    thread_id: str | None = None
     path: str | None = None
     parameters: Dict[str, Any] | None = None
     items_count: int | None = None

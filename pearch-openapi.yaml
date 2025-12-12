@@ -23,9 +23,9 @@ paths:
         Run a search query. This accepts a natural language query as `query` parameter along with additional settings. It returns a list of profiles that match the query and orders them by relevance.
         The query can be a simple search query like "software engineer from Ohio" or a more complex query like "Find me engineers in California speaking at least basic english working in software industry with experience at FAANG with 2+ years of experience and at least 500 followers and at least BS degree".
         Use parameters to control tradeoffs between speed and quality. Here are some recipes:        
-        - For highest quality results (1-3 minutes) use pro search with insights and profile scoring enabled: `{"query": "<YOUR QUERY HERE>", "type": "pro", "insights": true, "profile_scoring": true}`
-        - For medium to high quality results with time constraints (<30s) use "fast" search. `{"query": "<YOUR QUERY HERE>", "type": "fast", "insights": true, "profile_scoring": true}`
-        - If you want results very fast (<5s), then enforce no filtering by passing empty `custom_filters` and turn of `insights` and `profile_scoring`: `{"query": "<YOUR QUERY HERE>", "type": "fast", "insights": false, "profile_scoring": false, "custom_filters": {}}`
+        - For highest quality results (30-180 seconds) use pro search with insights and profile scoring enabled: `{"query": "<YOUR QUERY HERE>", "type": "pro", "insights": true, "profile_scoring": true}`
+        - For medium to high quality results use "fast" search (<30s). `{"query": "<YOUR QUERY HERE>", "type": "fast", "insights": true, "profile_scoring": true}`
+        - For very fast results use "superfast" search (<10s): `{"query": "<YOUR QUERY HERE>", "type": "superfast"}`
         - If you want to implement pagination, pass the `thread_id` of the previous request to the next request with increased `limit`. 
 
         Check out other parameters below to adjust speed vs quality and additional data that can be returned by the endpoint. 
@@ -52,12 +52,13 @@ paths:
                   example: "ec191bf9-99ff-4989-8383-c97c71fafb6d"
                 type:
                   type: string
-                  enum: [fast, pro]
+                  enum: [superfast, fast, pro]
                   default: "pro"
                   description: |
                     The type of search to perform. 
-                    * "fast" search is best for medium to high quality results with time constraints (<30s). **Cost: 1 credit per candidate**
-                    * "pro" is slower and more costly, but has higher quality and recall. **Cost: 5 credits per candidate** 
+                    * "pro" is slower and more costly, but has higher quality and recall. **Cost: 5 credits per candidate**
+                    * "fast" is faster but may have less recall. **Cost: 1 credit per candidate**
+                    * "superfast" is the fastest with basic results (<10s). **Cost: 0.4 credits per candidate, rounded up per query**
                 insights:
                   type: boolean
                   default: true
@@ -242,7 +243,7 @@ paths:
         
         **Available Parameters in `extra_body`:**
         - `limit`: Maximum number of results (1-1000, default: 10)
-        - `type`: Search type - "fast" (1 credit/candidate) or "pro" (5 credits/candidate)
+        - `type`: Search type - "superfast" (0.4 credits/candidate, rounded up per query), "fast" (1 credit/candidate), or "pro" (5 credits/candidate)
         - `stream_profiles`: Control profile streaming - "none", "full", or "batch"
         - `profiles_batch_size`: Number of profiles per batch (default: 10)
         - `final_result`: Include full result in final chunk (default: true)
@@ -311,12 +312,13 @@ paths:
                       description: The maximum number of search results to return.
                     type:
                       type: string
-                      enum: [fast, pro]
+                      enum: [superfast, fast, pro]
                       default: "pro"
                       description: |
                         The type of search to perform. 
-                        * "fast" is faster but may have less recall. **Cost: 1 credit per candidate**
                         * "pro" is slower and more costly, but has higher quality and recall. **Cost: 5 credits per candidate**
+                        * "fast" is faster but may have less recall. **Cost: 1 credit per candidate**
+                        * "superfast" is the fastest with basic results (<10s). **Cost: 0.4 credits per candidate, rounded up per query**
                     stream_profiles:
                       type: string
                       enum: [none, full, batch]
@@ -601,12 +603,13 @@ paths:
                   example: "ec191bf9-99ff-4989-8383-c97c71fafb6d"
                 type:
                   type: string
-                  enum: [fast, pro]
+                  enum: [superfast, fast, pro]
                   default: "pro"
                   description: |
                     The type of search to perform. 
-                    * "fast" search is best for medium to high quality results with time constraints (<30s). **Cost: 1 credit per candidate**
-                    * "pro" is slower and more costly, but has higher quality and recall. **Cost: 5 credits per candidate** 
+                    * "pro" is slower and more costly, but has higher quality and recall. **Cost: 5 credits per candidate**
+                    * "fast" is faster but may have less recall. **Cost: 1 credit per candidate**
+                    * "superfast" is the fastest with basic results (<10s). **Cost: 0.4 credits per candidate, rounded up per query**
                 insights:
                   type: boolean
                   default: true
@@ -804,8 +807,8 @@ paths:
           required: false
           schema:
             type: string
-            enum: [fast, pro]
-          description: The type of search to perform. 'fast' for quicker but less comprehensive results, 'pro' for more thorough analysis.
+            enum: [superfast, fast, pro]
+          description: The type of search to perform. 'superfast' for fastest basic results, 'fast' for quicker but less comprehensive results, 'pro' for more thorough analysis.
           example: "fast"
         - name: require_emails
           in: query
@@ -2218,6 +2221,10 @@ components:
           type: string
           description: Unique identifier for the API call
           example: "ec191bf9-99ff-4989-8383-c97c71fafb6d"
+        thread_id:
+          type: string
+          description: Thread identifier for the API call
+          example: "thread_abc123"
         path:
           type: string
           description: The API endpoint path that was called
