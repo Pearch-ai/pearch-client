@@ -91,6 +91,8 @@ class Education(BaseModel):
     specialization: str | None = None
     degree: List[str] | None = None
     major: str | None = None
+    start_date: Date | None = None
+    end_date: Date | None = None
     model_config = ConfigDict(extra="ignore")
 
 
@@ -373,7 +375,7 @@ class CustomFilters(BaseModel):
 class V2SearchRequest(BaseModel):
     query: str | None = None
     thread_id: str | None = None
-    type: Literal["fast", "pro"] | None = "pro"
+    type: Literal["superfast", "fast", "pro"] | None = "pro"
     insights: bool | None = True
     high_freshness: bool | None = False
     profile_scoring: bool | None = True
@@ -385,7 +387,9 @@ class V2SearchRequest(BaseModel):
     require_phones_or_emails: bool | None = False
     show_phone_numbers: bool | None = False
     limit: int | None = Field(default=10, ge=1, le=1000)
+    offset: int | None = Field(default=0, ge=0)
     docid_blacklist: List[str] | None = None
+    docid_whitelist: List[str] | None = None
     model_config = ConfigDict(extra="ignore")
 
 
@@ -473,6 +477,7 @@ class V2SearchStatusResponse(BaseModel):
 
 class ApiCallHistoryEntry(BaseModel):
     uuid: str | None = None
+    thread_id: str | None = None
     path: str | None = None
     parameters: Dict[str, Any] | None = None
     items_count: int | None = None
