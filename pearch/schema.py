@@ -381,15 +381,20 @@ class V2SearchRequest(BaseModel):
     profile_scoring: bool | None = True
     custom_filters: CustomFilters | None = None
     strict_filters: bool | None = False
-    require_emails: bool | None = False
-    show_emails: bool | None = False
-    require_phone_numbers: bool | None = False
-    require_phones_or_emails: bool | None = False
-    show_phone_numbers: bool | None = False
+    filter_out_no_emails: bool | None = False
+    reveal_emails: bool | None = False
+    filter_out_no_phones: bool | None = False
+    filter_out_no_phones_or_emails: bool | None = False
+    reveal_phones: bool | None = False
     limit: int | None = Field(default=10, ge=1, le=1000)
     offset: int | None = Field(default=0, ge=0)
     docid_blacklist: List[str] | None = None
     docid_whitelist: List[str] | None = None
+    require_emails: bool | None = None
+    show_emails: bool | None = None
+    require_phone_numbers: bool | None = None
+    require_phones_or_emails: bool | None = None
+    show_phone_numbers: bool | None = None
     model_config = ConfigDict(extra="ignore")
 
 
@@ -400,20 +405,26 @@ class V2SearchCompanyLeadsRequest(BaseModel):
     outreach_message_instruction: str | None = None
     limit: int | None = Field(default=50, ge=1, le=1000)
     leads_limit: int | None = Field(default=3, ge=1, le=10)
-    show_emails: bool | None = False
-    show_phone_numbers: bool | None = False
-    require_emails: bool | None = False
-    require_phone_numbers: bool | None = False
-    require_phones_or_emails: bool | None = False
+    reveal_emails: bool | None = False
+    reveal_phones: bool | None = False
+    filter_out_no_emails: bool | None = False
+    filter_out_no_phones: bool | None = False
+    filter_out_no_phones_or_emails: bool | None = False
     high_freshness: bool | None = False
     company_high_freshness: bool | None = False
     select_top_leads: bool | None = True
+    show_emails: bool | None = None
+    show_phone_numbers: bool | None = None
+    require_emails: bool | None = None
+    require_phone_numbers: bool | None = None
+    require_phones_or_emails: bool | None = None
     model_config = ConfigDict(extra="ignore")
 
 
 class V1SearchRequest(BaseModel):
     query: str | None = None
     type: str | None = None
+    filter_out_no_emails: bool | None = None
     require_emails: bool | None = None
     limit: int | None = None
     model_config = ConfigDict(extra="ignore")
@@ -447,9 +458,11 @@ class V1FindMatchingJobsRequest(BaseModel):
 class V1ProfileRequest(BaseModel):
     docid: str
     high_freshness: bool | None = False
-    show_emails: bool | None = False
-    show_phone_numbers: bool | None = False
+    reveal_emails: bool | None = False
+    reveal_phones: bool | None = False
     with_profile: bool | None = False
+    show_emails: bool | None = None
+    show_phone_numbers: bool | None = None
     model_config = ConfigDict(extra="ignore")
 
 

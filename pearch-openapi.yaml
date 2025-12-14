@@ -30,7 +30,7 @@ paths:
 
         Check out other parameters below to adjust speed vs quality and additional data that can be returned by the endpoint. 
 
-        **Cost: (number of profiles returned) × (sum of credits for each of `type`, `insights`, `profile_scoring`, `high_freshness`, `show_emails`, `show_phone_numbers`)**
+        **Cost: (number of profiles returned) × (sum of credits for each of `type`, `insights`, `profile_scoring`, `high_freshness`, `reveal_emails`, `reveal_phones`)**
 
       security:
         - bearerAuth: []
@@ -77,26 +77,26 @@ paths:
                   type: boolean
                   default: false
                   description: Be stricter when filtering. If true, titles must match exactly, after expanding abbreviations (e.g. 'CEO' → 'Chief Executive Officer'), or after translation (e.g. 'Ingeniero de software' → 'Software Engineer'). If false, then apply fuzzy matching as well. 
-                require_emails:
+                filter_out_no_emails:
                   type: boolean
                   default: false
-                  description: "Only return profiles with at least one email address. Profiles will have additional `has_email` field set to true. **Cost: 1 credit per candidate**"
-                show_emails:
+                  description: "Only return profiles with at least one email address. Profiles will have additional `has_email` field set to true. **Cost: 1 credit per candidate**. Deprecated name: `require_emails`"
+                reveal_emails:
                   type: boolean
                   default: false
-                  description: "Include email addresses in search results if available. This returns all available emails including personal and work emails. **Cost: 2 credits per candidate, only charged if the candidate has at least one email address**"
-                require_phone_numbers:
+                  description: "Include email addresses in search results if available. This returns all available emails including personal and work emails. **Cost: 2 credits per candidate, only charged if the candidate has at least one email address**. Deprecated name: `show_emails`"
+                filter_out_no_phones:
                   type: boolean
                   default: false
-                  description: "Only return profiles with at least one phone number. Profiles will have additional `has_phone_numbers` field set to true. **Cost: 1 credit per candidate**"
-                require_phones_or_emails:
+                  description: "Only return profiles with at least one phone number. Profiles will have additional `has_phone_numbers` field set to true. **Cost: 1 credit per candidate**. Deprecated name: `require_phone_numbers`"
+                filter_out_no_phones_or_emails:
                   type: boolean
                   default: false
-                  description: "Only return profiles with at least one phone number OR at least one email address. Useful when you need contact information but either email or phone is acceptable. **Cost: 1 credit per candidate**"
-                show_phone_numbers:
+                  description: "Only return profiles with at least one phone number OR at least one email address. Useful when you need contact information but either email or phone is acceptable. **Cost: 1 credit per candidate**. Deprecated name: `require_phones_or_emails`"
+                reveal_phones:
                   type: boolean
                   default: false
-                  description: "Include phone numbers in search results if available. This returns all available phone numbers including personal and work numbers. **Cost: 14 credits per candidate, only charged if the candidate has at least one phone number**"
+                  description: "Include phone numbers in search results if available. This returns all available phone numbers including personal and work numbers. **Cost: 14 credits per candidate, only charged if the candidate has at least one phone number**. Deprecated name: `show_phone_numbers`"
                 limit:
                   type: integer
                   minimum: 1
@@ -255,15 +255,15 @@ paths:
         - `profile_scoring`: Enable profile scoring (1 credit/candidate)
         - `custom_filters`: Custom filters in JSON format for advanced filtering (see CustomFilters schema for all available fields including locations, languages, titles, industries, companies, universities, keywords, experience ranges, age ranges, follower counts, degrees, and more)
         - `strict_filters`: Be stricter when filtering (boolean, default: false)
-        - `require_emails`: Only return profiles with at least one email address (1 credit/candidate)
-        - `show_emails`: Include email addresses (2 credits/candidate, only if available)
-        - `require_phone_numbers`: Only return profiles with at least one phone number (1 credit/candidate)
-        - `require_phones_or_emails`: Only return profiles with at least one phone number OR email address (1 credit/candidate)
-        - `show_phone_numbers`: Include phone numbers (14 credits/candidate, only if available)
+        - `filter_out_no_emails`: Only return profiles with at least one email address (1 credit/candidate). Deprecated name: `require_emails`
+        - `reveal_emails`: Include email addresses (2 credits/candidate, only if available). Deprecated name: `show_emails`
+        - `filter_out_no_phones`: Only return profiles with at least one phone number (1 credit/candidate). Deprecated name: `require_phone_numbers`
+        - `filter_out_no_phones_or_emails`: Only return profiles with at least one phone number OR email address (1 credit/candidate). Deprecated name: `require_phones_or_emails`
+        - `reveal_phones`: Include phone numbers (14 credits/candidate, only if available). Deprecated name: `show_phone_numbers`
         - `docid_blacklist`: List of profile docids to exclude from search results
         - `docid_whitelist`: List of profile docids to limit search results to
         
-        **Cost: (number of profiles returned) × (sum of credits for each of `type`, `insights`, `profile_scoring`, `high_freshness`, `show_emails`, `show_phone_numbers`)**
+        **Cost: (number of profiles returned) × (sum of credits for each of `type`, `insights`, `profile_scoring`, `high_freshness`, `reveal_emails`, `reveal_phones`)**
         
         _Check out official [Python client](https://github.com/Pearch-ai/pearch-client)_
       security:
@@ -368,26 +368,26 @@ paths:
                       type: boolean
                       default: false
                       description: Be stricter when filtering.
-                    require_emails:
+                    filter_out_no_emails:
                       type: boolean
                       default: false
-                      description: "Only return profiles with at least one email address. **Cost: 1 credit per candidate**"
-                    show_emails:
+                      description: "Only return profiles with at least one email address. **Cost: 1 credit per candidate**. Deprecated name: `require_emails`"
+                    reveal_emails:
                       type: boolean
                       default: false
-                      description: "Include email addresses in search results. **Cost: 2 credits per candidate, only charged if the candidate has at least one email address**"
-                    require_phone_numbers:
+                      description: "Include email addresses in search results. **Cost: 2 credits per candidate, only charged if the candidate has at least one email address**. Deprecated name: `show_emails`"
+                    filter_out_no_phones:
                       type: boolean
                       default: false
-                      description: "Only return profiles with at least one phone number. **Cost: 1 credit per candidate**"
-                    require_phones_or_emails:
+                      description: "Only return profiles with at least one phone number. **Cost: 1 credit per candidate**. Deprecated name: `require_phone_numbers`"
+                    filter_out_no_phones_or_emails:
                       type: boolean
                       default: false
-                      description: "Only return profiles with at least one phone number OR email address. **Cost: 1 credit per candidate**"
-                    show_phone_numbers:
+                      description: "Only return profiles with at least one phone number OR email address. **Cost: 1 credit per candidate**. Deprecated name: `require_phones_or_emails`"
+                    reveal_phones:
                       type: boolean
                       default: false
-                      description: "Include phone numbers in search results. **Cost: 14 credits per candidate, only charged if the candidate has at least one phone number**"
+                      description: "Include phone numbers in search results. **Cost: 14 credits per candidate, only charged if the candidate has at least one phone number**. Deprecated name: `show_phone_numbers`"
               required:
                 - messages
       responses:
@@ -429,7 +429,7 @@ paths:
         - When you want to generate personalized outreach messages for the identified leads, pass the outreach message instruction: `{"company_query": "manufacturers of aviation parts", "lead_query": "CTOs and engineering managers", "outreach_message_instruction": "Suggest buying my (Rob) SaaS recruitment product <300 characters, email style, casual, personal touch"}`
         - if you don't have good intuition about leads to target, use a very broad lead query like `{..., "lead_query": "people who I can contact regarding partnerships or any c-level (CEO CFO COO CTO CIO CMO CHRO CPO CLO CSO) /founder/director/owner roles"}`
         
-        **Cost: (number of companies returned) × (5 + `company_high_freshness` if enabled) + (number of leads returned) × (2 + sum of credits for `outreach_message_instruction`, `show_emails`, `show_phone_numbers`, `require_emails`, `require_phone_numbers`, `high_freshness`)** 
+        **Cost: (number of companies returned) × (5 + `company_high_freshness` if enabled) + (number of leads returned) × (2 + sum of credits for `outreach_message_instruction`, `reveal_emails`, `reveal_phones`, `filter_out_no_emails`, `filter_out_no_phones`, `high_freshness`)** 
 
         _Check out official [Python client](https://github.com/Pearch-ai/pearch-client)_
       security:
@@ -470,22 +470,22 @@ paths:
                   maximum: 10
                   default: 3
                   description: The number of leads to find per company. 
-                show_emails:
+                reveal_emails:
                   type: boolean
                   default: false
-                  description: "Include email addresses in lead results if available. **Cost: 3 credits per lead**"
-                show_phone_numbers:
+                  description: "Include email addresses in lead results if available. **Cost: 3 credits per lead**. Deprecated name: `show_emails`"
+                reveal_phones:
                   type: boolean
                   default: false
-                  description: "Include phone numbers in lead results if available. **Cost: 8 credits per lead**"
-                require_emails:
+                  description: "Include phone numbers in lead results if available. **Cost: 8 credits per lead**. Deprecated name: `show_phone_numbers`"
+                filter_out_no_emails:
                   type: boolean
                   default: false
-                  description: "Only return leads with at least one email address. Leads will have additional `has_email` field set to true. **Cost: 1 credit per candidate**"
-                require_phone_numbers:
+                  description: "Only return leads with at least one email address. Leads will have additional `has_email` field set to true. **Cost: 1 credit per candidate**. Deprecated name: `require_emails`"
+                filter_out_no_phones:
                   type: boolean
                   default: false
-                  description: "Only return leads with at least one phone number. Leads will have additional `has_phone_numbers` field set to true. **Cost: 1 credit per candidate**"
+                  description: "Only return leads with at least one phone number. Leads will have additional `has_phone_numbers` field set to true. **Cost: 1 credit per candidate**. Deprecated name: `require_phone_numbers`"
                 high_freshness:
                   type: boolean
                   default: false
@@ -580,7 +580,7 @@ paths:
         
         All the same search parameters are supported as the synchronous `/v2/search` endpoint, including `thread_id` for continuation and pagination.
 
-        **Cost: (number of profiles returned) × (sum of credits for each of `type`, `insights`, `profile_scoring`, `high_freshness`, `show_emails`, `show_phone_numbers`)**
+        **Cost: (number of profiles returned) × (sum of credits for each of `type`, `insights`, `profile_scoring`, `high_freshness`, `reveal_emails`, `reveal_phones`)**
         
         _Check out official [Python client](https://github.com/Pearch-ai/pearch-client)_
       security:
@@ -628,26 +628,26 @@ paths:
                   type: boolean
                   default: false
                   description: Be stricter when filtering. If true, titles must match exactly, after expanding abbreviations (e.g. 'CEO' → 'Chief Executive Officer'), or after translation (e.g. 'Ingeniero de software' → 'Software Engineer'). If false, then apply fuzzy matching as well. 
-                require_emails:
+                filter_out_no_emails:
                   type: boolean
                   default: false
-                  description: "Only return profiles with at least one email address. Profiles will have additional `has_email` field set to true. **Cost: 1 credit per candidate**"
-                show_emails:
+                  description: "Only return profiles with at least one email address. Profiles will have additional `has_email` field set to true. **Cost: 1 credit per candidate**. Deprecated name: `require_emails`"
+                reveal_emails:
                   type: boolean
                   default: false
-                  description: "Include email addresses in search results if available. This returns all available emails including personal and work emails. **Cost: 2 credits per candidate**"
-                require_phone_numbers:
+                  description: "Include email addresses in search results if available. This returns all available emails including personal and work emails. **Cost: 2 credits per candidate**. Deprecated name: `show_emails`"
+                filter_out_no_phones:
                   type: boolean
                   default: false
-                  description: "Only return profiles with at least one phone number. Profiles will have additional `has_phone_numbers` field set to true. **Cost: 1 credit per candidate**"
-                require_phones_or_emails:
+                  description: "Only return profiles with at least one phone number. Profiles will have additional `has_phone_numbers` field set to true. **Cost: 1 credit per candidate**. Deprecated name: `require_phone_numbers`"
+                filter_out_no_phones_or_emails:
                   type: boolean
                   default: false
-                  description: "Only return profiles with at least one phone number OR at least one email address. Useful when you need contact information but either email or phone is acceptable. **Cost: 1 credit per candidate**"
-                show_phone_numbers:
+                  description: "Only return profiles with at least one phone number OR at least one email address. Useful when you need contact information but either email or phone is acceptable. **Cost: 1 credit per candidate**. Deprecated name: `require_phones_or_emails`"
+                reveal_phones:
                   type: boolean
                   default: false
-                  description: "Include phone numbers in search results if available. This returns all available phone numbers including personal and work numbers. **Cost: 14 credits per candidate**"
+                  description: "Include phone numbers in search results if available. This returns all available phone numbers including personal and work numbers. **Cost: 14 credits per candidate**. Deprecated name: `show_phone_numbers`"
                 limit:
                   type: integer
                   minimum: 1
@@ -788,7 +788,7 @@ paths:
 
         Run a search query. Parameter are accepted both as query parameters with GET request and as JSON body with POST request.
 
-        **Cost: 1 credits per candidate if `type='fast'`, 7 credits per candidate if `type='pro'` + 2 credits per candidate if `require_emails` is true**
+        **Cost: 1 credits per candidate if `type='fast'`, 7 credits per candidate if `type='pro'` + 2 credits per candidate if `filter_out_no_emails` is true**
 
 
         _Check out official [Python client](https://github.com/Pearch-ai/pearch-client)_
@@ -810,12 +810,12 @@ paths:
             enum: [superfast, fast, pro]
           description: The type of search to perform. 'superfast' for fastest basic results, 'fast' for quicker but less comprehensive results, 'pro' for more thorough analysis.
           example: "fast"
-        - name: require_emails
+        - name: filter_out_no_emails
           in: query
           required: false
           schema:
             type: boolean
-          description: Whether to require search results to have at least one email address (but don't necessarily return them)
+          description: Whether to require search results to have at least one email address (but don't necessarily return them). Deprecated name: `require_emails`
           example: false
         - name: limit
           in: query
@@ -1288,7 +1288,7 @@ paths:
         
         Retrieve enriched user profile based on the provided Linkedin profile ID as a query parameter. Linkedin profile ID is the part that comes after `https://www.linkedin.com/in/` in the profile URL.
 
-        **Cost: 1 credit + extra credits for each of `high_freshness`, `show_emails`, `show_phone_numbers` and `with_profile` parameters if enabled**
+        **Cost: 1 credit + extra credits for each of `high_freshness`, `reveal_emails`, `reveal_phones` and `with_profile` parameters if enabled**
       security:
         - bearerAuth: []
       parameters:
@@ -1306,19 +1306,19 @@ paths:
             type: boolean
           description: "Enable real-time profile updates for fresher data. This downloads the most recent copies of profiles directly from source websites in realtime (e.g. Linkedin). Scraped results are cached for up to 24 hours. If you are ok with profiles that may be a few months outdated, turn off high_freshness. **Cost: 2 credits**"
           example: false
-        - name: show_emails
+        - name: reveal_emails
           in: query
           required: false
           schema:
             type: boolean
-          description: "Include email addresses in the profile if available. **Cost: 2 credits, only charged if the profile has at least one email address**"
+          description: "Include email addresses in the profile if available. **Cost: 2 credits, only charged if the profile has at least one email address**. Deprecated name: `show_emails`"
           example: false
-        - name: show_phone_numbers
+        - name: reveal_phones
           in: query
           required: false
           schema:
             type: boolean
-          description: "Include phone numbers in the profile if available. **Cost: 14 credits, only charged if the profile has at least one phone number**"
+          description: "Include phone numbers in the profile if available. **Cost: 14 credits, only charged if the profile has at least one phone number**. Deprecated name: `show_phone_numbers`"
           example: false
         - name: with_profile
           in: query

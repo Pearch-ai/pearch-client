@@ -249,7 +249,7 @@ from pearch.schema import V1ProfileRequest
 with PearchClient() as client:
     request = V1ProfileRequest(
         docid="vslaykovsky", 
-        show_emails=True,
+        reveal_emails=True,
         with_profile=True
     )
     response = client.get_profile(request)
@@ -259,14 +259,14 @@ with PearchClient() as client:
 Available parameters:
 - `docid` (required): LinkedIn profile ID
 - `high_freshness` (optional): Enable real-time profile updates (+2 credits)
-- `show_emails` (optional): Include email addresses if available (+2 credits if emails found)
-- `show_phone_numbers` (optional): Include phone numbers if available (+14 credits if phone numbers found)
+- `reveal_emails` (optional): Include email addresses if available (+2 credits if emails found). Deprecated: `show_emails` (still supported but deprecated)
+- `reveal_phones` (optional): Include phone numbers if available (+14 credits if phone numbers found). Deprecated: `show_phone_numbers` (still supported but deprecated)
 - `with_profile` (optional): Include full profile data in response (+1 credit)
 
 Output:
 ```bash
 INFO - pearch.client - client.py:321 - Retrieving profile for docid: vslaykovsky
-INFO - httpx - _client.py:1025 - HTTP Request: GET https://api.pearch.ai/v1/profile?docid=vslaykovsky&high_freshness=false&show_emails=true&show_phone_numbers=false&with_profile=true "HTTP/1.1 200 OK"
+INFO - httpx - _client.py:1025 - HTTP Request: GET https://api.pearch.ai/v1/profile?docid=vslaykovsky&high_freshness=false&reveal_emails=true&reveal_phones=false&with_profile=true "HTTP/1.1 200 OK"
 Profile: {"uuid":"1f3cca0a-06b2-4679-95eb-d9b1075a2764","profile":{"docid":"vslaykovsky","linkedin_slug":"vslaykovsky","first_name":"Vlad","middle_name":null,"last_name":"Sly","picture_url":"https://media.licdn.com/dms/image/v2/C4D03AQE9ZowG0kPs6A/profile-displayphoto-shrink_200_200/profile-displayphoto-shrink_200_200/0/1538525794823?e=2147483647&v=beta&t=hZOiV9Po50zLV9blRTbra2IfeXvSdkeuJyhFJ4rmr9k","title":"Machine Learning Researcher + Kaggle Grandmaster, top10","summary":"Machine Learning Researcher with extensive experience in industry. Fluent in Python, multiple years of experience building scalable backend systems in C/C++, Java and PHP.","gender":null,"is_decision_maker":1.0,"languages":[{"language":"English","proficiency":"C1"},{"language":"Russian","proficiency":"C2"}],"inferred_languages":[],"location":"Bristol, England, United Kingdom","is_top_universities":false,"is_opentowork":null,"is_hiring":null,"total_experience_years":22.0,"estimated_age":43.0,"expertise":["machine learning","
 ```
 
@@ -334,10 +334,10 @@ stream = client.chat.completions.create(
         "final_result": True,
         "insights": True,
         "high_freshness": True,
-        "show_emails": True,
-        "show_phone_numbers": True,
-        "require_emails": True,
-        "require_phone_numbers": True,
+        "reveal_emails": True,
+        "reveal_phones": True,
+        "filter_out_no_emails": True,
+        "filter_out_no_phones": True,
         "profile_scoring": True,
         "strict_filters": False,
         "custom_filters": {}
