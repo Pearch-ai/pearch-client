@@ -25,7 +25,6 @@ paths:
         Use parameters to control tradeoffs between speed and quality. Here are some recipes:        
         - For highest quality results (30-180 seconds) use pro search with insights and profile scoring enabled: `{"query": "<YOUR QUERY HERE>", "type": "pro", "insights": true, "profile_scoring": true}`
         - For medium to high quality results use "fast" search (<30s). `{"query": "<YOUR QUERY HERE>", "type": "fast", "insights": true, "profile_scoring": true}`
-        - For very fast results use "superfast" search (<10s): `{"query": "<YOUR QUERY HERE>", "type": "superfast"}`
         - If you want to implement pagination, pass the `thread_id` of the previous request to the next request with increased `limit`. 
 
         Check out other parameters below to adjust speed vs quality and additional data that can be returned by the endpoint. 
@@ -52,13 +51,12 @@ paths:
                   example: "ec191bf9-99ff-4989-8383-c97c71fafb6d"
                 type:
                   type: string
-                  enum: [superfast, fast, pro]
+                  enum: [fast, pro]
                   default: "pro"
                   description: |
                     The type of search to perform. 
                     * "pro" is slower and more costly, but has higher quality and recall. **Cost: 5 credits per candidate**
                     * "fast" is faster but may have less recall. **Cost: 1 credit per candidate**
-                    * "superfast" is the fastest with basic results (<10s). **Cost: 0.4 credits per candidate, rounded up per query**
                 insights:
                   type: boolean
                   default: true
@@ -243,7 +241,7 @@ paths:
         
         **Available Parameters in `extra_body`:**
         - `limit`: Maximum number of results (1-1000, default: 10)
-        - `type`: Search type - "superfast" (0.4 credits/candidate, rounded up per query), "fast" (1 credit/candidate), or "pro" (5 credits/candidate)
+        - `type`: Search type - "fast" (1 credit/candidate), or "pro" (5 credits/candidate)
         - `stream_profiles`: Control profile streaming - "none", "full", or "batch"
         - `profiles_batch_size`: Number of profiles per batch (default: 10)
         - `final_result`: Include full result in final chunk (default: true)
@@ -312,13 +310,12 @@ paths:
                       description: The maximum number of search results to return.
                     type:
                       type: string
-                      enum: [superfast, fast, pro]
+                      enum: [fast, pro]
                       default: "pro"
                       description: |
                         The type of search to perform. 
                         * "pro" is slower and more costly, but has higher quality and recall. **Cost: 5 credits per candidate**
                         * "fast" is faster but may have less recall. **Cost: 1 credit per candidate**
-                        * "superfast" is the fastest with basic results (<10s). **Cost: 0.4 credits per candidate, rounded up per query**
                     stream_profiles:
                       type: string
                       enum: [none, full, batch]
@@ -603,13 +600,12 @@ paths:
                   example: "ec191bf9-99ff-4989-8383-c97c71fafb6d"
                 type:
                   type: string
-                  enum: [superfast, fast, pro]
+                  enum: [fast, pro]
                   default: "pro"
                   description: |
                     The type of search to perform. 
                     * "pro" is slower and more costly, but has higher quality and recall. **Cost: 5 credits per candidate**
                     * "fast" is faster but may have less recall. **Cost: 1 credit per candidate**
-                    * "superfast" is the fastest with basic results (<10s). **Cost: 0.4 credits per candidate, rounded up per query**
                 insights:
                   type: boolean
                   default: true
@@ -807,15 +803,15 @@ paths:
           required: false
           schema:
             type: string
-            enum: [superfast, fast, pro]
-          description: The type of search to perform. 'superfast' for fastest basic results, 'fast' for quicker but less comprehensive results, 'pro' for more thorough analysis.
+            enum: [fast, pro]
+          description: The type of search to perform. 'fast' for quicker but less comprehensive results, 'pro' for more thorough analysis.
           example: "fast"
         - name: filter_out_no_emails
           in: query
           required: false
           schema:
             type: boolean
-          description: Whether to require search results to have at least one email address (but don't necessarily return them). Deprecated name: `require_emails`
+          description: "Whether to require search results to have at least one email address (but don't necessarily return them). Deprecated name: `require_emails`"
           example: false
         - name: limit
           in: query
