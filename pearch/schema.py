@@ -265,6 +265,7 @@ class V2SearchResponse(BaseModel):
     total_estimate_is_lower_bound: bool | None = None
     credits_remaining: int | None = None
     credits_used: int | None = None
+    credits_used_total: int | None = None
     search_results: List[ScoredProfile] | None = Field(default_factory=list)
     model_config = ConfigDict(extra="ignore")
 
@@ -395,7 +396,8 @@ class V2SearchRequest(BaseModel):
     require_phone_numbers: bool | None = None
     require_phones_or_emails: bool | None = None
     show_phone_numbers: bool | None = None
-    model_config = ConfigDict(extra="ignore")
+    async_: bool | None = Field(default=None, alias="async")
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
 
 
 class V2SearchCompanyLeadsRequest(BaseModel):

@@ -4,6 +4,11 @@ info:
   description: "Pearch.AI API. You need to pass API key as 'Authorization: Bearer <API_KEY>' header."
   version: "2.0"
 
+x-readme:
+  explorer-enabled: true
+  samples-languages: ["shell"]
+  proxy-enabled: false
+
 servers:
   - url: https://api.pearch.ai/
     description: Main server
@@ -118,6 +123,10 @@ paths:
                     type: string
                   description: List of profile docids to limit search results to. Only profiles with these docids will be returned.
                   example: ["johndoe", "janedoe"]
+                async:
+                  type: boolean
+                  default: false
+                  description: If true, the search will be processed asynchronously. The endpoint will return immediately with thread ID that can be used to check the status and retrieve results when ready.
               required:
                 - query
       responses:
@@ -2181,9 +2190,9 @@ components:
                       example: "I have 3+ years of experience in software development."
         score:
           type: integer
-          description: Numerical score representing candidate relevance.
+          description: Numerical score representing candidate relevance. 4 - great candidate, 3 - good candidate, 2 - worth reviewing, 1 - irrelevant candidate
           example: 4
-          enum: [2, 3, 4]
+          enum: [1, 2, 3, 4]
         profile:
           $ref: '#/components/schemas/Profile'
         outreach_message:

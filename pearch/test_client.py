@@ -236,7 +236,7 @@ def validate_credits(request: V2SearchRequest, response: V2SearchResponse | V2Se
             logger.info(f"{profile_id}: Incremented candidate_credits by 1 for filter_out_no_emails or filter_out_no_phones or filter_out_no_phones_or_emails, total now {candidate_credits}")
         expected_credits += candidate_credits
         logger.info(f"{profile_id}: Added candidate_credits {candidate_credits} to expected_credits, expected_credits now {expected_credits}")
-    assert response.credits_used == expected_credits    
+    assert response.credits_used == expected_credits or response.credits_used_total == expected_credits
 
 
 
@@ -480,6 +480,36 @@ async def test_get_search_status():
             assert credits2 - credits3 == status_response.credits_used, "Credits check failed"
             break
         await asyncio.sleep(5)
+
+ 
+
+@pytest.mark.asyncio
+async def test_async_search_v2():
+    credits1 = await get_credits()
+    first_request = V2SearchRequest(
+        query="software engineer",
+        type="fast",
+        limit=2,
+        async_=True,
+    )
+    generate_curl_command("search", first_request)
+    response = await AsyncPearchClient().search(first_request)
+
+    check_results = V2SearchRequest(
+        thread_id=response.thread_id,
+        limit=None,
+    )
+
+    while True:
+        results = await AsyncPearchClient().search(check_results)
+        if results.status == "Done":
+            validate_credits(first_request, results)
+            credits2 = await get_credits()
+            assert credits1 - credits2 == results.credits_used_total, "Credits check failed"
+            break
+        await asyncio.sleep(5)
+    
+
 
 
 @pytest.mark.asyncio
