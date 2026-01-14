@@ -1260,19 +1260,29 @@ paths:
         - Test this endpoint in the [playground](https://chat.pearch.ai/api-enrichment)
         - Check out official [Python client](https://github.com/Pearch-ai/pearch-client)        
         
-        Retrieve enriched user profile based on the provided Linkedin profile ID as a query parameter. Linkedin profile ID is the part that comes after `https://www.linkedin.com/in/` in the profile URL.
+        Retrieve enriched user profile based on the provided Linkedin profile ID or email address as a query parameter. Linkedin profile ID is the part that comes after `https://www.linkedin.com/in/` in the profile URL.
+        
+        You can provide either `docid` (LinkedIn profile ID) or `email`. If only `email` is provided, the system will attempt to resolve it to a LinkedIn profile.
 
-        **Cost: 1 credit + extra credits for each of `high_freshness`, `show_emails`, `show_phone_numbers` and `with_profile` parameters if enabled**
+        **Cost: 1 credit + extra credits for each of `high_freshness`, `show_emails`, `show_phone_numbers` and `with_profile` parameters if enabled. Email lookup adds +1 credit.**
       security:
         - bearerAuth: []
       parameters:
         - name: docid
           in: query
-          required: true
+          required: false
           schema:
             type: string
-          description: The linkedin profile ID of the profile to retrieve. Linkedin profile ID is the part that comes after `https://www.linkedin.com/in/` in the profile URL.
+          description: The linkedin profile ID of the profile to retrieve. Linkedin profile ID is the part that comes after `https://www.linkedin.com/in/` in the profile URL. Either `docid` or `email` must be provided.
           example: "hrachik"
+        - name: email
+          in: query
+          required: false
+          schema:
+            type: string
+            format: email
+          description: "Email address to look up. If provided without `docid`, the system will resolve the email to a LinkedIn profile. Recommended to use with `high_freshness=true` for best results. **Cost: +1 credit for email lookup**"
+          example: "mz@pearch.ai"
         - name: high_freshness
           in: query
           required: false
@@ -1320,7 +1330,7 @@ paths:
         "404":
           description: Profile not found
         "400":
-          description: Invalid parameter values. JSON body contains the error message.
+          description: Invalid parameter values or missing required parameters. At least one of `docid` or `email` must be provided. JSON body contains the error message.
 
   /v1/user:
     get:
