@@ -1281,7 +1281,7 @@ paths:
           schema:
             type: string
             format: email
-          description: "Email address to look up. If provided without `docid`, the system will resolve the email to a LinkedIn profile. Recommended to use with `high_freshness=true` for best results. **Cost: +1 credit for email lookup**"
+          description: "Email address to look up. If provided without `docid`, the system will resolve the email to a LinkedIn profile.  **Cost: +1 credit for email lookup**"
           example: "mz@pearch.ai"
         - name: high_freshness
           in: query
