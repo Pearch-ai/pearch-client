@@ -75,7 +75,7 @@ paths:
                 strict_filters:
                   type: boolean
                   default: false
-                  description: Be stricter when filtering. If true, titles must match exactly, after expanding abbreviations (e.g. 'CEO' → 'Chief Executive Officer'), or after translation (e.g. 'Ingeniero de software' → 'Software Engineer'). If false, then apply fuzzy matching as well. 
+                  description: Be stricter when filtering. If true, titles must match exactly after expanding abbreviations (e.g., “CEO” → “Chief Executive Officer”) or translating (e.g., “Ingeniero de software” → “Software Engineer”). If false, fuzzy matching is also used. All other filters are always applied strictly. Enabling strict_filters improves quality but can greatly reduce the number of results. This setting only affects Pearch’s implicit filtering. Custom filters are not affected and are always applied strictly.
                 require_emails:
                   type: boolean
                   default: false
@@ -612,7 +612,7 @@ paths:
                 strict_filters:
                   type: boolean
                   default: false
-                  description: Be stricter when filtering. If true, titles must match exactly, after expanding abbreviations (e.g. 'CEO' → 'Chief Executive Officer'), or after translation (e.g. 'Ingeniero de software' → 'Software Engineer'). If false, then apply fuzzy matching as well. 
+                  description: Be stricter when filtering. If true, titles must match exactly after expanding abbreviations (e.g., “CEO” → “Chief Executive Officer”) or translating (e.g., “Ingeniero de software” → “Software Engineer”). If false, fuzzy matching is also used. All other filters are always applied strictly. Enabling strict_filters improves quality but can greatly reduce the number of results. This setting only affects Pearch’s implicit filtering. Custom filters are not affected and are always applied strictly.
                 require_emails:
                   type: boolean
                   default: false
