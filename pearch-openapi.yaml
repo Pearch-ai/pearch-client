@@ -1407,7 +1407,9 @@ components:
       type: object
       description: |
         Custom filters in JSON format for advanced filtering. Leave empty to use default filtering logic. 
-        Format: `{"filter_name1": ["value1", "value2"], "filter_name2": ["value3", "value4"], ...}`. This is applied as boolean filters `(filter_name1=value1 OR filter_name1=value2) AND (filter_name2=value3 OR filter_name2=value4)` etc.
+        Format: `{"filter_name1": ["value1", "value2"], "filter_name2": ["value3", "value4"], ...}`. 
+        
+        Filtering logic: Conditions between different keys are joined with "AND", so all conditions must pass. Within each condition, we always use "OR". For example, `{"titles": ["swe", "mle"]}` means the profile must have either "swe" OR "mle" as a title. If you specify multiple keys like `{"titles": ["swe", "mle"], "locations": ["San Francisco"]}`, the profile must match at least one title (swe OR mle) AND be in San Francisco.
         
         Use any string values as is. Pearch.ai internally correctly matches them to profile data. E.g. you may pass `{"industries": "health"}` to filter for profiles in health industry, this will be correctly mapped to pearch.ai internal `healthcare` industry. 
         If you want to force no filtering at all (`custom_filters` or default filters), pass empty object `"custom_filters": {}`. This will speed up search, increase recall at some relevancy cost.
