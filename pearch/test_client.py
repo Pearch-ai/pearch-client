@@ -9,6 +9,7 @@ import pytest
 import json
 from typing import Any
 import time
+import uuid
 
 from openai import OpenAI
 
@@ -87,6 +88,46 @@ def generate_curl_command(client_method: str, request: Any) -> str:
 
     curl_parts.append(f"'{url}'")
     logger.info(" ".join(curl_parts))
+
+
+def generate_threads_runs_stream_curl(thread_id: str, assistant_id: str, input_data: dict, config: dict, stream_mode: list, stream_resumable: bool, on_disconnect: str) -> str:
+    """Generate a curl command for threads/runs/stream endpoint."""
+    base_url = os.getenv("PEARCH_API_URL") or "https://api.pearch.ai/"
+    api_key = os.getenv("PEARCH_API_KEY")
+    token = os.getenv("PEARCH_TEST_KEY")
+    
+    url = f"{base_url.rstrip('/')}/threads/{thread_id}/runs"
+    
+    query_params = [f"assistant_id={assistant_id}"]
+    for mode in stream_mode:
+        query_params.append(f"stream_mode={mode}")
+    if stream_resumable:
+        query_params.append("stream_resumable=true")
+    if on_disconnect:
+        query_params.append(f"on_disconnect={on_disconnect}")
+    
+    if query_params:
+        url += "?" + "&".join(query_params)
+    
+    body_data = {
+        "input": input_data,
+        "config": config
+    }
+    body_json = json.dumps(body_data, separators=(',', ':'))
+    
+    curl_parts = ["curl", "-X", "POST", "-N"]
+    curl_parts.extend(["-H", f"'Authorization: Bearer {api_key}'"])
+    curl_parts.extend(["-H", "'Content-Type: application/json'"])
+    
+    if token:
+        curl_parts.extend(["-H", f"'X-Test-Secret: {token}'"])
+    
+    curl_parts.extend(["-d", f"'{body_json}'"])
+    curl_parts.append(f"'{url}'")
+    
+    curl_command = " ".join(curl_parts)
+    logger.info(curl_command)
+    return curl_command
 
 
 async def get_credits():
@@ -549,74 +590,59 @@ async def test_get_user():
     assert all(pricing.description is not None for pricing in response.pricing)
 
 
-# OpenAI format tests for /v1/chat/completions endpoint
 BASE_URL = os.getenv("PEARCH_API_URL") or "https://api.pearch.ai/"
 API_KEY = os.getenv("PEARCH_API_KEY")
 TEST_KEY = os.getenv("PEARCH_TEST_KEY")
 
-
-def _user(msg: str):
-    return {"role": "user", "content": msg}
  
 
 @pytest.mark.asyncio
-async def test_chat_completions_stream_with_continuation():
-    """Test streaming with thread continuation"""
-    if not API_KEY:
-        pytest.skip("PEARCH_API_KEY not set")
-    
-    client = OpenAI(base_url=BASE_URL, api_key=API_KEY)
+async def test_stream_langgraph_api():
+    from langgraph_sdk import get_client    
+    base_url = BASE_URL.rstrip("/")
+    headers = {"Authorization": f"Bearer {API_KEY}"}
     if TEST_KEY:
-        client._client.headers["X-Test-Secret"] = TEST_KEY
-
-    # First request
-    stream1 = client.chat.completions.create(
-        model="pearch",
-        stream=True,
-        messages=[_user("software engineers at Google")],
-        extra_body={
-            "limit": 2,
-            "type": "fast",
-            "stream_profiles": "batch",
-            "profiles_batch_size": 5,
-            "final_result": True,
-            "insights": True,
-            "high_freshness": True,
-            "show_emails": True,
-            "show_phone_numbers": True,
-            },
+        headers["X-Test-Secret"] = TEST_KEY
+    client = get_client(url=base_url, headers=headers)
+    thread_id = str(uuid.uuid4())
+    assistant_id = "agent"
+    input_data = {
+        "messages": [
+            {
+                "type": "human",
+                "content": "ml engineers in seattle"
+            }
+        ],
+        "selected_profiles_list": None,
+        "selected_company_slugs": None,
+        "selected_full_profile_slug": None
+    }
+    config = {
+        "recursion_limit": 100
+    }
+    chunks_received = []
+    stream_mode = ["updates", "values", "custom"]
+    generate_threads_runs_stream_curl(
+        thread_id=thread_id,
+        assistant_id=assistant_id,
+        input_data=input_data,
+        config=config,
+        stream_mode=stream_mode,
+        stream_resumable=True,
+        on_disconnect="continue"
     )
-
-    thread_id = None
-    for chunk in stream1:
-        if chunk.choices and len(chunk.choices) > 0:
-            if chunk.choices[0].finish_reason is not None:
-                # Try to extract thread_id from the chunk if available
-                chunk_dict = chunk.model_dump() if hasattr(chunk, 'model_dump') else {}
-                if 'summary' in chunk_dict and 'thread_id' in chunk_dict['summary']:
-                    thread_id = chunk_dict['summary']['thread_id']
-                break
-
-    # Second request with continuation (if thread_id was found)
-    if thread_id:
-        stream2 = client.chat.completions.create(
-            model="pearch",
-            stream=True,
-            messages=[_user("who are at least 30 years old")],
-            extra_body={"limit": 2, "thread_id": thread_id, "type": "fast"},
-        )
-
-        chunks_received = 0
-        final_chunk = None
-        
-        for chunk in stream2:
-            chunks_received += 1
-            if chunk.choices and len(chunk.choices) > 0:
-                if chunk.choices[0].finish_reason is not None:
-                    final_chunk = chunk
-        
-        assert chunks_received > 0
-        assert final_chunk is not None
-        assert final_chunk.choices[0].finish_reason == "stop"
+    async for chunk in client.runs.stream(
+        thread_id=thread_id,
+        assistant_id=assistant_id,
+        input=input_data,
+        config=config,
+        stream_mode=stream_mode,
+        stream_resumable=True,
+        on_disconnect="continue"
+    ):
+        chunks_received.append(chunk)
+        logger.info(f"Chunk: {chunk}")
+    assert len(chunks_received) > 0
+    
 
  
