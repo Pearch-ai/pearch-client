@@ -72,6 +72,10 @@ paths:
                   description: "Enable profile scoring and reranking for better result quality. This filters out less relevant profiles and produces scores for more relevant once. Scores range from 0.0 to 4.0 where higher is better. **Cost: 1 credit per candidate**" 
                 custom_filters:
                   $ref: '#/components/schemas/CustomFilters'
+                custom_filters_mode:
+                  type: string
+                  enum: [exact, smart]
+                  description: "Mode for handling custom filters. 'exact' - only use the passed custom_filters, no LLM-generated filters. 'smart' - merge custom_filters with LLM-generated filters."
                 strict_filters:
                   type: boolean
                   default: false
@@ -350,6 +354,10 @@ paths:
                       description: "Enable profile scoring and reranking. **Cost: 1 credit per candidate**"
                     custom_filters:
                       $ref: '#/components/schemas/CustomFilters'
+                    custom_filters_mode:
+                      type: string
+                      enum: [exact, smart]
+                      description: "Mode for handling custom filters. 'exact' - only use the passed custom_filters, no LLM-generated filters. 'smart' - merge custom_filters with LLM-generated filters."
                     strict_filters:
                       type: boolean
                       default: false
@@ -609,6 +617,10 @@ paths:
                   description: "Enable profile scoring and reranking for better result quality. This filters out less relevant profiles and produces scores for more relevant once. Scores range from 0.0 to 4.0 where higher is better. **Cost: 1 credit per candidate**" 
                 custom_filters:
                   $ref: '#/components/schemas/CustomFilters'
+                custom_filters_mode:
+                  type: string
+                  enum: [exact, smart]
+                  description: "Mode for handling custom filters. 'exact' - only use the passed custom_filters, no LLM-generated filters. 'smart' - merge custom_filters with LLM-generated filters."
                 strict_filters:
                   type: boolean
                   default: false
