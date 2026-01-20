@@ -157,6 +157,7 @@ class Profile(BaseModel):
     has_emails: bool | None = None
     phone_numbers: List[str] | None = Field(default_factory=list)
     phone_types: List[str] | None = Field(default_factory=list)
+    websites: List[str] | None = Field(default_factory=list)
     followers_count: int | None = None
     connections_count: int | None = None
 

@@ -2112,6 +2112,12 @@ components:
             enum:
               - mobile
           example: ["mobile"]
+        websites:
+          type: array
+          description: List of social profile URLs found during phone or email enrichment.
+          items:
+            type: string
+          example: ["https://twitter.com/johndoe", "https://github.com/johndoe"]
         followers_count:
           type: integer
           description: Number of followers on LinkedIn.
