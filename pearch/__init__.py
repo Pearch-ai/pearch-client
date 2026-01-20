@@ -9,6 +9,7 @@ from .client import (
 )
 from .schema import (
     CustomFilters,
+    CustomFiltersMode,
     V1FindMatchingJobsRequest,
     V1ProfileRequest,
     V1SearchRequest,
@@ -29,6 +30,7 @@ __all__ = [
     "PearchAuthenticationError",
     "PearchValidationError",
     "CustomFilters",
+    "CustomFiltersMode",
     "V1FindMatchingJobsRequest",
     "V1ProfileRequest",
     "V1SearchRequest",

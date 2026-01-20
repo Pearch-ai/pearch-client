@@ -1,10 +1,22 @@
 import logging
 from datetime import date as Date
+from enum import Enum
 from typing import Any, Dict, List, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
 logger = logging.getLogger("schema.py")
+
+
+class CustomFiltersMode(str, Enum):
+    """
+    Mode for handling custom filters in v2/search.
+    
+    - EXACT: Only use the passed custom_filters, no LLM-generated filters
+    - SMART: Merge custom_filters with LLM-generated filters
+    """
+    EXACT = "exact"
+    SMART = "smart"
 
 
 class FundingRound(BaseModel):
@@ -381,6 +393,7 @@ class V2SearchRequest(BaseModel):
     high_freshness: bool | None = False
     profile_scoring: bool | None = True
     custom_filters: CustomFilters | None = None
+    custom_filters_mode: CustomFiltersMode | None = None
     strict_filters: bool | None = False
     filter_out_no_emails: bool | None = False
     reveal_emails: bool | None = False

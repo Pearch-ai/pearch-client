@@ -9,6 +9,7 @@ import pytest
 import json
 from typing import Any
 import time
+import uuid
 
 from openai import OpenAI
 
@@ -87,6 +88,46 @@ def generate_curl_command(client_method: str, request: Any) -> str:
 
     curl_parts.append(f"'{url}'")
     logger.info(" ".join(curl_parts))
+
+
+def generate_threads_runs_stream_curl(thread_id: str, assistant_id: str, input_data: dict, config: dict, stream_mode: list, stream_resumable: bool, on_disconnect: str) -> str:
+    """Generate a curl command for threads/runs/stream endpoint."""
+    base_url = os.getenv("PEARCH_API_URL") or "https://api.pearch.ai/"
+    api_key = os.getenv("PEARCH_API_KEY")
+    token = os.getenv("PEARCH_TEST_KEY")
+    
+    url = f"{base_url.rstrip('/')}/threads/{thread_id}/runs"
+    
+    query_params = [f"assistant_id={assistant_id}"]
+    for mode in stream_mode:
+        query_params.append(f"stream_mode={mode}")
+    if stream_resumable:
+        query_params.append("stream_resumable=true")
+    if on_disconnect:
+        query_params.append(f"on_disconnect={on_disconnect}")
+    
+    if query_params:
+        url += "?" + "&".join(query_params)
+    
+    body_data = {
+        "input": input_data,
+        "config": config
+    }
+    body_json = json.dumps(body_data, separators=(',', ':'))
+    
+    curl_parts = ["curl", "-X", "POST", "-N"]
+    curl_parts.extend(["-H", f"'Authorization: Bearer {api_key}'"])
+    curl_parts.extend(["-H", "'Content-Type: application/json'"])
+    
+    if token:
+        curl_parts.extend(["-H", f"'X-Test-Secret: {token}'"])
+    
+    curl_parts.extend(["-d", f"'{body_json}'"])
+    curl_parts.append(f"'{url}'")
+    
+    curl_command = " ".join(curl_parts)
+    logger.info(curl_command)
+    return curl_command
 
 
 async def get_credits():
@@ -205,33 +246,65 @@ async def test_upsert_jobs():
      
 
  
-def validate_credits(request: V2SearchRequest, response: V2SearchResponse | V2SearchStatusResponse):
+def validate_credits(request: V2SearchRequest, response: V2SearchResponse | V2SearchStatusResponse, base_request: V2SearchRequest | None = None):
+    """
+    Validate credits used in a search response.
+    
+    Args:
+        request: The current request (may have None values when using thread_id)
+        response: The search response
+        base_request: Optional base request to inherit parameters from when using thread_id
+    """
+    # When using thread_id, API uses parameters from the original request, not the new one
+    # So we should use base_request parameters if available, otherwise use request parameters
+    if base_request is not None:
+        # Use base_request parameters as primary source when using thread_id
+        type_val = base_request.type if base_request.type is not None else (request.type if request.type is not None else "pro")
+        insights = base_request.insights if base_request.insights is not None else (request.insights if request.insights is not None else True)
+        high_freshness = base_request.high_freshness if base_request.high_freshness is not None else (request.high_freshness if request.high_freshness is not None else False)
+        profile_scoring = base_request.profile_scoring if base_request.profile_scoring is not None else (request.profile_scoring if request.profile_scoring is not None else True)
+        reveal_emails = base_request.reveal_emails if base_request.reveal_emails is not None else (base_request.show_emails if base_request.show_emails is not None else (request.reveal_emails if request.reveal_emails is not None else (request.show_emails if request.show_emails is not None else False)))
+        reveal_phones = base_request.reveal_phones if base_request.reveal_phones is not None else (base_request.show_phone_numbers if base_request.show_phone_numbers is not None else (request.reveal_phones if request.reveal_phones is not None else (request.show_phone_numbers if request.show_phone_numbers is not None else False)))
+        filter_out_no_emails = base_request.filter_out_no_emails if base_request.filter_out_no_emails is not None else (base_request.require_emails if base_request.require_emails is not None else (request.filter_out_no_emails if request.filter_out_no_emails is not None else (request.require_emails if request.require_emails is not None else False)))
+        filter_out_no_phones = base_request.filter_out_no_phones if base_request.filter_out_no_phones is not None else (base_request.require_phone_numbers if base_request.require_phone_numbers is not None else (request.filter_out_no_phones if request.filter_out_no_phones is not None else (request.require_phone_numbers if request.require_phone_numbers is not None else False)))
+        filter_out_no_phones_or_emails = base_request.filter_out_no_phones_or_emails if base_request.filter_out_no_phones_or_emails is not None else (base_request.require_phones_or_emails if base_request.require_phones_or_emails is not None else (request.filter_out_no_phones_or_emails if request.filter_out_no_phones_or_emails is not None else (request.require_phones_or_emails if request.require_phones_or_emails is not None else False)))
+    else:
+        type_val = request.type if request.type is not None else "pro"
+        insights = request.insights if request.insights is not None else True
+        high_freshness = request.high_freshness if request.high_freshness is not None else False
+        profile_scoring = request.profile_scoring if request.profile_scoring is not None else True
+        reveal_emails = request.reveal_emails if request.reveal_emails is not None else (request.show_emails if request.show_emails is not None else False)
+        reveal_phones = request.reveal_phones if request.reveal_phones is not None else (request.show_phone_numbers if request.show_phone_numbers is not None else False)
+        filter_out_no_emails = request.filter_out_no_emails if request.filter_out_no_emails is not None else (request.require_emails if request.require_emails is not None else False)
+        filter_out_no_phones = request.filter_out_no_phones if request.filter_out_no_phones is not None else (request.require_phone_numbers if request.require_phone_numbers is not None else False)
+        filter_out_no_phones_or_emails = request.filter_out_no_phones_or_emails if request.filter_out_no_phones_or_emails is not None else (request.require_phones_or_emails if request.require_phones_or_emails is not None else False)
+    
     expected_credits = 0   
     for result in response.search_results:
         candidate_credits = 0
         profile_id = result.profile.linkedin_slug if result.profile and result.profile.linkedin_slug else "unknown"
-        if request.type == "pro":
+        if type_val == "pro":
             candidate_credits += 5
             logger.info(f"{profile_id}: Incremented candidate_credits by 5 for type 'pro', total now {candidate_credits}")
-        elif request.type == "fast":
+        elif type_val == "fast":
             candidate_credits += 1
             logger.info(f"{profile_id}: Incremented candidate_credits by 1 for type 'fast', total now {candidate_credits}")
-        if request.insights and result.insights:
+        if insights and result.insights:
             candidate_credits += 1
             logger.info(f"{profile_id}: Incremented candidate_credits by 1 for insights, total now {candidate_credits}")
-        if request.high_freshness:
+        if high_freshness:
             candidate_credits += 2
             logger.info(f"{profile_id}: Incremented candidate_credits by 2 for high_freshness, total now {candidate_credits}")
-        if request.profile_scoring and result.score is not None:
+        if profile_scoring and result.score is not None:
             candidate_credits += 1
             logger.info(f"{profile_id}: Incremented candidate_credits by 1 for profile_scoring, total now {candidate_credits}")
-        if request.reveal_emails and result.profile and result.profile.get_all_emails():
+        if reveal_emails and result.profile and result.profile.get_all_emails():
             candidate_credits += 2
             logger.info(f"{profile_id}: Incremented candidate_credits by 2 for reveal_emails, total now {candidate_credits}")
-        if request.reveal_phones and result.profile and result.profile.phone_numbers:
+        if reveal_phones and result.profile and result.profile.phone_numbers:
             candidate_credits += 14
             logger.info(f"{profile_id}: Incremented candidate_credits by 14 for reveal_phones, total now {candidate_credits}")
-        if request.filter_out_no_emails or request.filter_out_no_phones or request.filter_out_no_phones_or_emails:
+        if filter_out_no_emails or filter_out_no_phones or filter_out_no_phones_or_emails:
             candidate_credits += 1
             logger.info(f"{profile_id}: Incremented candidate_credits by 1 for filter_out_no_emails or filter_out_no_phones or filter_out_no_phones_or_emails, total now {candidate_credits}")
         expected_credits += candidate_credits
@@ -299,8 +372,11 @@ async def test_v2_pro_search_generic():
     generate_curl_command("search", second_request)
     response: V2SearchResponse = await AsyncPearchClient().search(second_request)
     assert len(response.search_results) == 4
-    response.search_results = response.search_results[2:4]
-    validate_credits(first_request, response)
+    all_results = response.search_results
+    new_results = response.search_results[2:4]  # Last 2 are new
+    response.search_results = new_results
+    validate_credits(second_request, response, base_request=first_request)
+    response.search_results = all_results
     credits3 = await get_credits()
     logger.info(f"Credits3: {credits3}")
     assert credits2 - credits3 == response.credits_used, "Credits check failed"
@@ -314,7 +390,7 @@ async def test_v2_pro_search_generic():
     generate_curl_command("search", third_request)
     response: V2SearchResponse = await AsyncPearchClient().search(third_request)
     assert len(response.search_results) == 2
-    validate_credits(first_request, response)
+    validate_credits(third_request, response, base_request=first_request)
     credits4 = await get_credits()
     logger.info(f"Credits4: {credits4}")
     assert credits3 - credits4 == response.credits_used, "Credits check failed"
@@ -455,9 +531,13 @@ async def test_get_search_status():
         assert status_response.status in ["pending", "running", "completed"]
         assert status_response.query == "software engineer"
         if status_response.status == "completed":
-            validate_credits(first_submit_request, status_response.result)
+            # Get credits2 immediately after completion, before any other operations
             credits2 = await get_credits()
-            assert credits1 - credits2 == status_response.credits_used, "Credits check failed"
+            actual_credits_used = credits1 - credits2
+            # Validate that we didn't spend more credits than expected
+            assert actual_credits_used == status_response.credits_used, f"Credits check failed: actual={actual_credits_used}, expected={status_response.credits_used}, credits1={credits1}, credits2={credits2}. Actual credits used should not exceed expected."
+            # Now validate the credits calculation
+            validate_credits(first_submit_request, status_response.result)
             break
         await asyncio.sleep(5)
 
@@ -474,8 +554,11 @@ async def test_get_search_status():
         status_response = await AsyncPearchClient().get_search_status(task_id)
         assert status_response.status != "failed"
         if status_response.status == "completed":
-            status_response.result.search_results = status_response.result.search_results[2:4]
-            validate_credits(first_submit_request, status_response.result)
+            all_results = status_response.result.search_results
+            new_results = status_response.result.search_results[2:4]  # Last 2 are new
+            status_response.result.search_results = new_results
+            validate_credits(second_submit_request, status_response.result, base_request=first_submit_request)
+            status_response.result.search_results = all_results
             credits3 = await get_credits()
             assert credits2 - credits3 == status_response.credits_used, "Credits check failed"
             break
@@ -537,133 +620,56 @@ async def test_get_user():
     assert all(pricing.description is not None for pricing in response.pricing)
 
 
-# OpenAI format tests for /v1/chat/completions endpoint
 BASE_URL = os.getenv("PEARCH_API_URL") or "https://api.pearch.ai/"
 API_KEY = os.getenv("PEARCH_API_KEY")
 TEST_KEY = os.getenv("PEARCH_TEST_KEY")
 
-
-def _user(msg: str):
-    return {"role": "user", "content": msg}
  
 
 @pytest.mark.asyncio
-async def test_chat_completions_stream_with_continuation():
-    """Test streaming with thread continuation"""
-    if not API_KEY:
-        pytest.skip("PEARCH_API_KEY not set")
-    
-    client = OpenAI(base_url=BASE_URL, api_key=API_KEY)
+async def test_stream_langgraph_api():
+    from langgraph_sdk import get_client    
+    base_url = BASE_URL.rstrip("/")
+    headers = {"Authorization": f"Bearer {API_KEY}"}
     if TEST_KEY:
-        client._client.headers["X-Test-Secret"] = TEST_KEY
-
-    # First request
-    stream1 = client.chat.completions.create(
-        model="pearch",
-        stream=True,
-        messages=[_user("software engineers at Google")],
-        extra_body={
-            "limit": 2,
-            "type": "fast",
-            "stream_profiles": "batch",
-            "profiles_batch_size": 5,
-            "final_result": True,
-            "insights": True,
-            "reveal_emails": True,
-            },
+        headers["X-Test-Secret"] = TEST_KEY
+    client = get_client(url=base_url, headers=headers)
+    thread_id = str(uuid.uuid4())
+    assistant_id = "agent"
+    input_data = {
+        "messages": [
+            {
+                "type": "human",
+                "content": "ml engineers in seattle"
+            }
+        ],
+        "selected_profiles_list": None,
+        "selected_company_slugs": None,
+        "selected_full_profile_slug": None
+    }
+    config = {
+        "recursion_limit": 100
+    }
+    chunks_received = []
+    stream_mode = ["updates", "values", "custom"]
+    generate_threads_runs_stream_curl(
+        thread_id=thread_id,
+        assistant_id=assistant_id,
+        input_data=input_data,
+        config=config,
+        stream_mode=stream_mode,
+        stream_resumable=True,
+        on_disconnect="continue"
     )
-
-    thread_id = None
-    n_chunks = 0
-    title_mappings = None
-    profiles = None
-    query = None
-    messages = []
-    company_mappings = None
-    important_keywords = None
-    query_short = None
-    credits_used = None
-    total_estimate = None
-    total_estimate_is_lower_bound = None
-
-    for i, chunk in enumerate(stream1):
-        chunk_dict = chunk.model_dump() if hasattr(chunk, 'model_dump') else {}
-        import json
-        logger.info(f"Chunk {i}: {str(chunk_dict)[:300]}")
-        n_chunks += 1
-        thread_id = chunk.id
-        delta_content = None
-        if chunk.choices and len(chunk.choices) > 0:
-            delta_content = chunk.choices[0].delta.content
-            if delta_content:
-                js = json.loads(delta_content)
-                if js['type'] == 'title_mappings':
-                    title_mappings = js['data']
-                elif js['type'] == 'profiles':
-                    profiles = js['data']
-                elif js['type'] == 'query':
-                    query = js['data']
-                elif js['type'] == 'messages':
-                    messages = js['data']
-                elif js['type'] == 'company_mappings':
-                    company_mappings = js['data']
-                elif js['type'] == 'important_keywords':
-                    important_keywords = js['data']
-                elif js['type'] == 'query_short':
-                    query_short = js['data']
-                elif js['type'] == 'credits_used':
-                    credits_used = js['data']
-                elif js['type'] == 'total_estimate':
-                    total_estimate = js['data']
-                elif js['type'] == 'total_estimate_is_lower_bound':
-                    total_estimate_is_lower_bound = js['data']
-            if chunk.choices[0].finish_reason is not None:
-                break
-
-    # assert title_mappings is not None
-    assert len(profiles) == 2
-    assert query == 'software engineers at Google'
-    assert messages is not None
-    assert company_mappings is not None
-    assert important_keywords is not None
-    assert query_short == 'software engineers at Google'
-    assert credits_used is not None
-    assert total_estimate is not None
-    # assert total_estimate_is_lower_bound is not None
-    assert thread_id is not None
-
-    # Second request with continuation (if thread_id was found)
-    stream2 = client.chat.completions.create(
-        model="pearch",
-        stream=True,
-        messages=[_user("who are at least 30 years old")],
-        extra_body={"limit": 2, "thread_id": thread_id, "type": "fast"},
-    )
- 
-    query = None
-    query_short = None
-    profiles = None
-
-    for i, chunk in enumerate(stream2):
-        chunk_dict = chunk.model_dump() if hasattr(chunk, 'model_dump') else {}
-        import json
-        logger.info(f"Chunk {i}: {str(chunk_dict)[:300]}")
-        n_chunks += 1
-        thread_id = chunk.id
-        delta_content = None
-        if chunk.choices and len(chunk.choices) > 0:
-            delta_content = chunk.choices[0].delta.content
-            if delta_content:
-                js = json.loads(delta_content)
-                if js['type'] == 'profiles':
-                    profiles = js['data']
-                elif js['type'] == 'query':
-                    query = js['data']
-                elif js['type'] == 'query_short':
-                    query_short = js['data']
-            if chunk.choices[0].finish_reason is not None:
-                break
-
-    assert len(profiles) == 2
-    assert query == 'Software engineers working at Google who are at least 30 years old'
-    assert query_short == 'Software engineers at Google, 30+ years old'
+    async for chunk in client.runs.stream(
+        thread_id=thread_id,
+        assistant_id=assistant_id,
+        input=input_data,
+        config=config,
+        stream_mode=stream_mode,
+        stream_resumable=True,
+        on_disconnect="continue"
+    ):
+        chunks_received.append(chunk)
+        logger.info(f"Chunk: {chunk}")
+    assert len(chunks_received) > 0

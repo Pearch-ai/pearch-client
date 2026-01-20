@@ -76,10 +76,14 @@ paths:
                   description: "Enable profile scoring and reranking for better result quality. This filters out less relevant profiles and produces scores for more relevant once. Scores range from 0.0 to 4.0 where higher is better. **Cost: 1 credit per candidate**" 
                 custom_filters:
                   $ref: '#/components/schemas/CustomFilters'
+                custom_filters_mode:
+                  type: string
+                  enum: [exact, smart]
+                  description: "Mode for handling custom filters. 'exact' - only use the passed custom_filters, no LLM-generated filters. 'smart' - merge custom_filters with LLM-generated filters."
                 strict_filters:
                   type: boolean
                   default: false
-                  description: Be stricter when filtering. If true, titles must match exactly, after expanding abbreviations (e.g. 'CEO' → 'Chief Executive Officer'), or after translation (e.g. 'Ingeniero de software' → 'Software Engineer'). If false, then apply fuzzy matching as well. 
+                  description: Be stricter when filtering. If true, titles must match exactly after expanding abbreviations (e.g., "CEO" → "Chief Executive Officer") or translating (e.g., "Ingeniero de software" → "Software Engineer"). If false, fuzzy matching is also used. All other filters are always applied strictly. Enabling strict_filters improves quality but can greatly reduce the number of results. This setting only affects Pearch's implicit filtering. Custom filters are not affected and are always applied strictly.
                 filter_out_no_emails:
                   type: boolean
                   default: false
@@ -370,6 +374,10 @@ paths:
                       description: "Enable profile scoring and reranking. **Cost: 1 credit per candidate**"
                     custom_filters:
                       $ref: '#/components/schemas/CustomFilters'
+                    custom_filters_mode:
+                      type: string
+                      enum: [exact, smart]
+                      description: "Mode for handling custom filters. 'exact' - only use the passed custom_filters, no LLM-generated filters. 'smart' - merge custom_filters with LLM-generated filters."
                     strict_filters:
                       type: boolean
                       default: false
@@ -629,10 +637,14 @@ paths:
                   description: "Enable profile scoring and reranking for better result quality. This filters out less relevant profiles and produces scores for more relevant once. Scores range from 0.0 to 4.0 where higher is better. **Cost: 1 credit per candidate**" 
                 custom_filters:
                   $ref: '#/components/schemas/CustomFilters'
+                custom_filters_mode:
+                  type: string
+                  enum: [exact, smart]
+                  description: "Mode for handling custom filters. 'exact' - only use the passed custom_filters, no LLM-generated filters. 'smart' - merge custom_filters with LLM-generated filters."
                 strict_filters:
                   type: boolean
                   default: false
-                  description: Be stricter when filtering. If true, titles must match exactly, after expanding abbreviations (e.g. 'CEO' → 'Chief Executive Officer'), or after translation (e.g. 'Ingeniero de software' → 'Software Engineer'). If false, then apply fuzzy matching as well. 
+                  description: Be stricter when filtering. If true, titles must match exactly after expanding abbreviations (e.g., "CEO" → "Chief Executive Officer") or translating (e.g., "Ingeniero de software" → "Software Engineer"). If false, fuzzy matching is also used. All other filters are always applied strictly. Enabling strict_filters improves quality but can greatly reduce the number of results. This setting only affects Pearch's implicit filtering. Custom filters are not affected and are always applied strictly.
                 filter_out_no_emails:
                   type: boolean
                   default: false
@@ -1291,19 +1303,29 @@ paths:
         - Test this endpoint in the [playground](https://chat.pearch.ai/api-enrichment)
         - Check out official [Python client](https://github.com/Pearch-ai/pearch-client)        
         
-        Retrieve enriched user profile based on the provided Linkedin profile ID as a query parameter. Linkedin profile ID is the part that comes after `https://www.linkedin.com/in/` in the profile URL.
+        Retrieve enriched user profile based on the provided Linkedin profile ID or email address as a query parameter. Linkedin profile ID is the part that comes after `https://www.linkedin.com/in/` in the profile URL.
+        
+        You can provide either `docid` (LinkedIn profile ID) or `email`. If only `email` is provided, the system will attempt to resolve it to a LinkedIn profile.
 
-        **Cost: 1 credit + extra credits for each of `high_freshness`, `reveal_emails`, `reveal_phones` and `with_profile` parameters if enabled**
+        **Cost: 1 credit + extra credits for each of `high_freshness`, `reveal_emails`, `reveal_phones` and `with_profile` parameters if enabled. Email lookup adds +1 credit.**
       security:
         - bearerAuth: []
       parameters:
         - name: docid
           in: query
-          required: true
+          required: false
           schema:
             type: string
-          description: The linkedin profile ID of the profile to retrieve. Linkedin profile ID is the part that comes after `https://www.linkedin.com/in/` in the profile URL.
+          description: The linkedin profile ID of the profile to retrieve. Linkedin profile ID is the part that comes after `https://www.linkedin.com/in/` in the profile URL. Either `docid` or `email` must be provided.
           example: "hrachik"
+        - name: email
+          in: query
+          required: false
+          schema:
+            type: string
+            format: email
+          description: "Email address to look up. If provided without `docid`, the system will resolve the email to a LinkedIn profile.  **Cost: +1 credit for email lookup**"
+          example: "mz@pearch.ai"
         - name: high_freshness
           in: query
           required: false
@@ -1351,7 +1373,7 @@ paths:
         "404":
           description: Profile not found
         "400":
-          description: Invalid parameter values. JSON body contains the error message.
+          description: Invalid parameter values or missing required parameters. At least one of `docid` or `email` must be provided. JSON body contains the error message.
 
   /v1/user:
     get:
@@ -1428,7 +1450,9 @@ components:
       type: object
       description: |
         Custom filters in JSON format for advanced filtering. Leave empty to use default filtering logic. 
-        Format: `{"filter_name1": ["value1", "value2"], "filter_name2": ["value3", "value4"], ...}`. This is applied as boolean filters `(filter_name1=value1 OR filter_name1=value2) AND (filter_name2=value3 OR filter_name2=value4)` etc.
+        Format: `{"filter_name1": ["value1", "value2"], "filter_name2": ["value3", "value4"], ...}`. 
+        
+        Filtering logic: Conditions between different keys are joined with "AND", so all conditions must pass. Within each condition, we always use "OR". For example, `{"titles": ["swe", "mle"]}` means the profile must have either "swe" OR "mle" as a title. If you specify multiple keys like `{"titles": ["swe", "mle"], "locations": ["San Francisco"]}`, the profile must match at least one title (swe OR mle) AND be in San Francisco.
         
         Use any string values as is. Pearch.ai internally correctly matches them to profile data. E.g. you may pass `{"industries": "health"}` to filter for profiles in health industry, this will be correctly mapped to pearch.ai internal `healthcare` industry. 
         If you want to force no filtering at all (`custom_filters` or default filters), pass empty object `"custom_filters": {}`. This will speed up search, increase recall at some relevancy cost.
