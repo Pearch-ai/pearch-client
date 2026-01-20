@@ -154,14 +154,14 @@ async def test_find_matching_jobs():
 @pytest.mark.asyncio
 async def test_profile():
     credits1 = await get_credits()
-    request = V1ProfileRequest(docid="vslaykovsky", show_emails=True, show_phone_numbers=True)
+    request = V1ProfileRequest(docid="vslaykovsky", reveal_emails=True, reveal_phones=True)
     generate_curl_command("get_profile", request)
     response: V1ProfileResponse = await AsyncPearchClient().get_profile(request)
     assert response.credits_used == 2 * (0 if not response.profile.get_all_emails() else 1) + 14 * (0 if not response.profile.all_phone_numbers() else 1)
     credits2 = await get_credits()
     assert credits1 - credits2 == response.credits_used, "Credits check failed"
 
-    request = V1ProfileRequest(docid="victorsunden", show_emails=True, high_freshness=True, show_phone_numbers=True, with_profile=True)
+    request = V1ProfileRequest(docid="victorsunden", reveal_emails=True, high_freshness=True, reveal_phones=True, with_profile=True)
     generate_curl_command("get_profile", request)
     response: V1ProfileResponse = await AsyncPearchClient().get_profile(request)
     assert "victor" in response.profile.first_name.lower()
@@ -263,21 +263,21 @@ def validate_credits(request: V2SearchRequest, response: V2SearchResponse | V2Se
         insights = base_request.insights if base_request.insights is not None else (request.insights if request.insights is not None else True)
         high_freshness = base_request.high_freshness if base_request.high_freshness is not None else (request.high_freshness if request.high_freshness is not None else False)
         profile_scoring = base_request.profile_scoring if base_request.profile_scoring is not None else (request.profile_scoring if request.profile_scoring is not None else True)
-        show_emails = base_request.show_emails if base_request.show_emails is not None else (request.show_emails if request.show_emails is not None else False)
-        show_phone_numbers = base_request.show_phone_numbers if base_request.show_phone_numbers is not None else (request.show_phone_numbers if request.show_phone_numbers is not None else False)
-        require_emails = base_request.require_emails if base_request.require_emails is not None else (request.require_emails if request.require_emails is not None else False)
-        require_phone_numbers = base_request.require_phone_numbers if base_request.require_phone_numbers is not None else (request.require_phone_numbers if request.require_phone_numbers is not None else False)
-        require_phones_or_emails = base_request.require_phones_or_emails if base_request.require_phones_or_emails is not None else (request.require_phones_or_emails if request.require_phones_or_emails is not None else False)
+        reveal_emails = base_request.reveal_emails if base_request.reveal_emails is not None else (base_request.show_emails if base_request.show_emails is not None else (request.reveal_emails if request.reveal_emails is not None else (request.show_emails if request.show_emails is not None else False)))
+        reveal_phones = base_request.reveal_phones if base_request.reveal_phones is not None else (base_request.show_phone_numbers if base_request.show_phone_numbers is not None else (request.reveal_phones if request.reveal_phones is not None else (request.show_phone_numbers if request.show_phone_numbers is not None else False)))
+        filter_out_no_emails = base_request.filter_out_no_emails if base_request.filter_out_no_emails is not None else (base_request.require_emails if base_request.require_emails is not None else (request.filter_out_no_emails if request.filter_out_no_emails is not None else (request.require_emails if request.require_emails is not None else False)))
+        filter_out_no_phones = base_request.filter_out_no_phones if base_request.filter_out_no_phones is not None else (base_request.require_phone_numbers if base_request.require_phone_numbers is not None else (request.filter_out_no_phones if request.filter_out_no_phones is not None else (request.require_phone_numbers if request.require_phone_numbers is not None else False)))
+        filter_out_no_phones_or_emails = base_request.filter_out_no_phones_or_emails if base_request.filter_out_no_phones_or_emails is not None else (base_request.require_phones_or_emails if base_request.require_phones_or_emails is not None else (request.filter_out_no_phones_or_emails if request.filter_out_no_phones_or_emails is not None else (request.require_phones_or_emails if request.require_phones_or_emails is not None else False)))
     else:
         type_val = request.type if request.type is not None else "pro"
         insights = request.insights if request.insights is not None else True
         high_freshness = request.high_freshness if request.high_freshness is not None else False
         profile_scoring = request.profile_scoring if request.profile_scoring is not None else True
-        show_emails = request.show_emails if request.show_emails is not None else False
-        show_phone_numbers = request.show_phone_numbers if request.show_phone_numbers is not None else False
-        require_emails = request.require_emails if request.require_emails is not None else False
-        require_phone_numbers = request.require_phone_numbers if request.require_phone_numbers is not None else False
-        require_phones_or_emails = request.require_phones_or_emails if request.require_phones_or_emails is not None else False
+        reveal_emails = request.reveal_emails if request.reveal_emails is not None else (request.show_emails if request.show_emails is not None else False)
+        reveal_phones = request.reveal_phones if request.reveal_phones is not None else (request.show_phone_numbers if request.show_phone_numbers is not None else False)
+        filter_out_no_emails = request.filter_out_no_emails if request.filter_out_no_emails is not None else (request.require_emails if request.require_emails is not None else False)
+        filter_out_no_phones = request.filter_out_no_phones if request.filter_out_no_phones is not None else (request.require_phone_numbers if request.require_phone_numbers is not None else False)
+        filter_out_no_phones_or_emails = request.filter_out_no_phones_or_emails if request.filter_out_no_phones_or_emails is not None else (request.require_phones_or_emails if request.require_phones_or_emails is not None else False)
     
     expected_credits = 0   
     for result in response.search_results:
@@ -298,18 +298,18 @@ def validate_credits(request: V2SearchRequest, response: V2SearchResponse | V2Se
         if profile_scoring and result.score is not None:
             candidate_credits += 1
             logger.info(f"{profile_id}: Incremented candidate_credits by 1 for profile_scoring, total now {candidate_credits}")
-        if show_emails and result.profile and result.profile.get_all_emails():
+        if reveal_emails and result.profile and result.profile.get_all_emails():
             candidate_credits += 2
-            logger.info(f"{profile_id}: Incremented candidate_credits by 2 for show_emails, total now {candidate_credits}")
-        if show_phone_numbers and result.profile and result.profile.phone_numbers:
+            logger.info(f"{profile_id}: Incremented candidate_credits by 2 for reveal_emails, total now {candidate_credits}")
+        if reveal_phones and result.profile and result.profile.phone_numbers:
             candidate_credits += 14
-            logger.info(f"{profile_id}: Incremented candidate_credits by 14 for show_phone_numbers, total now {candidate_credits}")
-        if require_emails or require_phone_numbers or require_phones_or_emails:
+            logger.info(f"{profile_id}: Incremented candidate_credits by 14 for reveal_phones, total now {candidate_credits}")
+        if filter_out_no_emails or filter_out_no_phones or filter_out_no_phones_or_emails:
             candidate_credits += 1
-            logger.info(f"{profile_id}: Incremented candidate_credits by 1 for require_emails or require_phone_numbers or require_phones_or_emails, total now {candidate_credits}")
+            logger.info(f"{profile_id}: Incremented candidate_credits by 1 for filter_out_no_emails or filter_out_no_phones or filter_out_no_phones_or_emails, total now {candidate_credits}")
         expected_credits += candidate_credits
         logger.info(f"{profile_id}: Added candidate_credits {candidate_credits} to expected_credits, expected_credits now {expected_credits}")
-    assert response.credits_used == expected_credits    
+    assert response.credits_used == expected_credits or response.credits_used_total == expected_credits
 
 
 
@@ -320,13 +320,13 @@ async def test_v2_fast_search():
         query="Find me engineers in California speaking at least basic english working in software industry with experience at FAANG with 2+ years of experience and at least 500 followers and at least BS degree",
         type="fast",
         limit=2,
-        show_emails=True,
-        show_phone_numbers=True,
+        reveal_emails=True,
+        reveal_phones=True,
         insights=True,
         high_freshness=True,
         profile_scoring=True,
-        require_emails=True,
-        require_phone_numbers=True,        
+        filter_out_no_emails=True,
+        filter_out_no_phones=True,        
     )
     generate_curl_command("search", first_request)
     response: V2SearchResponse = await AsyncPearchClient().search(first_request)
@@ -345,13 +345,13 @@ async def test_v2_pro_search_generic():
     first_request = V2SearchRequest(
         query="Find me engineers in California speaking at least basic english working in software industry with experience at FAANG with 2+ years of experience and at least 500 followers and at least BS degree",
         limit=2,
-        show_emails=True,
-        show_phone_numbers=True,
+        reveal_emails=True,
+        reveal_phones=True,
         insights=True,
         high_freshness=True,
         profile_scoring=True,
-        require_emails=True,
-        require_phone_numbers=True,        
+        filter_out_no_emails=True,
+        filter_out_no_phones=True,        
     )
     generate_curl_command("search", first_request)
     response: V2SearchResponse = await AsyncPearchClient().search(first_request)
@@ -443,8 +443,8 @@ def validate_company_leads_credits(request: V2SearchCompanyLeadsRequest, respons
             expected_credits += outreach_credits
             logger.info(f"Added {outreach_credits} credits for outreach_message_instruction ({leads_with_outreach} leads with outreach messages * 3), total now {expected_credits}")
         
-        # show_emails: 3 credits per lead (optional)
-        if request.show_emails:
+        # reveal_emails: 3 credits per lead (optional)
+        if request.reveal_emails:
             # Only count leads that actually have emails
             leads_with_emails = 0
             if response.search_results:
@@ -455,10 +455,10 @@ def validate_company_leads_credits(request: V2SearchCompanyLeadsRequest, respons
                                 leads_with_emails += 1
             email_credits = leads_with_emails * 3
             expected_credits += email_credits
-            logger.info(f"Added {email_credits} credits for show_emails ({leads_with_emails} leads with emails * 3), total now {expected_credits}")
+            logger.info(f"Added {email_credits} credits for reveal_emails ({leads_with_emails} leads with emails * 3), total now {expected_credits}")
         
-        # show_phone_numbers: 8 credits per lead (optional)
-        if request.show_phone_numbers:
+        # reveal_phones: 8 credits per lead (optional)
+        if request.reveal_phones:
             # Only count leads that actually have phone numbers
             leads_with_phones = 0
             if response.search_results:
@@ -469,13 +469,13 @@ def validate_company_leads_credits(request: V2SearchCompanyLeadsRequest, respons
                                 leads_with_phones += 1
             phone_credits = leads_with_phones * 8
             expected_credits += phone_credits
-            logger.info(f"Added {phone_credits} credits for show_phone_numbers ({leads_with_phones} leads with phones * 8), total now {expected_credits}")
+            logger.info(f"Added {phone_credits} credits for reveal_phones ({leads_with_phones} leads with phones * 8), total now {expected_credits}")
         
-        # require_emails: 1 credit per candidate (optional)
-        if request.require_emails or request.require_phone_numbers or request.require_phones_or_emails:
+        # filter_out_no_emails: 1 credit per candidate (optional)
+        if request.filter_out_no_emails or request.filter_out_no_phones or request.filter_out_no_phones_or_emails:
             require_email_credits = total_leads * 1
             expected_credits += require_email_credits
-            logger.info(f"Added {require_email_credits} credits for require_* ({total_leads} leads * 1), total now {expected_credits}")
+            logger.info(f"Added {require_email_credits} credits for filter_out_* ({total_leads} leads * 1), total now {expected_credits}")
         
         # high_freshness: 1 credit per lead (optional)
         if request.high_freshness:
@@ -495,7 +495,7 @@ async def test_search_company_leads():
         outreach_message_instruction="<300 characters, email style, casual",
         limit=20,
         leads_limit=2,
-        show_emails=True,
+        reveal_emails=True,
     )
     generate_curl_command("search_company_leads", request)
     response = await AsyncPearchClient().search_company_leads(request)
@@ -563,6 +563,36 @@ async def test_get_search_status():
             assert credits2 - credits3 == status_response.credits_used, "Credits check failed"
             break
         await asyncio.sleep(5)
+
+ 
+
+@pytest.mark.asyncio
+async def test_async_search_v2():
+    credits1 = await get_credits()
+    first_request = V2SearchRequest(
+        query="software engineer",
+        type="fast",
+        limit=2,
+        async_=True,
+    )
+    generate_curl_command("search", first_request)
+    response = await AsyncPearchClient().search(first_request)
+
+    check_results = V2SearchRequest(
+        thread_id=response.thread_id,
+        limit=None,
+    )
+
+    while True:
+        results = await AsyncPearchClient().search(check_results)
+        if results.status == "Done":
+            validate_credits(first_request, results)
+            credits2 = await get_credits()
+            assert credits1 - credits2 == results.credits_used_total, "Credits check failed"
+            break
+        await asyncio.sleep(5)
+    
+
 
 
 @pytest.mark.asyncio
@@ -643,6 +673,3 @@ async def test_stream_langgraph_api():
         chunks_received.append(chunk)
         logger.info(f"Chunk: {chunk}")
     assert len(chunks_received) > 0
-    
-
- 

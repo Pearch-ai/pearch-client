@@ -103,6 +103,8 @@ class Education(BaseModel):
     specialization: str | None = None
     degree: List[str] | None = None
     major: str | None = None
+    start_date: Date | None = None
+    end_date: Date | None = None
     model_config = ConfigDict(extra="ignore")
 
 
@@ -275,6 +277,7 @@ class V2SearchResponse(BaseModel):
     total_estimate_is_lower_bound: bool | None = None
     credits_remaining: int | None = None
     credits_used: int | None = None
+    credits_used_total: int | None = None
     search_results: List[ScoredProfile] | None = Field(default_factory=list)
     model_config = ConfigDict(extra="ignore")
 
@@ -385,21 +388,29 @@ class CustomFilters(BaseModel):
 class V2SearchRequest(BaseModel):
     query: str | None = None
     thread_id: str | None = None
-    type: Literal["fast", "pro"] | None = "pro"
+    type: Literal["superfast", "fast", "pro"] | None = "pro"
     insights: bool | None = True
     high_freshness: bool | None = False
     profile_scoring: bool | None = True
     custom_filters: CustomFilters | None = None
     custom_filters_mode: CustomFiltersMode | None = None
     strict_filters: bool | None = False
-    require_emails: bool | None = False
-    show_emails: bool | None = False
-    require_phone_numbers: bool | None = False
-    require_phones_or_emails: bool | None = False
-    show_phone_numbers: bool | None = False
+    filter_out_no_emails: bool | None = False
+    reveal_emails: bool | None = False
+    filter_out_no_phones: bool | None = False
+    filter_out_no_phones_or_emails: bool | None = False
+    reveal_phones: bool | None = False
     limit: int | None = Field(default=10, ge=1, le=1000)
+    offset: int | None = Field(default=0, ge=0)
     docid_blacklist: List[str] | None = None
-    model_config = ConfigDict(extra="ignore")
+    docid_whitelist: List[str] | None = None
+    require_emails: bool | None = None
+    show_emails: bool | None = None
+    require_phone_numbers: bool | None = None
+    require_phones_or_emails: bool | None = None
+    show_phone_numbers: bool | None = None
+    async_: bool | None = Field(default=None, alias="async")
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
 
 
 class V2SearchCompanyLeadsRequest(BaseModel):
@@ -409,20 +420,26 @@ class V2SearchCompanyLeadsRequest(BaseModel):
     outreach_message_instruction: str | None = None
     limit: int | None = Field(default=50, ge=1, le=1000)
     leads_limit: int | None = Field(default=3, ge=1, le=10)
-    show_emails: bool | None = False
-    show_phone_numbers: bool | None = False
-    require_emails: bool | None = False
-    require_phone_numbers: bool | None = False
-    require_phones_or_emails: bool | None = False
+    reveal_emails: bool | None = False
+    reveal_phones: bool | None = False
+    filter_out_no_emails: bool | None = False
+    filter_out_no_phones: bool | None = False
+    filter_out_no_phones_or_emails: bool | None = False
     high_freshness: bool | None = False
     company_high_freshness: bool | None = False
     select_top_leads: bool | None = True
+    show_emails: bool | None = None
+    show_phone_numbers: bool | None = None
+    require_emails: bool | None = None
+    require_phone_numbers: bool | None = None
+    require_phones_or_emails: bool | None = None
     model_config = ConfigDict(extra="ignore")
 
 
 class V1SearchRequest(BaseModel):
     query: str | None = None
     type: str | None = None
+    filter_out_no_emails: bool | None = None
     require_emails: bool | None = None
     limit: int | None = None
     model_config = ConfigDict(extra="ignore")
@@ -456,9 +473,11 @@ class V1FindMatchingJobsRequest(BaseModel):
 class V1ProfileRequest(BaseModel):
     docid: str
     high_freshness: bool | None = False
-    show_emails: bool | None = False
-    show_phone_numbers: bool | None = False
+    reveal_emails: bool | None = False
+    reveal_phones: bool | None = False
     with_profile: bool | None = False
+    show_emails: bool | None = None
+    show_phone_numbers: bool | None = None
     model_config = ConfigDict(extra="ignore")
 
 
@@ -486,6 +505,7 @@ class V2SearchStatusResponse(BaseModel):
 
 class ApiCallHistoryEntry(BaseModel):
     uuid: str | None = None
+    thread_id: str | None = None
     path: str | None = None
     parameters: Dict[str, Any] | None = None
     items_count: int | None = None

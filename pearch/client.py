@@ -213,7 +213,7 @@ class PearchClient:
         response_data = self._make_request(
             method="POST",
             endpoint="v2/search",
-            data=request.model_dump(exclude_none=True),
+            data=request.model_dump(exclude_none=True, by_alias=True),
         )
 
         return V2SearchResponse(**response_data)
@@ -618,7 +618,7 @@ class AsyncPearchClient:
         response_data = await self._make_request(
             method="POST",
             endpoint="v2/search",
-            data=request.model_dump(exclude_none=True),
+            data=request.model_dump(exclude_none=True, by_alias=True),
         )
 
         return V2SearchResponse(**response_data)
