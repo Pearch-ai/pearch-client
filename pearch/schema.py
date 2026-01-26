@@ -220,6 +220,7 @@ class QueryInsight(BaseModel):
     match_level: str | None = None
     priority: str | None = None
     short_rationale: str | None = None
+    rationale: str | None = None
     subquery: str | None = None
     short_quotes: List[str] | None = Field(default_factory=list)
     model_config = ConfigDict(extra="ignore")

@@ -2205,7 +2205,11 @@ components:
                   short_rationale:
                     type: string
                     description: Concise version of the rationale.
-                    example: "3+ years as a software engineer"
+                    example: "3+ years as a SWE"
+                  rationale:
+                    type: string
+                    description: Full version of the rationale.
+                    example: "3+ years as a Software Engineer"
                   subquery:
                     type: string
                     description: Specific subquery analyzed for this insight.
