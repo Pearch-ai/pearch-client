@@ -147,6 +147,12 @@ async def test_find_matching_jobs():
     response: V1FindMatchingJobsResponse = await AsyncPearchClient().find_matching_jobs(request)
     assert response.jobs
     assert any(job.job_id for job in response.jobs)
+    assert response.jobs[0].insights is not None, "Insights should be not None"
+    assert response.jobs[0].insights.query_insights is not None, "Query insights should be not None"
+    assert response.jobs[0].insights.query_insights[0].rationale is not None, "Rationale should be not None"
+    assert response.jobs[0].insights.query_insights[0].short_rationale is not None, "Short rationale should be not None"
+    assert response.jobs[0].insights.query_insights[0].subquery is not None, "Subquery should be not None"
+
     assert response.credits_used == len(response.jobs) * 1
     credits2 = await get_credits()
     assert credits1 - credits2 == response.credits_used, "Credits check failed"
