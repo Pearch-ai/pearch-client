@@ -2187,8 +2187,23 @@ components:
           example: "Dayton, Ohio, United States"
         location_info:
           type: object
-          description: Structured location information
-          additionalProperties: true
+          description: Structured location information, including latitude, longitude, and country code
+          properties:
+            lat:
+              type: number
+              format: float
+              description: Latitude of the location
+              example: 37.7749
+            lng:
+              type: number
+              format: float
+              description: Longitude of the location
+              example: -122.4194
+            country_code:
+              type: string
+              description: ISO 3166-1 alpha-2 country code (e.g., "US", "IN")
+              example: "US"
+          additionalProperties: false
         experience_summary:
           type: string
           description: Summary of responsibilities and accomplishments in this role
