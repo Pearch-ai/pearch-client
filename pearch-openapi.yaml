@@ -1443,6 +1443,339 @@ paths:
         "401":
           description: Invalid API key
 
+  /threads/{thread_id}/state:
+    get:
+      operationId: get_threads_thread_id_state
+      summary: Get thread state
+      tags:
+        - Search with streaming
+      description: |
+        Retrieve the current state of a thread. This endpoint returns the thread's state values, metadata, and checkpoint information.
+        This endpoint is LangGraph API compatible with LangGraph SDK. 
+        
+        See LangSmith API definition: https://docs.langchain.com/langsmith/agent-server-api/threads/get-thread-state
+   
+        If the thread is not found, an empty state is returned.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: thread_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Unique identifier for the thread
+          example: "823cdda6-eb2c-49e9-9173-f13f40ed100c"
+      responses:
+        "200":
+          description: Thread state retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  next:
+                    type: array
+                    description: Next steps or nodes in the thread execution
+                    items:
+                      type: string
+                    example: []
+                  tasks:
+                    type: array
+                    description: Tasks associated with the thread
+                    items:
+                      type: object
+                    example: []
+                  metadata:
+                    type: object
+                    description: Additional metadata for the thread
+                    additionalProperties: true
+                    example: {}
+                  created_at:
+                    type: string
+                    description: ISO 8601 timestamp when the thread was created
+                    example: "2024-01-15T10:30:00Z"
+                  checkpoint:
+                    type: object
+                    description: Current checkpoint information
+                    additionalProperties: true
+                    example: {}
+                  parent_checkpoint:
+                    type: object
+                    description: Parent checkpoint information
+                    additionalProperties: true
+                    example: {}
+                  interrupts:
+                    type: array
+                    description: List of interrupts for the thread
+                    items:
+                      type: object
+                    example: []
+                  checkpoint_id:
+                    type: string
+                    nullable: true
+                    description: Identifier for the current checkpoint
+                    example: null
+                  parent_checkpoint_id:
+                    type: string
+                    nullable: true
+                    description: Identifier for the parent checkpoint
+                    example: null
+                  values:
+                    type: object
+                    description: Current state values of the thread (filtered to only include valid output keys)
+                    additionalProperties: true
+                    example:
+                      messages: []
+                      profiles: []
+        "404":
+          description: Thread not found (returns empty state)
+        "401":
+          description: Invalid API key
+        "500":
+          description: Internal server error
+
+  /threads/{thread_id}/runs:
+    post:
+      operationId: post_threads_thread_id_runs
+      summary: Search and stream output
+      tags:
+        - Search with streaming
+      description: |
+        Create a new run for a thread and stream the output as Server-Sent Events (SSE). This endpoint executes a search query within a thread context and streams the results in real-time.
+
+        This API is a LangGraph API compatible with LangGraph SDK.
+        
+        API definition: https://docs.langchain.com/langsmith/agent-server-api/thread-runs/create-run-stream-output
+        
+        Official TypeScript implementation: https://github.com/langchain-ai/langgraphjs/blob/main/libs/langgraph-api/src/api/runs.mts#L354-L392
+        
+        The endpoint supports multiple streaming modes:
+        - `updates`: Stream updates as they occur in the graph execution
+        - `values`: Stream the current state values after each update
+        - `custom`: Stream custom events
+        
+        The response is a Server-Sent Events (SSE) stream with `text/event-stream` content type. Each event contains the stream mode and data.
+        
+        **Cost: (number of profiles returned) × (sum of credits for each of `type`, `insights`, `profile_scoring`, `high_freshness`, `reveal_emails`, `reveal_phones`)**
+        
+        Example request (Python):
+        ```python
+        from langgraph_sdk import get_client    
+        headers = {"Authorization": f"Bearer {API_KEY}"}
+        client = get_client(url=base_url, headers=headers)
+        thread_id = str(uuid.uuid4())
+        input_data = {
+            "messages": [
+                {
+                    "type": "human",
+                    "content": "ml engineers in seattle"
+                }
+            ],
+        }
+        chunks_received = []
+        stream_mode = ["updates", "values", "custom"]
+        print(f"Starting stream. {thread_id=} {input_data=}")
+        async for chunk in client.runs.stream(
+            thread_id=thread_id,
+            assistant_id="agent",
+            input=input_data,
+            config={},
+            stream_mode=stream_mode,
+        ):
+            chunks_received.append(chunk)
+            print(chunk)
+        ```
+        Example output: https://gist.github.com/vslaykovsky/419c9e8348cab643fa8814f2eb6ad120
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: thread_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Unique identifier for the thread
+          example: "823cdda6-eb2c-49e9-9173-f13f40ed100c"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - input
+              properties:
+                input:
+                  type: object
+                  required:
+                    - messages
+                  description: Input data for the run
+                  properties:
+                    messages:
+                      type: array
+                      description: Array of messages for the run. At least one human message with content is required.
+                      items:
+                        type: object
+                        required:
+                          - type
+                          - content
+                        properties:
+                          type:
+                            type: string
+                            enum: [human]
+                            description: Type of message (currently only "human" is supported)
+                            example: "human"
+                          content:
+                            type: string
+                            description: Content of the message. Must be non-empty.
+                            example: "ml engineers in seattle"
+                      minItems: 1
+                      example:
+                        - type: "human"
+                          content: "ml engineers in seattle"
+                    selected_profiles_list:
+                      type: array
+                      nullable: true
+                      description: List of selected profiles
+                      items:
+                        type: object
+                      example: null
+                    selected_company_slugs:
+                      type: array
+                      nullable: true
+                      description: List of selected company slugs
+                      items:
+                        type: string
+                      example: null
+                    selected_full_profile_slug:
+                      type: string
+                      nullable: true
+                      description: Selected full profile slug
+                      example: null
+                config:
+                  type: object
+                  description: Configuration for the run
+                  properties:
+                    recursion_limit:
+                      type: integer
+                      description: Maximum recursion limit for the graph execution
+                      default: 100
+                      example: 100
+                    limit:
+                      type: integer
+                      description: Maximum number of results to return
+                      example: 10
+                    type:
+                      type: string
+                      enum: [fast, pro]
+                      description: Type of search to perform
+                      example: "pro"
+                    insights:
+                      type: boolean
+                      description: Enable detailed insights
+                      example: true
+                    profile_scoring:
+                      type: boolean
+                      description: Enable profile scoring
+                      example: true
+                    high_freshness:
+                      type: boolean
+                      description: Enable real-time profile updates
+                      example: false
+                    reveal_emails:
+                      type: boolean
+                      description: Include email addresses in results
+                      example: false
+                    reveal_phones:
+                      type: boolean
+                      description: Include phone numbers in results
+                      example: false
+                    custom_filters:
+                      $ref: '#/components/schemas/CustomFilters'
+                    strict_filters:
+                      type: boolean
+                      description: Be stricter when filtering
+                      example: false
+                    filter_out_no_emails:
+                      type: boolean
+                      description: Only return profiles with at least one email address
+                      example: false
+                    filter_out_no_phones:
+                      type: boolean
+                      description: Only return profiles with at least one phone number
+                      example: false
+                    filter_out_no_phones_or_emails:
+                      type: boolean
+                      description: Only return profiles with at least one phone number OR email address
+                      example: false
+                  additionalProperties: true
+                  example:
+                    recursion_limit: 100
+                stream_mode:
+                  type: array
+                  description: List of streaming modes to enable. Can include "updates", "values", and "custom". Defaults to ["values"] if not specified.
+                  items:
+                    type: string
+                    enum: [updates, values, custom]
+                  default: ["values"]
+                  example: ["updates", "values", "custom"]
+                stream_resumable:
+                  type: boolean
+                  description: Whether the stream is resumable
+                  default: false
+                  example: true
+                assistant_id:
+                  type: string
+                  description: Identifier for the assistant to use
+                  default: "agent"
+                  example: "agent"
+                on_disconnect:
+                  type: string
+                  description: Behavior when client disconnects. Can be "continue" to keep processing or "stop" to abort.
+                  example: "continue"
+      responses:
+        "200":
+          description: Stream of Server-Sent Events containing run updates
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                description: |
+                  Server-Sent Events stream. Each event has the format:
+                  
+                  ```
+                  event: <mode>
+                  data: <json_data>
+                  
+                  ```
+                  
+                  Where `<mode>` is one of "updates", "values", "custom", or "heartbeat", and `<json_data>` is the JSON-encoded data for that event.
+                  
+                  The stream includes:
+                  - `updates` events: Graph execution updates as they occur
+                  - `values` events: Current state values after each update
+                  - `custom` events: Custom events from the graph
+                  - `heartbeat` events: Keep-alive events sent every 15 seconds if no activity
+                  
+                  The stream ends when a `null` event is sent.
+              example: |
+                event: values
+                data: {"linkedin_slugs": ["profile1", "profile2"]}
+                
+                event: updates
+                data: {"node_name": {"key": "value"}}
+                
+                event: heartbeat
+                
+        "400":
+          description: Bad request (e.g., missing messages, invalid JSON, empty query content)
+        "401":
+          description: Invalid API key
+        "500":
+          description: Internal server error
+
+   
 components:
   schemas:
     
