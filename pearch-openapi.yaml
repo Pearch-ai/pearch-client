@@ -26,11 +26,21 @@ paths:
         - Check out official [Python client](https://github.com/Pearch-ai/pearch-client)        
         
         Run a search query. This accepts a natural language query as `query` parameter along with additional settings. It returns a list of profiles that match the query and orders them by relevance.
-        The query can be a simple search query like "software engineer from Ohio" or a more complex query like "Find me engineers in California speaking at least basic english working in software industry with experience at FAANG with 2+ years of experience and at least 500 followers and at least BS degree".
+        The query can be:
+        - a simple search query like "software engineer from Ohio"
+        - a more complex query like "Find me engineers in California speaking at least basic english working in software industry with experience at FAANG with 2+ years of experience and at least 500 followers and at least BS degree".
+        - a full JD-style query that describes the ideal candidate in detail along with job description, responsibilities, requirements, etc.
+
+        If the query is already structured (for example JSON, structured text, or a boolean expression), you have two main options:
+        - Use the query parameter and pass the structured query as is. This is the simplest approach. Pearch.ai will interpret structured parts and priorities written in free-form text (such as “must have” or “very important”).
+        - Use the custom_filters parameter and map some or all structured parts to it. This gives you more control over filtering.
+
         Use parameters to control tradeoffs between speed and quality. Here are some recipes:        
         - For highest quality results (30-180 seconds) use pro search with insights and profile scoring enabled: `{"query": "<YOUR QUERY HERE>", "type": "pro", "insights": true, "profile_scoring": true}`
         - For medium to high quality results use "fast" search (<30s). `{"query": "<YOUR QUERY HERE>", "type": "fast", "insights": true, "profile_scoring": true}`
         - If you want to implement pagination, pass the `thread_id` of the previous request to the next request with increased `limit`. 
+
+        Results are generally returned in the order of decreasing relevancy. However, you may notice results with out of order `score` values in some cases especially when requesting large number of results. It should be safe to use stable sorting by `score` field on the client side in this cases. Note that `score` field is only calculated and returned when `profile_scoring=true`.
 
         Check out other parameters below to adjust speed vs quality and additional data that can be returned by the endpoint. 
 
@@ -173,7 +183,7 @@ paths:
                     example: "Done"
                   total_estimate:
                     type: integer
-                    description: The estimated total number of search results available.
+                    description: The estimated total number of search results available. See also `total_estimate_is_lower_bound` to understand if the estimate is a lower bound. Search is currently capped at 1000 results regardless of `total_estimate_is_lower_bound` value, future search vesions will significantly increase this limit.
                     example: 1000
                   total_estimate_is_lower_bound:
                     type: boolean
@@ -202,229 +212,7 @@ paths:
         "400":
           description: Invalid parameter values. JSON body contains the error message.
 
-  /chat/completions:
-    post:
-      operationId: post_chat-completions
-      summary: OpenAI-compatible chat completions (streaming search)
-      tags:
-        - Search
-      x-readme:
-        explorer-enabled: false
-      description: |
-        OpenAI-compatible chat completions endpoint that performs streaming search. 
-        This endpoint accepts the standard OpenAI chat completions format and returns search results in a streaming format.
-        
-        The endpoint extracts the query from the last user message in the `messages` array and performs a search. 
-        All search parameters are passed via the `extra_body` field.
-        
-        **Important**: This endpoint always returns a streaming response (SSE format), even when `stream=False` is specified.
-        You should always use `stream=True` and process the response as a stream.
-        
-        The response format follows OpenAI's streaming chat completions format, making it compatible with OpenAI client libraries.
-        
-        **Example:**
-        ```python
-        from openai import OpenAI
-        
-        client = OpenAI(
-            base_url="https://api.pearch.ai/",
-            api_key="your-api-key"
-        )
-        
-        stream = client.chat.completions.create(
-            model="pearch",
-            stream=True,
-            messages=[{"role": "user", "content": "software engineers at Google with 10 years of experience"}],
-            extra_body={
-                "limit": 5,
-                "type": "fast",
-                "stream_profiles": "batch",
-                "final_result": True
-            }
-        )
-        
-        for chunk in stream:
-            if chunk.choices and len(chunk.choices) > 0:
-                delta = chunk.choices[0].delta
-                if delta and delta.content:
-                    print(delta.content, end="", flush=True)
-                if chunk.choices[0].finish_reason is not None:
-                    print(f"\nFinished: {chunk.choices[0].finish_reason}")
-        ```
-        
-        **Available Parameters in `extra_body`:**
-        - `limit`: Maximum number of results (1-1000, default: 10)
-        - `type`: Search type - "fast" (1 credit/candidate), or "pro" (5 credits/candidate)
-        - `stream_profiles`: Control profile streaming - "none", "full", or "batch"
-        - `profiles_batch_size`: Number of profiles per batch (default: 10)
-        - `final_result`: Include full result in final chunk (default: true)
-        - `id_source`: Source for completion ID in stream chunks - "uuid" or "thread_id" (default: "uuid")
-        - `thread_id`: Thread ID for continuation
-        - `uuid`: UUID from a previous API call to resolve thread_id
-        - `insights`: Enable detailed insights (1 credit/candidate)
-        - `high_freshness`: Enable real-time updates (2 credits/candidate)
-        - `profile_scoring`: Enable profile scoring (1 credit/candidate)
-        - `custom_filters`: Custom filters in JSON format for advanced filtering (see CustomFilters schema for all available fields including locations, languages, titles, industries, companies, universities, keywords, experience ranges, age ranges, follower counts, degrees, and more)
-        - `strict_filters`: Be stricter when filtering (boolean, default: false)
-        - `filter_out_no_emails`: Only return profiles with at least one email address (1 credit/candidate). Deprecated name: `require_emails`
-        - `reveal_emails`: Include email addresses (2 credits/candidate, only if available). Deprecated name: `show_emails`
-        - `filter_out_no_phones`: Only return profiles with at least one phone number (1 credit/candidate). Deprecated name: `require_phone_numbers`
-        - `filter_out_no_phones_or_emails`: Only return profiles with at least one phone number OR email address (1 credit/candidate). Deprecated name: `require_phones_or_emails`
-        - `reveal_phones`: Include phone numbers (14 credits/candidate, only if available). Deprecated name: `show_phone_numbers`
-        - `docid_blacklist`: List of profile docids to exclude from search results
-        - `docid_whitelist`: List of profile docids to limit search results to
-        
-        **Cost: (number of profiles returned) × (sum of credits for each of `type`, `insights`, `profile_scoring`, `high_freshness`, `reveal_emails`, `reveal_phones`)**
-        
-        _Check out official [Python client](https://github.com/Pearch-ai/pearch-client)_
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                model:
-                  type: string
-                  description: Model name (use "pearch" or any value)
-                  example: "pearch"
-                messages:
-                  type: array
-                  description: Array of message objects following OpenAI format
-                  items:
-                    type: object
-                    properties:
-                      role:
-                        type: string
-                        enum: [user, assistant, system]
-                        description: Message role
-                      content:
-                        type: string
-                        description: Message content. For user messages, this is the search query.
-                  example:
-                    - role: "user"
-                      content: "software engineers at Google with 10 years of experience"
-                  minItems: 1
-                stream:
-                  type: boolean
-                  default: true
-                  description: "Whether to stream the response. Note: endpoint always streams regardless of this value."
-                extra_body:
-                  type: object
-                  description: Search parameters passed as extra body
-                  properties:
-                    limit:
-                      type: integer
-                      minimum: 1
-                      maximum: 1000
-                      default: 10
-                      description: The maximum number of search results to return.
-                    type:
-                      type: string
-                      enum: [fast, pro]
-                      default: "pro"
-                      description: |
-                        The type of search to perform. 
-                        * "pro" is slower and more costly, but has higher quality and recall. **Cost: 5 credits per candidate**
-                        * "fast" is faster but may have less recall. **Cost: 1 credit per candidate**
-                    stream_profiles:
-                      type: string
-                      enum: [none, full, batch]
-                      default: null
-                      description: |
-                        Control how profiles are streamed:
-                        * `"none"` or `null`: Don't stream profiles (default)
-                        * `"full"`: Stream each profile as it's found
-                        * `"batch"`: Stream profiles in batches
-                    profiles_batch_size:
-                      type: integer
-                      minimum: 1
-                      default: 10
-                      description: Number of profiles per batch when `stream_profiles` is set to `"batch"`.
-                    final_result:
-                      type: boolean
-                      default: true
-                      description: Include full result in final chunk.
-                    id_source:
-                      type: string
-                      enum: [uuid, thread_id]
-                      default: "uuid"
-                      description: Source for completion ID in stream chunks.
-                    thread_id:
-                      type: string
-                      description: Thread ID for continuation.
-                      example: "ec191bf9-99ff-4989-8383-c97c71fafb6d"
-                    uuid:
-                      type: string
-                      description: UUID from a previous API call to resolve thread_id.
-                      example: "ec191bf9-99ff-4989-8383-c97c71fafb6d"
-                    insights:
-                      type: boolean
-                      default: true
-                      description: 'Enable detailed insights and analysis. **Cost: 1 credit per candidate**'
-                    high_freshness:
-                      type: boolean
-                      default: false
-                      description: "Enable real-time profile updates. **Cost: 2 credits per candidate**"
-                    profile_scoring:
-                      type: boolean
-                      default: true
-                      description: "Enable profile scoring and reranking. **Cost: 1 credit per candidate**"
-                    custom_filters:
-                      $ref: '#/components/schemas/CustomFilters'
-                    custom_filters_mode:
-                      type: string
-                      enum: [exact, smart]
-                      description: "Mode for handling custom filters. 'exact' - only use the passed custom_filters, no LLM-generated filters. 'smart' - merge custom_filters with LLM-generated filters."
-                    strict_filters:
-                      type: boolean
-                      default: false
-                      description: Be stricter when filtering.
-                    filter_out_no_emails:
-                      type: boolean
-                      default: false
-                      description: "Only return profiles with at least one email address. **Cost: 1 credit per candidate**. Deprecated name: `require_emails`"
-                    reveal_emails:
-                      type: boolean
-                      default: false
-                      description: "Include email addresses in search results. **Cost: 2 credits per candidate, only charged if the candidate has at least one email address**. Deprecated name: `show_emails`"
-                    filter_out_no_phones:
-                      type: boolean
-                      default: false
-                      description: "Only return profiles with at least one phone number. **Cost: 1 credit per candidate**. Deprecated name: `require_phone_numbers`"
-                    filter_out_no_phones_or_emails:
-                      type: boolean
-                      default: false
-                      description: "Only return profiles with at least one phone number OR email address. **Cost: 1 credit per candidate**. Deprecated name: `require_phones_or_emails`"
-                    reveal_phones:
-                      type: boolean
-                      default: false
-                      description: "Include phone numbers in search results. **Cost: 14 credits per candidate, only charged if the candidate has at least one phone number**. Deprecated name: `show_phone_numbers`"
-              required:
-                - messages
-      responses:
-        "200":
-          description: Streaming chat completions response (Server-Sent Events in OpenAI format)
-          content:
-            text/event-stream:
-              schema:
-                type: string
-                description: |
-                  Server-Sent Events stream in OpenAI chat completions format containing:
-                  - Content chunks (delta.content)
-                  - Stage updates
-                  - Profile updates (if stream_profiles enabled)
-                  - Final chunk with finish_reason="stop" and optional summary/result
-                  - [DONE] marker at the end
-        "400":
-          description: Invalid parameter values. JSON body contains the error message.
-        "401":
-          description: Invalid API key
-        "404":
-          description: Thread not found (when using thread_id or uuid)
-
+ 
   /v2/search_company_leads:
     post:
       operationId: post_v2-search-company-leads
@@ -2179,7 +1967,7 @@ components:
           example: 0.7
         age_years:
           type: number
-          description: Age of the experience in years
+          description: How long ago has the candidate left the role (in years). So essentially it's today - end_date in years. 
           example: 1.2
         location:
           type: string
@@ -2335,7 +2123,7 @@ components:
           example: "jason-tysl"
         linkedin_slug:
           type: string
-          description: LinkedIn profile slug/identifier.
+          description: LinkedIn profile slug/identifier. This is the part that comes after `https://www.linkedin.com/in/` in the profile URL. Because index freshness varies, the slug may not always resolve to a publicly visible profile. If fully up-to-date data is critical, enable the high_freshness parameter.
           example: "jason-tysl"
         first_name:
           type: string
@@ -2570,7 +2358,7 @@ components:
                       example: "I have 3+ years of experience in software development."
         score:
           type: integer
-          description: Numerical score representing candidate relevance. 4 - great candidate, 3 - good candidate, 2 - worth reviewing, 1 - irrelevant candidate
+          description: Numerical score representing candidate relevance. 4 - great candidate, 3 - good candidate, 2 - worth reviewing, 1 - irrelevant candidate. We don't return irrelevant candidates (score=1) when `profile_scoring=true` unless docid_whitelist is provided.
           example: 4
           enum: [1, 2, 3, 4]
         profile:
