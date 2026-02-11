@@ -179,7 +179,7 @@ paths:
                     example: 2.45
                   status:
                     type: string
-                    description: The current status of the query.
+                    description: The current status of the query. One of `pending`, `Done`, `failed`.
                     example: "Done"
                   total_estimate:
                     type: integer
@@ -339,7 +339,7 @@ paths:
                     example: "dev@dev.co"
                   status:
                     type: string
-                    description: The current status of the query.
+                    description: The current status of the query. One of `pending`, `Done`, `failed`.
                     example: "Done"
                   total_estimate:
                     type: integer
@@ -494,7 +494,7 @@ paths:
                     example: "550e8400-e29b-41d4-a716-446655440000"
                   status:
                     type: string
-                    description: The current status of the submitted task.
+                    description: The current status of the submitted task. Upon submission, the status is always `pending`. 
                     example: "pending"
                   message:
                     type: string
@@ -516,7 +516,6 @@ paths:
         
         The task status can be one of:
         - `pending`: Task is queued but not yet started
-        - `running`: Task is currently being processed
         - `completed`: Task has finished successfully and results are available
         - `failed`: Task failed and error details are provided
 
@@ -547,7 +546,7 @@ paths:
                     example: "ec191bf9-99ff-4989-8383-c97c71fafb6d"
                   status:
                     type: string
-                    description: The current status of the task.
+                    description: The current status of the task. One of `pending`, `completed`, `failed`.
                     example: "completed"
                   created_at:
                     type: string
@@ -2431,7 +2430,7 @@ components:
           example: "Invalid query parameter"
         task_status:
           type: string
-          description: Status of the task (for async endpoints)
+          description: Status of the task (for async endpoints). Valid values are `pending`, `completed`, `failed`.
           example: "completed"
         credits_used:
           type: integer
