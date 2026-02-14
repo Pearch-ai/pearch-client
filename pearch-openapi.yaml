@@ -1583,42 +1583,108 @@ components:
             type: string
           description: Filter by location (e.g., "San Francisco", "New York", "California", "United States")
           example: ["San Francisco", "New York"]
-        languages:
+        not_locations:
           type: array
           items:
             type: string
-          description: Filter by languages spoken (e.g., "English", "Spanish", "French")
-          example: ["English", "Spanish"]
+          description: Exclude profiles by location (same format as locations)
+          example: ["Austin", "Boston"]
+        languages:
+          type: array
+          items:
+            $ref: '#/components/schemas/Language'
+          description: "Filter by languages with optional proficiency (e.g. object with language and proficiency)"
+          example: [{"language": "English", "proficiency": "C1"}]
+        not_languages:
+          type: array
+          items:
+            $ref: '#/components/schemas/Language'
+          description: Exclude profiles by languages (same Language object format as languages)
+          example: [{"language": "Spanish", "proficiency": "B2"}]
         titles:
           type: array
           items:
             type: string
           description: Filter by job titles (e.g., "Software Engineer", "Data Scientist", "CEO")
           example: ["software engineer", "data scientist"]
+        not_titles:
+          type: array
+          items:
+            type: string
+          description: Exclude profiles by job titles (e.g., "Intern", "Volunteer")
+          example: ["intern", "volunteer"]
+        current_titles:
+          type: array
+          items:
+            type: string
+          description: Filter by current job title only
+          example: ["software engineer", "tech lead"]
+        not_current_titles:
+          type: array
+          items:
+            type: string
+          description: Exclude profiles by current job title (same format as current_titles)
+          example: ["retired", "student"]
         industries:
           type: array
           items:
             type: string
           description: Filter by industries (e.g., "health", "pharma", "technology", "finance")
           example: ["health", "pharma"]
+        not_industries:
+          type: array
+          items:
+            type: string
+          description: Exclude profiles by industry (same format as industries)
+          example: ["retail", "gaming"]
         companies:
           type: array
           items:
             type: string
           description: Filter by company names (e.g., "Google", "Microsoft", "Amazon")
           example: ["Google", "Microsoft"]
+        not_companies:
+          type: array
+          items:
+            type: string
+          description: Exclude profiles by company (any experience; same format as companies)
+          example: ["Acme Corp", "Former Employer Inc"]
+        current_experience_companies:
+          type: array
+          items:
+            type: string
+          description: Filter by current employer only
+          example: ["Google", "Meta"]
+        not_current_experience_companies:
+          type: array
+          items:
+            type: string
+          description: Exclude profiles by current employer (same format as current_experience_companies)
+          example: ["Company X", "Competitor Inc"]
         universities:
           type: array
           items:
             type: string
           description: Filter by universities attended (e.g., "Stanford University", "MIT", "Harvard")
           example: ["Stanford University", "MIT"]
+        not_universities:
+          type: array
+          items:
+            type: string
+          description: Exclude profiles by university (same format as universities)
+          example: ["Unknown College", "Online University"]
         keywords:
           type: array
           items:
             type: string
           description: Filter by keywords in full profile description
           example: ["machine learning", "python", "leadership"]
+        keywords_blacklist:
+          type: array
+          items:
+            type: string
+          description: Exclude profiles containing these keywords
+          example: ["retired", "student only"]
         min_linkedin_followers:
           type: integer
           description: Minimum number of LinkedIn followers
@@ -1695,6 +1761,13 @@ components:
             enum: [bachelor, master, MBA, doctor, postdoc]
           description: Filter by degree types
           example: ["bachelor", "master"]
+        not_degrees:
+          type: array
+          items:
+            type: string
+            enum: [bachelor, master, MBA, doctor, postdoc]
+          description: Exclude profiles by degree types (same enum as degrees)
+          example: ["bachelor"]
         specialization_categories:
           type: array
           items:
@@ -1715,6 +1788,26 @@ components:
               - "Law & Criminal Justice"
           description: "Filter by specialization categories. Allowed values include: Business & Management, Finance, Engineering, Computer Science & IT, Health & Medicine, Social Sciences, Natural Sciences, Mathematics, Education, Communication & Media, Arts, Design & Architecture, Humanities & Liberal Arts, Law & Criminal Justice."
           example: ["Computer Science & IT", "Engineering"]
+        not_specialization_categories:
+          type: array
+          items:
+            type: string
+            enum:
+              - "Business & Management"
+              - "Finance"
+              - "Engineering"
+              - "Computer Science & IT"
+              - "Health & Medicine"
+              - "Social Sciences"
+              - "Natural Sciences"
+              - "Mathematics"
+              - "Education"
+              - "Communication & Media"
+              - "Arts, Design & Architecture"
+              - "Humanities & Liberal Arts"
+              - "Law & Criminal Justice"
+          description: Exclude profiles by specialization category (same enum as specialization_categories)
+          example: ["Arts, Design & Architecture"]
       additionalProperties: false
       example:
         industries: ["health", "pharma"]

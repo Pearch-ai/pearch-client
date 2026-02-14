@@ -102,7 +102,9 @@ with PearchClient() as client:
 ```
 
 Available filter fields:
-- **Array filters**: `locations`, `languages`, `titles`, `industries`, `companies`, `universities`, `keywords`, `degrees`, `specialization_categories`
+- **Array filters (include)**: `locations`, `languages`, `titles`, `industries`, `companies`, `universities`, `keywords`, `degrees`, `specialization_categories`
+- **Array filters (exclude)**: `not_locations`, `not_languages`, `not_titles`, `not_current_titles`, `not_industries`, `not_companies`, `not_current_experience_companies`, `not_universities`, `keywords_blacklist`, `not_degrees`, `not_specialization_categories`
+- **Current-only**: `current_titles`, `current_experience_companies`
 - **Numeric ranges**: `min/max_linkedin_followers`, `min/max_total_experience_years`, `min/max_estimated_age`, `min/max_current_experience_years`
 - **Boolean filters**: `studied_at_top_universities`, `has_startup_experience`, `has_saas_experience`, `has_b2b_experience`, `has_b2c_experience`
 - **Exact match**: `first_name`, `middle_name`, `last_name`, `gender`
@@ -158,7 +160,8 @@ Upsert status: {"uuid":"e7d685cd-e669-4b1c-b4e4-276ed607d735","status":"success"
 ```
 
 ### Find relevant jobs (/v1/find_matching_jobs)
-```
+
+```python
 # Find jobs matching a candidate profile  
 with PearchClient() as client:
     response = client.find_matching_jobs(V1FindMatchingJobsRequest(
