@@ -252,39 +252,25 @@ async def test_upsert_jobs():
      
 
  
-def validate_credits(request: V2SearchRequest, response: V2SearchResponse | V2SearchStatusResponse, base_request: V2SearchRequest | None = None):
+def validate_credits(request: V2SearchRequest, response: V2SearchResponse | V2SearchStatusResponse):
     """
     Validate credits used in a search response.
     
     Args:
         request: The current request (may have None values when using thread_id)
         response: The search response
-        base_request: Optional base request to inherit parameters from when using thread_id
     """
-    # When using thread_id, API uses parameters from the original request, not the new one
-    # So we should use base_request parameters if available, otherwise use request parameters
-    if base_request is not None:
-        # Use base_request parameters as primary source when using thread_id
-        type_val = base_request.type if base_request.type is not None else (request.type if request.type is not None else "pro")
-        insights = base_request.insights if base_request.insights is not None else (request.insights if request.insights is not None else True)
-        high_freshness = base_request.high_freshness if base_request.high_freshness is not None else (request.high_freshness if request.high_freshness is not None else False)
-        profile_scoring = base_request.profile_scoring if base_request.profile_scoring is not None else (request.profile_scoring if request.profile_scoring is not None else True)
-        reveal_emails = base_request.reveal_emails if base_request.reveal_emails is not None else (base_request.show_emails if base_request.show_emails is not None else (request.reveal_emails if request.reveal_emails is not None else (request.show_emails if request.show_emails is not None else False)))
-        reveal_phones = base_request.reveal_phones if base_request.reveal_phones is not None else (base_request.show_phone_numbers if base_request.show_phone_numbers is not None else (request.reveal_phones if request.reveal_phones is not None else (request.show_phone_numbers if request.show_phone_numbers is not None else False)))
-        filter_out_no_emails = base_request.filter_out_no_emails if base_request.filter_out_no_emails is not None else (base_request.require_emails if base_request.require_emails is not None else (request.filter_out_no_emails if request.filter_out_no_emails is not None else (request.require_emails if request.require_emails is not None else False)))
-        filter_out_no_phones = base_request.filter_out_no_phones if base_request.filter_out_no_phones is not None else (base_request.require_phone_numbers if base_request.require_phone_numbers is not None else (request.filter_out_no_phones if request.filter_out_no_phones is not None else (request.require_phone_numbers if request.require_phone_numbers is not None else False)))
-        filter_out_no_phones_or_emails = base_request.filter_out_no_phones_or_emails if base_request.filter_out_no_phones_or_emails is not None else (base_request.require_phones_or_emails if base_request.require_phones_or_emails is not None else (request.filter_out_no_phones_or_emails if request.filter_out_no_phones_or_emails is not None else (request.require_phones_or_emails if request.require_phones_or_emails is not None else False)))
-    else:
-        type_val = request.type if request.type is not None else "pro"
-        insights = request.insights if request.insights is not None else True
-        high_freshness = request.high_freshness if request.high_freshness is not None else False
-        profile_scoring = request.profile_scoring if request.profile_scoring is not None else True
-        reveal_emails = request.reveal_emails if request.reveal_emails is not None else (request.show_emails if request.show_emails is not None else False)
-        reveal_phones = request.reveal_phones if request.reveal_phones is not None else (request.show_phone_numbers if request.show_phone_numbers is not None else False)
-        filter_out_no_emails = request.filter_out_no_emails if request.filter_out_no_emails is not None else (request.require_emails if request.require_emails is not None else False)
-        filter_out_no_phones = request.filter_out_no_phones if request.filter_out_no_phones is not None else (request.require_phone_numbers if request.require_phone_numbers is not None else False)
-        filter_out_no_phones_or_emails = request.filter_out_no_phones_or_emails if request.filter_out_no_phones_or_emails is not None else (request.require_phones_or_emails if request.require_phones_or_emails is not None else False)
-    
+
+    type_val = request.type if request.type is not None else "pro"
+    insights = request.insights if request.insights is not None else True
+    high_freshness = request.high_freshness if request.high_freshness is not None else False
+    profile_scoring = request.profile_scoring if request.profile_scoring is not None else True
+    reveal_emails = request.reveal_emails if request.reveal_emails is not None else (request.show_emails if request.show_emails is not None else False)
+    reveal_phones = request.reveal_phones if request.reveal_phones is not None else (request.show_phone_numbers if request.show_phone_numbers is not None else False)
+    filter_out_no_emails = request.filter_out_no_emails if request.filter_out_no_emails is not None else (request.require_emails if request.require_emails is not None else False)
+    filter_out_no_phones = request.filter_out_no_phones if request.filter_out_no_phones is not None else (request.require_phone_numbers if request.require_phone_numbers is not None else False)
+    filter_out_no_phones_or_emails = request.filter_out_no_phones_or_emails if request.filter_out_no_phones_or_emails is not None else (request.require_phones_or_emails if request.require_phones_or_emails is not None else False)
+
     expected_credits = 0   
     for result in response.search_results:
         candidate_credits = 0
@@ -315,7 +301,7 @@ def validate_credits(request: V2SearchRequest, response: V2SearchResponse | V2Se
             logger.info(f"{profile_id}: Incremented candidate_credits by 1 for filter_out_no_emails or filter_out_no_phones or filter_out_no_phones_or_emails, total now {candidate_credits}")
         expected_credits += candidate_credits
         logger.info(f"{profile_id}: Added candidate_credits {candidate_credits} to expected_credits, expected_credits now {expected_credits}")
-    assert response.credits_used == expected_credits or response.credits_used_total == expected_credits
+    assert response.credits_used == expected_credits or response.credits_used_total == expected_credits, f"{response.credits_used=} == {expected_credits=} or {response.credits_used_total=} == {expected_credits=}"
 
 
 
@@ -347,6 +333,7 @@ async def test_v2_fast_search():
 @pytest.mark.asyncio
 async def test_v2_pro_search_generic():
     credits1 = await get_credits()
+    logger.info("Running a first query: Find me engineers in California speaking at least basic english working in software industry with experience at FAANG with 2+ years of experience and at least 500 followers and at least BS degree")
     logger.info(f"Credits1: {credits1}")
     first_request = V2SearchRequest(
         query="Find me engineers in California speaking at least basic english working in software industry with experience at FAANG with 2+ years of experience and at least 500 followers and at least BS degree",
@@ -361,7 +348,7 @@ async def test_v2_pro_search_generic():
     )
     generate_curl_command("search", first_request)
     response: V2SearchResponse = await AsyncPearchClient().search(first_request)
-    assert len(response.search_results) == 2
+    assert len(response.search_results) == 2, "Expected 2 results, in the first query"
     assert any(result.profile.linkedin_slug for result in response.search_results)
     assert all(len(result.profile.get_all_emails()) > 0 for result in response.search_results)
     assert all(len(result.profile.all_phone_numbers()) > 0 for result in response.search_results)
@@ -371,32 +358,31 @@ async def test_v2_pro_search_generic():
     assert credits1 - credits2 == response.credits_used, "Credits check failed"
 
     # "show more"
-    second_request = V2SearchRequest(
-        limit=4,
-        thread_id=response.thread_id,
-    )
+    logger.info("Running a show more query (+2 more results)")
+    second_request = first_request
+    second_request.limit = 4
+    second_request.thread_id = response.thread_id
     generate_curl_command("search", second_request)
     response: V2SearchResponse = await AsyncPearchClient().search(second_request)
-    assert len(response.search_results) == 4
+    assert len(response.search_results) == 4, "Expected 4 results, in the show more query"
     all_results = response.search_results
     new_results = response.search_results[2:4]  # Last 2 are new
     response.search_results = new_results
-    validate_credits(second_request, response, base_request=first_request)
+    validate_credits(first_request, response)
     response.search_results = all_results
     credits3 = await get_credits()
     logger.info(f"Credits3: {credits3}")
     assert credits2 - credits3 == response.credits_used, "Credits check failed"
 
     # follow up query
-    third_request = V2SearchRequest(
-        thread_id=response.thread_id,
-        query="who are at least 30 years old",
-        limit=2,
-    )
+    logger.info("Running a follow up query: who are at least 30 years old")
+    third_request = first_request
+    third_request.query = "who are at least 30 years old"
+    third_request.limit = 2
     generate_curl_command("search", third_request)
     response: V2SearchResponse = await AsyncPearchClient().search(third_request)
-    assert len(response.search_results) == 2
-    validate_credits(third_request, response, base_request=first_request)
+    assert len(response.search_results) == 2, f"Expected 2 results, in the follow up query, actual results: {len(response.search_results)}"
+    validate_credits(third_request, response)
     credits4 = await get_credits()
     logger.info(f"Credits4: {credits4}")
     assert credits3 - credits4 == response.credits_used, "Credits check failed"
@@ -490,7 +476,7 @@ def validate_company_leads_credits(request: V2SearchCompanyLeadsRequest, respons
             logger.info(f"Added {freshness_credits} credits for high_freshness ({total_leads} leads * 1), total now {expected_credits}")
     
     logger.info(f"Final expected_credits: {expected_credits}, actual credits_used: {response.credits_used}")
-    assert response.credits_used == expected_credits
+    assert response.credits_used == expected_credits, "Credits check failed. Reported credits used <> credits charged"
 
 @pytest.mark.asyncio
 async def test_search_company_leads():
@@ -525,6 +511,7 @@ async def test_get_search_status():
         limit=2,
     )
     generate_curl_command("search_submit", first_submit_request)
+    logger.info("Submitting first search request: software engineer")
     submit_response = await AsyncPearchClient().search_submit(first_submit_request)
     task_id = submit_response.task_id
     thread_id = submit_response.thread_id
@@ -552,6 +539,7 @@ async def test_get_search_status():
         limit=4,  # "show more"
     )
     generate_curl_command("search_submit", second_submit_request)
+    logger.info("Submitting second search request: show +2 more results")
     submit_response = await AsyncPearchClient().search_submit(second_submit_request)
     task_id = submit_response.task_id
     assert submit_response.status == "pending"    
@@ -563,7 +551,7 @@ async def test_get_search_status():
             all_results = status_response.result.search_results
             new_results = status_response.result.search_results[2:4]  # Last 2 are new
             status_response.result.search_results = new_results
-            validate_credits(second_submit_request, status_response.result, base_request=first_submit_request)
+            validate_credits(first_submit_request, status_response.result)  # costs are the same as the first query
             status_response.result.search_results = all_results
             credits3 = await get_credits()
             assert credits2 - credits3 == status_response.credits_used, "Credits check failed"
@@ -586,7 +574,6 @@ async def test_async_search_v2():
 
     check_results = V2SearchRequest(
         thread_id=response.thread_id,
-        limit=None,
     )
 
     while True:
@@ -594,7 +581,7 @@ async def test_async_search_v2():
         if results.status == "Done":
             validate_credits(first_request, results)
             credits2 = await get_credits()
-            assert credits1 - credits2 == results.credits_used_total, "Credits check failed"
+            assert credits1 - credits2 == results.credits_used_total, f"Credits charged {credits1 - credits2} <> credits used total {results.credits_used_total}"
             break
         await asyncio.sleep(5)
     
@@ -607,8 +594,8 @@ async def test_api_call_history():
     generate_curl_command("api_call_history", request)
     response = await AsyncPearchClient().api_call_history(request)
     assert response.api_call_history is not None
-    assert len(response.api_call_history) > 0
-    assert response.total_credits_used > 0
+    assert len(response.api_call_history) > 0, "Expected some api call history"
+    assert response.total_credits_used > 0, "Expected some total credits used"
 
 
 @pytest.mark.asyncio

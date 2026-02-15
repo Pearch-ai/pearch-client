@@ -390,20 +390,20 @@ class CustomFilters(BaseModel):
 class V2SearchRequest(BaseModel):
     query: str | None = None
     thread_id: str | None = None
-    type: Literal["superfast", "fast", "pro"] | None = "pro"
-    insights: bool | None = True
-    high_freshness: bool | None = False
-    profile_scoring: bool | None = True
+    type: Literal["superfast", "fast", "pro"] | None = None
+    insights: bool | None = None
+    high_freshness: bool | None = None
+    profile_scoring: bool | None = None
     custom_filters: CustomFilters | None = None
     custom_filters_mode: CustomFiltersMode | None = None
-    strict_filters: bool | None = False
-    filter_out_no_emails: bool | None = False
-    reveal_emails: bool | None = False
-    filter_out_no_phones: bool | None = False
-    filter_out_no_phones_or_emails: bool | None = False
-    reveal_phones: bool | None = False
-    limit: int | None = Field(default=10, ge=1, le=1000)
-    offset: int | None = Field(default=0, ge=0)
+    strict_filters: bool | None = None
+    filter_out_no_emails: bool | None = None
+    reveal_emails: bool | None = None
+    filter_out_no_phones: bool | None = None
+    filter_out_no_phones_or_emails: bool | None = None
+    reveal_phones: bool | None = None
+    limit: int | None = Field(default=None, ge=1, le=1000)
+    offset: int | None = Field(default=None, ge=0)
     docid_blacklist: List[str] | None = None
     docid_whitelist: List[str] | None = None
     require_emails: bool | None = None
