@@ -584,7 +584,32 @@ async def test_async_search_v2():
             assert credits1 - credits2 == results.credits_used_total, f"Credits charged {credits1 - credits2} <> credits used total {results.credits_used_total}"
             break
         await asyncio.sleep(5)
-    
+
+    followup_request = V2SearchRequest(
+        thread_id=response.thread_id,
+        query="in Seattle",
+        type="fast",
+        limit=2,
+        async_=True,
+    )
+    generate_curl_command("search", followup_request)
+    followup_response = await AsyncPearchClient().search(followup_request)
+    check_followup = V2SearchRequest(thread_id=followup_response.thread_id)
+    first_followup_check = await AsyncPearchClient().search(check_followup)
+    assert first_followup_check.status == "pending", "First followup check status is not pending"
+    while True:
+        followup_results = await AsyncPearchClient().search(check_followup)
+        if followup_results.status == "Done":
+            assert len(followup_results.search_results) == 2
+            for result in followup_results.search_results:
+                profile_dump = result.profile.model_dump()
+                profile_json = str(profile_dump).lower()
+                assert "seattle" in profile_json
+                assert "software engineer" in profile_json
+            credits3 = await get_credits()            
+            assert credits1 - credits3 == followup_results.credits_used_total, f"Credits charged {credits1 - credits3} <> credits used total {followup_results.credits_used_total}"
+            break
+        await asyncio.sleep(5)
 
 
 
