@@ -34,6 +34,7 @@ from pearch.schema import (
     Job,
     V2SearchResponse,
     V2SearchStatusResponse,
+    CustomFilters,
 )
 
 logger = logging.getLogger(__name__)
@@ -610,6 +611,50 @@ async def test_async_search_v2():
             assert credits1 - credits3 == followup_results.credits_used_total, f"Credits charged {credits1 - credits3} <> credits used total {followup_results.credits_used_total}"
             break
         await asyncio.sleep(5)
+
+
+@pytest.mark.asyncio
+async def test_filters():
+    request = V2SearchRequest(
+        query="software engineer",
+        type="fast",
+        limit=2,
+        filter_out_no_emails=True,
+        filter_out_no_phones=True,
+        custom_filters=CustomFilters(
+            locations=["United States"],
+            languages=["English"],
+            industries=["internet"],
+            titles=["software engineer"],
+            universities=["Stanford"],
+            companies=["Google"],
+            keywords=["software engineer"],
+            min_linkedin_followers=1,
+            max_linkedin_followers=1000,
+            min_total_experience_years=1,
+            max_total_experience_years=30,
+            min_estimated_age=20,
+            max_estimated_age=60,
+            studied_at_top_universities=True,
+            degrees=["bachelor"],
+            specialization_categories=["Computer Science & IT", "Engineering"],
+        ),
+    )
+
+    response = await AsyncPearchClient().search(request)
+    assert len(response.search_results) == 2
+    assert all(result.profile.linkedin_slug for result in response.search_results)
+    assert all(result.profile.has_emails and result.profile.has_phone_numbers for result in response.search_results)
+    assert all("English" in (str(result.profile.languages) + str(result.profile.inferred_languages)) for result in response.search_results)
+    assert all("Stanford" in str(result.profile) for result in response.search_results)
+    assert all("Google" in str(result.profile) for result in response.search_results)
+    assert all("Software Engineer" in str(result.profile) for result in response.search_results)
+    assert all(result.profile.estimated_age >= 20 and result.profile.estimated_age <= 60 for result in response.search_results)
+    assert all(result.profile.total_experience_years >= 1 and result.profile.total_experience_years <= 30 for result in response.search_results)
+    assert all(result.profile.is_top_universities for result in response.search_results)
+    assert all("bachelor" in str(result.profile.educations) for result in response.search_results)
+    assert all("Computer Science & IT" in str(result.profile) or "Engineering" in str(result.profile) for result in response.search_results)
+    assert all(result.profile.followers_count >= 1 and result.profile.followers_count <= 1000 for result in response.search_results)
 
 
 
