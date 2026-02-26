@@ -76,6 +76,12 @@ paths:
                   type: boolean
                   default: true
                   description: 'Enable detailed insights and analysis for search results. This includes scores for each of query requirements along with quotes from profiles that match subqueries. Check out `insights` output fields for details. This may be helpful if you share search results with users and want to provide deeper explanations of why profiles are relevant. If your product only needs highly relevant profiles without explanations, use `{"insights": false, "profile_scoring": true}` **Cost: 1 credit per candidate**'
+                insights_items:
+                  type: array
+                  items:
+                    type: string
+                    enum: [overall_summary, short_quotes, rationale, short_rationale]
+                  description: When insights is true, optionally restrict which insight fields to include. If omitted, all insight types are included.
                 high_freshness:
                   type: boolean
                   default: false
@@ -415,6 +421,12 @@ paths:
                   type: boolean
                   default: true
                   description: 'Enable detailed insights and analysis for search results. This includes scores for each of query requirements along with quotes from profiles that match subqueries. Check out `insights` output fields for details. This may be helpful if you share search results with users and want to provide deeper explanations of why profiles are relevant. If your product only needs highly relevant profiles without explanations, use `{"insights": false, "profile_scoring": true}` **Cost: 1 credit per candidate**'
+                insights_items:
+                  type: array
+                  items:
+                    type: string
+                    enum: [overall_summary, short_quotes, rationale, short_rationale]
+                  description: When insights is true, optionally restrict which insight fields to include. If omitted, all insight types are included.
                 high_freshness:
                   type: boolean
                   default: false
@@ -1462,6 +1474,12 @@ paths:
                       type: boolean
                       description: Enable detailed insights
                       example: true
+                    insights_items:
+                      type: array
+                      items:
+                        type: string
+                        enum: [overall_summary, short_quotes, rationale, short_rationale]
+                      description: When insights is true, optionally restrict which insight fields to include.
                     profile_scoring:
                       type: boolean
                       description: Enable profile scoring

@@ -19,6 +19,13 @@ class CustomFiltersMode(str, Enum):
     SMART = "smart"
 
 
+class InsightItem(str, Enum):
+    OVERALL_SUMMARY = "overall_summary"
+    SHORT_QUOTES = "short_quotes"
+    RATIONALE = "rationale"
+    SHORT_RATIONALE = "short_rationale"
+
+
 class FundingRound(BaseModel):
     value_usd: int | None = None
     date: Date | None = None
@@ -392,6 +399,7 @@ class V2SearchRequest(BaseModel):
     thread_id: str | None = None
     type: Literal["superfast", "fast", "pro"] | None = None
     insights: bool | None = None
+    insights_items: List[InsightItem] | None = None
     high_freshness: bool | None = None
     profile_scoring: bool | None = None
     custom_filters: CustomFilters | None = None
