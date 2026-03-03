@@ -643,6 +643,7 @@ async def test_filters():
 
     response = await AsyncPearchClient().search(request)
     assert len(response.search_results) == 2
+    assert all("United States" in str(result.profile.location) for result in response.search_results)
     assert all(result.profile.linkedin_slug for result in response.search_results)
     assert all(result.profile.has_emails and result.profile.has_phone_numbers for result in response.search_results)
     assert all("English" in (str(result.profile.languages) + str(result.profile.inferred_languages)) for result in response.search_results)
