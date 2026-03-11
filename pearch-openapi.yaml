@@ -70,7 +70,7 @@ paths:
                   default: "pro"
                   description: |
                     The type of search to perform. 
-                    * "pro" is slower and more costly, but has higher quality and recall. **Cost: 5 credits per candidate**
+                    * "pro" is slower and more costly, but has higher quality and recall. Profile scoring is included at no extra cost. **Cost: 5 credits per candidate**
                     * "fast" is faster but may have less recall. **Cost: 1 credit per candidate**
                 insights:
                   type: boolean
@@ -89,7 +89,7 @@ paths:
                 profile_scoring:
                   type: boolean
                   default: true
-                  description: "Enable profile scoring and reranking for better result quality. This filters out less relevant profiles and produces scores for more relevant once. Scores range from 0.0 to 4.0 where higher is better. **Cost: 1 credit per candidate**" 
+                  description: "Enable profile scoring and reranking for better result quality. This filters out less relevant profiles and produces scores for more relevant once. Scores range from 0.0 to 4.0 where higher is better. **Included free with pro search. With fast search: 1 credit per candidate**" 
                 custom_filters:
                   $ref: '#/components/schemas/CustomFilters'
                 custom_filters_mode:
@@ -415,7 +415,7 @@ paths:
                   default: "pro"
                   description: |
                     The type of search to perform. 
-                    * "pro" is slower and more costly, but has higher quality and recall. **Cost: 5 credits per candidate**
+                    * "pro" is slower and more costly, but has higher quality and recall. Profile scoring is included at no extra cost. **Cost: 5 credits per candidate**
                     * "fast" is faster but may have less recall. **Cost: 1 credit per candidate**
                 insights:
                   type: boolean
@@ -434,7 +434,7 @@ paths:
                 profile_scoring:
                   type: boolean
                   default: true
-                  description: "Enable profile scoring and reranking for better result quality. This filters out less relevant profiles and produces scores for more relevant once. Scores range from 0.0 to 4.0 where higher is better. **Cost: 1 credit per candidate**" 
+                  description: "Enable profile scoring and reranking for better result quality. This filters out less relevant profiles and produces scores for more relevant once. Scores range from 0.0 to 4.0 where higher is better. **Included free with pro search. With fast search: 1 credit per candidate**" 
                 custom_filters:
                   $ref: '#/components/schemas/CustomFilters'
                 custom_filters_mode:
