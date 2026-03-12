@@ -108,6 +108,7 @@ class Education(BaseModel):
     university_linkedin_url: str | None = None
     campus: str | None = None
     specialization: str | None = None
+    specialization_category: str | None = None
     degree: List[str] | None = None
     major: str | None = None
     start_date: Date | None = None

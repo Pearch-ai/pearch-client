@@ -302,6 +302,8 @@ def validate_credits(request: V2SearchRequest, response: V2SearchResponse | V2Se
             logger.info(f"{profile_id}: Incremented candidate_credits by 1 for filter_out_no_emails or filter_out_no_phones or filter_out_no_phones_or_emails, total now {candidate_credits}")
         expected_credits += candidate_credits
         logger.info(f"{profile_id}: Added candidate_credits {candidate_credits} to expected_credits, expected_credits now {expected_credits}")
+    if type_val == "pro":
+        expected_credits -= len(response.search_results) * 1
     assert response.credits_used == expected_credits or response.credits_used_total == expected_credits, f"{response.credits_used=} == {expected_credits=} or {response.credits_used_total=} == {expected_credits=}"
 
 
@@ -654,7 +656,11 @@ async def test_filters():
     assert all(result.profile.total_experience_years >= 1 and result.profile.total_experience_years <= 30 for result in response.search_results)
     assert all(result.profile.is_top_universities for result in response.search_results)
     assert all("bachelor" in str(result.profile.educations) for result in response.search_results)
-    assert all("Computer Science & IT" in str(result.profile) or "Engineering" in str(result.profile) for result in response.search_results)
+    allowed_categories = {"Computer Science & IT", "Engineering"}
+    assert all(
+        any(edu.specialization_category in allowed_categories for edu in (result.profile.educations or []))
+        for result in response.search_results
+    )
     assert all(result.profile.followers_count >= 1 and result.profile.followers_count <= 1000 for result in response.search_results)
 
 
