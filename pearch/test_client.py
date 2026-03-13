@@ -333,6 +333,8 @@ async def test_v2_fast_search():
     credits2 = await get_credits()
     assert credits1 - credits2 == response.credits_used, "Credits check failed"
 
+
+
 @pytest.mark.asyncio
 async def test_v2_pro_search_generic():
     credits1 = await get_credits()
@@ -355,27 +357,44 @@ async def test_v2_pro_search_generic():
     assert any(result.profile.linkedin_slug for result in response.search_results)
     assert all(len(result.profile.get_all_emails()) > 0 for result in response.search_results)
     assert all(len(result.profile.all_phone_numbers()) > 0 for result in response.search_results)
+    first_page_slugs = [r.profile.linkedin_slug for r in response.search_results]
+    logger.info(f"First page slugs: {first_page_slugs}")
     validate_credits(first_request, response)
     credits2 = await get_credits()
     logger.info(f"Credits2: {credits2}")
     assert credits1 - credits2 == response.credits_used, "Credits check failed"
 
-    # "show more"
-    logger.info("Running a show more query (+2 more results)")
+    # second page
+    logger.info("Running a limit=2 offset=2 query")
+    second_request = first_request
+    second_request.limit = 2
+    second_request.offset = 2
+    second_request.thread_id = response.thread_id
+    generate_curl_command("search", second_request)
+    response: V2SearchResponse = await AsyncPearchClient().search(second_request)
+    assert len(response.search_results) == 2, "Expected 2 results, in the second page query"
+    second_page_slugs = [r.profile.linkedin_slug for r in response.search_results]
+    logger.info(f"Second page slugs: {second_page_slugs}")
+    validate_credits(first_request, response)
+    credits3 = await get_credits()
+    logger.info(f"Credits3: {credits3}")
+    assert credits2 - credits3 == response.credits_used, "Credits check failed"
+
+    logger.info("Running a limit=4 offset=0 query")
     second_request = first_request
     second_request.limit = 4
+    second_request.offset = 0
     second_request.thread_id = response.thread_id
     generate_curl_command("search", second_request)
     response: V2SearchResponse = await AsyncPearchClient().search(second_request)
     assert len(response.search_results) == 4, "Expected 4 results, in the show more query"
     all_results = response.search_results
-    new_results = response.search_results[2:4]  # Last 2 are new
-    response.search_results = new_results
-    validate_credits(first_request, response)
-    response.search_results = all_results
-    credits3 = await get_credits()
-    logger.info(f"Credits3: {credits3}")
-    assert credits2 - credits3 == response.credits_used, "Credits check failed"
+    logger.info(f"All results slugs: {[r.profile.linkedin_slug for r in all_results]}")
+    assert second_page_slugs[0] == all_results[2].profile.linkedin_slug
+    assert second_page_slugs[1] == all_results[3].profile.linkedin_slug
+    credits4 = await get_credits()
+    logger.info(f"Credits4: {credits4}")
+    assert credits3 - credits4 == 0 and response.credits_used == 0, "Cached results should not cost any credits"
 
     # follow up query
     logger.info("Running a follow up query: who are at least 30 years old")
@@ -386,10 +405,11 @@ async def test_v2_pro_search_generic():
     response: V2SearchResponse = await AsyncPearchClient().search(third_request)
     assert len(response.search_results) == 2, f"Expected 2 results, in the follow up query, actual results: {len(response.search_results)}"
     validate_credits(third_request, response)
-    credits4 = await get_credits()
-    logger.info(f"Credits4: {credits4}")
-    assert credits3 - credits4 == response.credits_used, "Credits check failed"
+    credits5 = await get_credits()
+    logger.info(f"Credits5: {credits5}")
+    assert credits4 - credits5 == response.credits_used, "Credits check failed"
  
+  
   
 
 def validate_company_leads_credits(request: V2SearchCompanyLeadsRequest, response: V2SearchCompanyLeadsResponse):
