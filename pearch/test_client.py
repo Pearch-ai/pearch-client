@@ -135,6 +135,7 @@ async def get_credits():
     response: V1UserResponse = await AsyncPearchClient().get_user()
     return response.credits_remaining
 
+
 @pytest.mark.asyncio
 async def test_find_matching_jobs():
     credits1 = await get_credits()
@@ -150,13 +151,15 @@ async def test_find_matching_jobs():
     assert any(job.job_id for job in response.jobs)
     assert response.jobs[0].insights is not None, "Insights should be not None"
     assert response.jobs[0].insights.query_insights is not None, "Query insights should be not None"
-    assert response.jobs[0].insights.query_insights[0].rationale is not None, "Rationale should be not None"
-    assert response.jobs[0].insights.query_insights[0].short_rationale is not None, "Short rationale should be not None"
-    assert response.jobs[0].insights.query_insights[0].subquery is not None, "Subquery should be not None"
+    qi = response.jobs[0].insights.query_insights
+    assert qi[0].rationale is not None and qi[0].rationale != "", "Rationale should be not None"
+    assert qi[0].short_rationale is not None and qi[0].short_rationale != "", "Short rationale should be not None"
+    assert qi[0].subquery is not None and qi[0].subquery != "", "Subquery should be not None"
 
     assert response.credits_used == len(response.jobs) * 1
     credits2 = await get_credits()
     assert credits1 - credits2 == response.credits_used, "Credits check failed"
+
 
 @pytest.mark.asyncio
 async def test_profile():
