@@ -291,7 +291,7 @@ def validate_credits(request: V2SearchRequest, response: V2SearchResponse | V2Se
         if high_freshness:
             candidate_credits += 2
             logger.info(f"{profile_id}: Incremented candidate_credits by 2 for high_freshness, total now {candidate_credits}")
-        if profile_scoring and result.score is not None:
+        if profile_scoring and result.score is not None and type_val not in ("pro", "fast"):
             candidate_credits += 1
             logger.info(f"{profile_id}: Incremented candidate_credits by 1 for profile_scoring, total now {candidate_credits}")
         if reveal_emails and result.profile and result.profile.get_all_emails():
@@ -305,8 +305,6 @@ def validate_credits(request: V2SearchRequest, response: V2SearchResponse | V2Se
             logger.info(f"{profile_id}: Incremented candidate_credits by 1 for filter_out_no_emails or filter_out_no_phones or filter_out_no_phones_or_emails, total now {candidate_credits}")
         expected_credits += candidate_credits
         logger.info(f"{profile_id}: Added candidate_credits {candidate_credits} to expected_credits, expected_credits now {expected_credits}")
-    if type_val == "pro":
-        expected_credits -= len(response.search_results) * 1
     assert response.credits_used == expected_credits or response.credits_used_total == expected_credits, f"{response.credits_used=} == {expected_credits=} or {response.credits_used_total=} == {expected_credits=}"
 
 
