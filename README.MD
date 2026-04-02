@@ -262,8 +262,8 @@ with PearchClient() as client:
 Available parameters:
 - `docid` (required): LinkedIn profile ID
 - `high_freshness` (optional): Enable real-time profile updates (+2 credits)
-- `reveal_emails` (optional): Include email addresses if available (+2 credits if emails found). Deprecated: `show_emails` (still supported but deprecated)
-- `reveal_phones` (optional): Include phone numbers if available (+14 credits if phone numbers found). Deprecated: `show_phone_numbers` (still supported but deprecated)
+- `reveal_emails` (optional): Include email addresses if available (+6 credits if emails found). Deprecated: `show_emails` (still supported but deprecated)
+- `reveal_phones` (optional): Include phone numbers if available (+6 credits if phone numbers found). Deprecated: `show_phone_numbers` (still supported but deprecated)
 - `with_profile` (optional): Include full profile data in response (+1 credit)
 
 Output:

@@ -167,7 +167,7 @@ async def test_profile():
     request = V1ProfileRequest(docid="vslaykovsky", reveal_emails=True, reveal_phones=True)
     generate_curl_command("get_profile", request)
     response: V1ProfileResponse = await AsyncPearchClient().get_profile(request)
-    assert response.credits_used == 2 * (0 if not response.profile.get_all_emails() else 1) + 14 * (0 if not response.profile.all_phone_numbers() else 1)
+    assert response.credits_used == 6 * (0 if not response.profile.get_all_emails() else 1) + 6 * (0 if not response.profile.all_phone_numbers() else 1)
     credits2 = await get_credits()
     assert credits1 - credits2 == response.credits_used, "Credits check failed"
 
@@ -175,7 +175,7 @@ async def test_profile():
     generate_curl_command("get_profile", request)
     response: V1ProfileResponse = await AsyncPearchClient().get_profile(request)
     assert "victor" in response.profile.first_name.lower()
-    assert response.credits_used == 2 + 2 * (0 if not response.profile.get_all_emails() else 1) + 14 * (0 if not response.profile.all_phone_numbers() else 1) + 1
+    assert response.credits_used == 2 + 6 * (0 if not response.profile.get_all_emails() else 1) + 6 * (0 if not response.profile.all_phone_numbers() else 1) + 1
     credits3 = await get_credits()
     assert credits2 - credits3 == response.credits_used, "Credits check failed"
 
@@ -295,11 +295,11 @@ def validate_credits(request: V2SearchRequest, response: V2SearchResponse | V2Se
             candidate_credits += 1
             logger.info(f"{profile_id}: Incremented candidate_credits by 1 for profile_scoring, total now {candidate_credits}")
         if reveal_emails and result.profile and result.profile.get_all_emails():
-            candidate_credits += 2
-            logger.info(f"{profile_id}: Incremented candidate_credits by 2 for reveal_emails, total now {candidate_credits}")
+            candidate_credits += 6
+            logger.info(f"{profile_id}: Incremented candidate_credits by 6 for reveal_emails, total now {candidate_credits}")
         if reveal_phones and result.profile and result.profile.phone_numbers:
-            candidate_credits += 14
-            logger.info(f"{profile_id}: Incremented candidate_credits by 14 for reveal_phones, total now {candidate_credits}")
+            candidate_credits += 6
+            logger.info(f"{profile_id}: Incremented candidate_credits by 6 for reveal_phones, total now {candidate_credits}")
         if filter_out_no_emails or filter_out_no_phones or filter_out_no_phones_or_emails:
             candidate_credits += 1
             logger.info(f"{profile_id}: Incremented candidate_credits by 1 for filter_out_no_emails or filter_out_no_phones or filter_out_no_phones_or_emails, total now {candidate_credits}")

@@ -107,7 +107,7 @@ paths:
                 reveal_emails:
                   type: boolean
                   default: false
-                  description: "Include email addresses in search results if available. This returns all available emails including personal and work emails. **Cost: 2 credits per candidate, only charged if the candidate has at least one email address**. Deprecated name: `show_emails`"
+                  description: "Include email addresses in search results if available. This returns all available emails including personal and work emails. **Cost: 6 credits per candidate, only charged if the candidate has at least one email address**. Deprecated name: `show_emails`"
                 filter_out_no_phones:
                   type: boolean
                   default: false
@@ -119,7 +119,7 @@ paths:
                 reveal_phones:
                   type: boolean
                   default: false
-                  description: "Include phone numbers in search results if available. This returns all available phone numbers including personal and work numbers. **Cost: 14 credits per candidate, only charged if the candidate has at least one phone number**. Deprecated name: `show_phone_numbers`"
+                  description: "Include phone numbers in search results if available. This returns all available phone numbers including personal and work numbers. **Cost: 6 credits per candidate, only charged if the candidate has at least one phone number**. Deprecated name: `show_phone_numbers`"
                 limit:
                   type: integer
                   minimum: 1
@@ -452,7 +452,7 @@ paths:
                 reveal_emails:
                   type: boolean
                   default: false
-                  description: "Include email addresses in search results if available. This returns all available emails including personal and work emails. **Cost: 2 credits per candidate**. Deprecated name: `show_emails`"
+                  description: "Include email addresses in search results if available. This returns all available emails including personal and work emails. **Cost: 6 credits per candidate**. Deprecated name: `show_emails`"
                 filter_out_no_phones:
                   type: boolean
                   default: false
@@ -464,7 +464,7 @@ paths:
                 reveal_phones:
                   type: boolean
                   default: false
-                  description: "Include phone numbers in search results if available. This returns all available phone numbers including personal and work numbers. **Cost: 14 credits per candidate**. Deprecated name: `show_phone_numbers`"
+                  description: "Include phone numbers in search results if available. This returns all available phone numbers including personal and work numbers. **Cost: 6 credits per candidate**. Deprecated name: `show_phone_numbers`"
                 limit:
                   type: integer
                   minimum: 1
@@ -1106,7 +1106,7 @@ paths:
         
         You can provide either `docid` (LinkedIn profile ID) or `email`. If only `email` is provided, the system will attempt to resolve it to a LinkedIn profile.
 
-        **Cost: 1 credit + extra credits for each of `high_freshness`, `reveal_emails`, `reveal_phones` and `with_profile` parameters if enabled. Email lookup adds +1 credit.**
+        **Cost: 1 credit + extra credits for each of `high_freshness`, `reveal_emails`, `reveal_phones` and `with_profile` parameters if enabled. `reveal_emails` and `reveal_phones` are 6 credits each when contact data is found. Email lookup adds +1 credit.**
       security:
         - bearerAuth: []
       parameters:
@@ -1137,14 +1137,14 @@ paths:
           required: false
           schema:
             type: boolean
-          description: "Include email addresses in the profile if available. **Cost: 2 credits, only charged if the profile has at least one email address**. Deprecated name: `show_emails`"
+          description: "Include email addresses in the profile if available. **Cost: 6 credits, only charged if the profile has at least one email address**. Deprecated name: `show_emails`"
           example: false
         - name: reveal_phones
           in: query
           required: false
           schema:
             type: boolean
-          description: "Include phone numbers in the profile if available. **Cost: 14 credits, only charged if the profile has at least one phone number**. Deprecated name: `show_phone_numbers`"
+          description: "Include phone numbers in the profile if available. **Cost: 6 credits, only charged if the profile has at least one phone number**. Deprecated name: `show_phone_numbers`"
           example: false
         - name: with_profile
           in: query
@@ -1490,11 +1490,11 @@ paths:
                       example: false
                     reveal_emails:
                       type: boolean
-                      description: Include email addresses in results
+                      description: "Include email addresses in results. **Cost: 6 credits per candidate, only charged if the candidate has at least one email address**"
                       example: false
                     reveal_phones:
                       type: boolean
-                      description: Include phone numbers in results
+                      description: "Include phone numbers in results. **Cost: 6 credits per candidate, only charged if the candidate has at least one phone number**"
                       example: false
                     custom_filters:
                       $ref: '#/components/schemas/CustomFilters'
