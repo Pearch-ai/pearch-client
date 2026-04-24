@@ -23,6 +23,8 @@ from .schema import (
     V1UserResponse,
     V2SearchCompanyLeadsRequest,
     V2SearchCompanyLeadsResponse,
+    V2SearchCountRequest,
+    V2SearchCountResponse,
     V2SearchRequest,
     V2SearchResponse,
     V2SearchSubmitResponse,
@@ -217,6 +219,17 @@ class PearchClient:
         )
 
         return V2SearchResponse(**response_data)
+
+    def search_count(self, request: V2SearchCountRequest) -> V2SearchCountResponse:
+        logger.info("Executing v2 search count")
+
+        response_data = self._make_request(
+            method="POST",
+            endpoint="v2/search/count",
+            data=request.model_dump(exclude_none=True),
+        )
+
+        return V2SearchCountResponse(**response_data)
 
     def search_company_leads(
         self, request: V2SearchCompanyLeadsRequest
@@ -622,6 +635,17 @@ class AsyncPearchClient:
         )
 
         return V2SearchResponse(**response_data)
+
+    async def search_count(self, request: V2SearchCountRequest) -> V2SearchCountResponse:
+        logger.info("Executing async v2 search count")
+
+        response_data = await self._make_request(
+            method="POST",
+            endpoint="v2/search/count",
+            data=request.model_dump(exclude_none=True),
+        )
+
+        return V2SearchCountResponse(**response_data)
 
     async def search_company_leads(
         self, request: V2SearchCompanyLeadsRequest

@@ -218,6 +218,70 @@ paths:
         "400":
           description: Invalid parameter values. JSON body contains the error message.
 
+  /v2/search/count:
+    post:
+      operationId: post_v2-search-count
+      summary: Count profiles matching custom filters
+      tags:
+        - Search
+      description: |
+        Return an estimated count of profiles that match the provided `custom_filters`.
+
+        This endpoint does not run the full search pipeline (no LLM query interpretation). It is intended for quickly checking how broad or narrow a set of filters is before running `/v2/search`.
+
+        The request must include `custom_filters` with at least one non-empty constraint (for example `locations`, `titles`, `companies`, `industries`, follower count ranges, etc.).
+
+        Expect slower response for expected large counts. E.g. for title="manager" from "US" you should expect slower response and approximate=true in the response. For title="meteorologist" from "tokio" expect faster response and approximate=false in the response.
+
+        **Cost: 2 credits per call**
+
+        _Check out official [Python client](https://github.com/Pearch-ai/pearch-client)_
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                custom_filters:
+                  $ref: '#/components/schemas/CustomFilters'
+              required:
+                - custom_filters
+      responses:
+        "200":
+          description: Count computed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
+                    description: Estimated number of matching profiles.
+                    example: 1234
+                  approximate:
+                    type: boolean
+                    description: True if the count was extrapolated from a subset of shards (not all shards returned a count).
+                    example: false
+                  uuid:
+                    type: string
+                    description: Unique identifier for this request.
+                    example: "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+                  credits_used:
+                    type: integer
+                    description: Credits charged for this request.
+                    example: 0
+                  credits_remaining:
+                    type: integer
+                    description: Number of credits remaining after this request.
+                    example: 950
+        "401":
+          description: Invalid API key
+        "400":
+          description: Invalid parameter values. JSON body contains the error message.
+
  
   /v2/search_company_leads:
     post:

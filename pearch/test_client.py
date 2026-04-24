@@ -34,6 +34,7 @@ from pearch.schema import (
     Job,
     V2SearchResponse,
     V2SearchStatusResponse,
+    V2SearchCountRequest,
     CustomFilters,
 )
 
@@ -54,6 +55,7 @@ def generate_curl_command(client_method: str, request: Any) -> str:
         "delete_jobs": ("POST", "v1/delete_jobs"),
         "search": ("POST", "v2/search"),
         "search_company_leads": ("POST", "v2/search_company_leads"),
+        "search_count": ("POST", "v2/search/count"),
         "search_submit": ("POST", "v2/search/submit"),
         "get_search_status": ("GET", "v2/search/status"),
     }
@@ -683,6 +685,25 @@ async def test_filters():
         for result in response.search_results
     )
     assert all(result.profile.followers_count >= 1 and result.profile.followers_count <= 1000 for result in response.search_results)
+
+
+@pytest.mark.asyncio
+async def test_v2_search_count():
+    credits1 = await get_credits()
+    request = V2SearchCountRequest(
+        custom_filters=CustomFilters(
+            locations=["Tokio"],
+            titles=["meteorologist"],
+        )
+    )
+    generate_curl_command("search_count", request)
+    response = await AsyncPearchClient().search_count(request)
+    assert response.count >= 0
+    assert response.uuid
+    assert response.credits_used is not None
+    assert response.credits_remaining is not None
+    credits2 = await get_credits()
+    assert credits1 - credits2 == response.credits_used, "Credits check failed"
 
 
 

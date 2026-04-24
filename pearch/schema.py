@@ -424,6 +424,21 @@ class V2SearchRequest(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
 
 
+class V2SearchCountRequest(BaseModel):
+    strict_filters: bool | None = None
+    custom_filters: CustomFilters
+    enable_custom_search: bool | None = None
+    model_config = ConfigDict(extra="ignore")
+
+
+class V2SearchCountResponse(BaseModel):
+    count: int
+    uuid: str | None = None
+    credits_used: int | None = None
+    credits_remaining: int | None = None
+    model_config = ConfigDict(extra="ignore")
+
+
 class V2SearchCompanyLeadsRequest(BaseModel):
     company_query: str
     thread_id: str | None = None
