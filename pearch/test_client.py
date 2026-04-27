@@ -681,7 +681,8 @@ async def test_filters():
     assert all("bachelor" in str(result.profile.educations) for result in response.search_results)
     allowed_categories = {"Computer Science & IT", "Engineering"}
     assert all(
-        any(edu.specialization_category in allowed_categories for edu in (result.profile.educations or []))
+        all(edu.specialization_category is None or edu.specialization_category in allowed_categories
+            for edu in (result.profile.educations or []))
         for result in response.search_results
     )
     assert all(result.profile.followers_count >= 1 and result.profile.followers_count <= 1000 for result in response.search_results)
