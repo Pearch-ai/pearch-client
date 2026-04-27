@@ -681,7 +681,7 @@ async def test_filters():
     assert all("bachelor" in str(result.profile.educations) for result in response.search_results)
     allowed_categories = {"Computer Science & IT", "Engineering"}
     assert all(
-        all(edu.specialization_category is None or edu.specialization_category in allowed_categories
+        any(edu.specialization_category in allowed_categories
             for edu in (result.profile.educations or []))
         for result in response.search_results
     )
