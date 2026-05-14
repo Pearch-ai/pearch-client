@@ -176,7 +176,6 @@ class Profile(BaseModel):
     memberships: List[Any] | None = Field(default_factory=list)
     patents: List[Patent] | None = Field(default_factory=list)
     publications: List[Any] | None = Field(default_factory=list)
-    updated_date: Date | None = None
 
     outreach_message: str | None = None
 

@@ -2476,11 +2476,6 @@ components:
             type: object
             description: Publication object with flexible structure.
             additionalProperties: true
-        updated_date:
-          type: string
-          format: date
-          description: Date when the profile was last updated.
-          example: "2024-01-15"
 
     ScoredProfile:
       type: object
