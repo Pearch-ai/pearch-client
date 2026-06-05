@@ -44,7 +44,7 @@ paths:
 
         Check out other parameters below to adjust speed vs quality and additional data that can be returned by the endpoint. 
 
-        **Cost: (number of profiles returned) × (sum of credits for each of `type`, `insights`, `profile_scoring`, `high_freshness`, `reveal_emails`, `reveal_phones`)**
+        **Cost: (number of profiles returned) × (credits for `type` + `insights` + `profile_scoring` (0) + `high_freshness` + `reveal_emails` + `reveal_phones`)**
 
       security:
         - bearerAuth: []
@@ -89,7 +89,7 @@ paths:
                 profile_scoring:
                   type: boolean
                   default: true
-                  description: "Enable profile scoring and reranking for better result quality. This filters out less relevant profiles and produces scores for more relevant once. Scores range from 0.0 to 4.0 where higher is better. **Included free with pro search. With fast search: 1 credit per candidate**" 
+                  description: "Enable profile scoring and reranking for better result quality. This filters out less relevant profiles and produces scores for more relevant once. Scores range from 0.0 to 4.0 where higher is better. **Cost: 0 credits**" 
                 custom_filters:
                   $ref: '#/components/schemas/CustomFilters'
                 custom_filters_mode:
@@ -452,7 +452,7 @@ paths:
         
         All the same search parameters are supported as the synchronous `/v2/search` endpoint, including `thread_id` for continuation and pagination.
 
-        **Cost: (number of profiles returned) × (sum of credits for each of `type`, `insights`, `profile_scoring`, `high_freshness`, `reveal_emails`, `reveal_phones`)**
+        **Cost: (number of profiles returned) × (credits for `type` + `insights` + `profile_scoring` (0) + `high_freshness` + `reveal_emails` + `reveal_phones`)**
         
         _Check out official [Python client](https://github.com/Pearch-ai/pearch-client)_
       security:
@@ -498,7 +498,7 @@ paths:
                 profile_scoring:
                   type: boolean
                   default: true
-                  description: "Enable profile scoring and reranking for better result quality. This filters out less relevant profiles and produces scores for more relevant once. Scores range from 0.0 to 4.0 where higher is better. **Included free with pro search. With fast search: 1 credit per candidate**" 
+                  description: "Enable profile scoring and reranking for better result quality. This filters out less relevant profiles and produces scores for more relevant once. Scores range from 0.0 to 4.0 where higher is better. **Cost: 0 credits**" 
                 custom_filters:
                   $ref: '#/components/schemas/CustomFilters'
                 custom_filters_mode:
@@ -1420,7 +1420,7 @@ paths:
         
         The response is a Server-Sent Events (SSE) stream with `text/event-stream` content type. Each event contains the stream mode and data.
         
-        **Cost: (number of profiles returned) × (sum of credits for each of `type`, `insights`, `profile_scoring`, `high_freshness`, `reveal_emails`, `reveal_phones`)**
+        **Cost: (number of profiles returned) × (credits for `type` + `insights` + `profile_scoring` (0) + `high_freshness` + `reveal_emails` + `reveal_phones`)**
         
         Example request (Python):
         ```python
@@ -1546,7 +1546,7 @@ paths:
                       description: When insights is true, optionally restrict which insight fields to include.
                     profile_scoring:
                       type: boolean
-                      description: Enable profile scoring
+                      description: "Enable profile scoring. **Cost: 0 credits**"
                       example: true
                     high_freshness:
                       type: boolean
