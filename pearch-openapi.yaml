@@ -89,7 +89,11 @@ paths:
                 profile_scoring:
                   type: boolean
                   default: true
-                  description: "Enable profile scoring and reranking for better result quality. This filters out less relevant profiles and produces scores for more relevant once. Scores range from 0.0 to 4.0 where higher is better. **Cost: 0 credits**" 
+                  description: "Enable profile scoring and reranking for better result quality. This filters out less relevant profiles and produces scores for more relevant once. Scores range from 0.0 to 4.0 where higher is better. **Included free with pro search. With fast search: 1 credit per candidate**" 
+                fill_with_low_confidence_results:
+                  type: boolean
+                  default: true
+                  description: "Fill below-limit responses with low confidence results when profile scoring exhausts candidates before reaching the requested limit. These fallback profiles are marked with their score and have credits_charged set to 0."
                 custom_filters:
                   $ref: '#/components/schemas/CustomFilters'
                 custom_filters_mode:
@@ -498,7 +502,11 @@ paths:
                 profile_scoring:
                   type: boolean
                   default: true
-                  description: "Enable profile scoring and reranking for better result quality. This filters out less relevant profiles and produces scores for more relevant once. Scores range from 0.0 to 4.0 where higher is better. **Cost: 0 credits**" 
+                  description: "Enable profile scoring and reranking for better result quality. This filters out less relevant profiles and produces scores for more relevant once. Scores range from 0.0 to 4.0 where higher is better. **Included free with pro search. With fast search: 1 credit per candidate**" 
+                fill_with_low_confidence_results:
+                  type: boolean
+                  default: true
+                  description: "Fill below-limit responses with low confidence results when profile scoring exhausts candidates before reaching the requested limit. These fallback profiles are marked with their score and have credits_charged set to 0."
                 custom_filters:
                   $ref: '#/components/schemas/CustomFilters'
                 custom_filters_mode:
@@ -2530,6 +2538,10 @@ components:
           description: Numerical score representing candidate relevance. 4 - great candidate, 3 - good candidate, 2 - worth reviewing, 1 - irrelevant candidate. We don't return irrelevant candidates (score=1) when `profile_scoring=true` unless docid_whitelist is provided.
           example: 4
           enum: [1, 2, 3, 4]
+        credits_charged:
+          type: integer
+          description: Credits charged for this search result.
+          example: 5
         profile:
           $ref: '#/components/schemas/Profile'
         outreach_message:

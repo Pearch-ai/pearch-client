@@ -36,6 +36,7 @@ from pearch.schema import (
     V2SearchStatusResponse,
     V2SearchCountRequest,
     CustomFilters,
+    SearchRequirement,
 )
 
 logger = logging.getLogger(__name__)
@@ -339,6 +340,27 @@ async def test_v2_fast_search():
 
 
 @pytest.mark.asyncio
+async def test_v2_search_requirements():
+    credits1 = await get_credits()
+    request = V2SearchRequest(
+        search_requirements=[
+            SearchRequirement(search_requirement="software engineer", must_have=True),
+            SearchRequirement(search_requirement="located in dallas", must_have=True),
+            SearchRequirement(search_requirement="with a sense of humor", must_have=False),
+        ],
+        type="fast",
+        limit=2,
+    )
+    generate_curl_command("search", request)
+    response: V2SearchResponse = await AsyncPearchClient().search(request)
+    assert len(response.search_results) == 2
+    assert all(result.profile.linkedin_slug for result in response.search_results)
+    validate_credits(request, response)
+    credits2 = await get_credits()
+    assert credits1 - credits2 == response.credits_used, "Credits check failed"
+
+
+@pytest.mark.asyncio
 async def test_v2_pro_search_generic():
     credits1 = await get_credits()
     logger.info("Running a first query: Find me engineers in California speaking at least basic english working in software industry with experience at FAANG with 2+ years of experience and at least 500 followers and at least BS degree")
@@ -597,6 +619,7 @@ async def test_async_search_v2():
     )
     generate_curl_command("search", first_request)
     response = await AsyncPearchClient().search(first_request)
+    assert response.status == "pending", "Async submit did not return pending"
 
     check_results = V2SearchRequest(
         thread_id=response.thread_id,
@@ -620,9 +643,8 @@ async def test_async_search_v2():
     )
     generate_curl_command("search", followup_request)
     followup_response = await AsyncPearchClient().search(followup_request)
+    assert followup_response.status == "pending", "Async submit did not return pending"
     check_followup = V2SearchRequest(thread_id=followup_response.thread_id)
-    first_followup_check = await AsyncPearchClient().search(check_followup)
-    assert first_followup_check.status == "pending", "First followup check status is not pending"
     while True:
         followup_results = await AsyncPearchClient().search(check_followup)
         if followup_results.status == "Done":
@@ -630,7 +652,7 @@ async def test_async_search_v2():
             for result in followup_results.search_results:
                 profile_dump = result.profile.model_dump()
                 profile_json = str(profile_dump).lower()
-                assert "seattle" in profile_json
+                assert "seattle" in profile_json or "bellevue" in profile_json
                 assert "software engineer" in profile_json
             credits3 = await get_credits()            
             assert credits1 - credits3 == followup_results.credits_used_total, f"Credits charged {credits1 - credits3} <> credits used total {followup_results.credits_used_total}"

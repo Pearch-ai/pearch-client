@@ -20,6 +20,7 @@ from .schema import (
     V2SearchCountRequest,
     V2SearchRequest,
     V2SearchCompanyLeadsRequest,
+    SearchRequirement,
     Job,
     ListedJob,
 )
@@ -43,6 +44,7 @@ __all__ = [
     "V2SearchCountRequest",
     "V2SearchRequest",
     "V2SearchCompanyLeadsRequest",
+    "SearchRequirement",
     "Job",
     "ListedJob",
 ]

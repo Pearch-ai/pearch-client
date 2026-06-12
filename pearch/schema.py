@@ -244,6 +244,7 @@ class ScoredProfile(BaseModel):
     profile: Profile | None = None
     insights: Insights | None = None
     score: int | None = None
+    credits_charged: int | None = None
     outreach_message: str | None = None
     model_config = ConfigDict(extra="ignore")
 
@@ -394,14 +395,22 @@ class CustomFilters(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
 
+class SearchRequirement(BaseModel):
+    search_requirement: str
+    must_have: bool = False
+    model_config = ConfigDict(extra="forbid")
+
+
 class V2SearchRequest(BaseModel):
     query: str | None = None
+    search_requirements: List[SearchRequirement] | None = None
     thread_id: str | None = None
     type: Literal["superfast", "fast", "pro"] | None = None
     insights: bool | None = None
     insights_items: List[InsightItem] | None = None
     high_freshness: bool | None = None
     profile_scoring: bool | None = None
+    fill_with_low_confidence_results: bool | None = True
     custom_filters: CustomFilters | None = None
     custom_filters_mode: CustomFiltersMode | None = None
     strict_filters: bool | None = None
