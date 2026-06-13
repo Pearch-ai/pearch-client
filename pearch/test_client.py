@@ -7,11 +7,12 @@ import logging
 import os
 import pytest
 import json
-from typing import Any
+from typing import Any, Literal
 import time
 import uuid
 
 from openai import OpenAI
+from pydantic import BaseModel
 
 from pearch.client import AsyncPearchClient
 from pearch.schema import (
@@ -37,9 +38,117 @@ from pearch.schema import (
     V2SearchCountRequest,
     CustomFilters,
     SearchRequirement,
+    SearchRequirementStats,
 )
 
 logger = logging.getLogger(__name__)
+
+
+class MustHaveRequirementAlignment(BaseModel):
+    requirement_alignment: list[Literal["full", "partial", "no"]]
+
+
+MUST_HAVE_REQUIREMENT_ALIGNMENT_PROMPT = """Evaluate whether the candidate profile matches each must-have search requirement.
+
+Use only explicit information from the candidate's profile. Do not infer or assume.
+
+For each requirement, determine the alignment:
+- "full": The requirement is fully met based on explicit evidence in the profile.
+- "partial": The requirement is partially met or can be inferred from profile evidence.
+- "no": The requirement is not aligned with the profile.
+
+Return one alignment per requirement, in the same order.
+
+Must-have requirements:
+{requirements}
+
+Candidate profile:
+{profile}
+"""
+
+
+def _returned_must_have_requirements(response: V2SearchResponse) -> list[str]:
+    stats = response.search_requirements_stats or []
+    return [
+        item.requirement
+        for item in stats
+        if isinstance(item, SearchRequirementStats) and item.must_have and item.requirement
+    ]
+
+
+def _score_from_must_have_alignment(alignment: list[str]) -> int:
+    if not alignment:
+        return 0
+    if "no" in alignment:
+        return 1
+    if all(value == "full" for value in alignment):
+        return 4
+    full_count = sum(1 for value in alignment if value == "full")
+    if full_count > len(alignment) / 2:
+        return 3
+    if all(value in ["full", "partial"] for value in alignment):
+        return 2
+    return 1
+
+
+async def validate_must_have_requirements_with_openrouter(response: V2SearchResponse):
+    if not os.getenv("OPENROUTER_API_KEY"):
+        logger.info("Not running client-side must-have scoring: OPENROUTER_API_KEY is not set")
+        return
+
+    from langchain_core.messages import HumanMessage
+    from langchain_openrouter import ChatOpenRouter
+
+    must_have_requirements = _returned_must_have_requirements(response)
+    if not must_have_requirements:
+        logger.info("Not running client-side must-have scoring: response has no returned must-have requirements")
+        return
+    logger.info(
+        "Running client-side must-have scoring for %s profiles against %s must-have requirements",
+        len(response.search_results or []),
+        len(must_have_requirements),
+    )
+
+    model = ChatOpenRouter(
+        model=os.getenv("OPENROUTER_TEST_MODEL", "anthropic/claude-sonnet-4.6"),
+        timeout=30000,
+        disable_streaming=True,
+        max_retries=1,
+    )
+    structured_model = model.with_structured_output(
+        MustHaveRequirementAlignment, method="json_schema", strict=True
+    )
+    failures = []
+
+    for result in response.search_results or []:
+        profile = result.profile.model_dump(mode="json", exclude_none=True) if result.profile else {}
+        alignment = await structured_model.ainvoke(
+            [
+                HumanMessage(
+                    content=MUST_HAVE_REQUIREMENT_ALIGNMENT_PROMPT.format(
+                        requirements=json.dumps(must_have_requirements, ensure_ascii=False),
+                        profile=json.dumps(profile, ensure_ascii=False),
+                    )
+                )
+            ]
+        )
+        assert len(alignment.requirement_alignment) == len(must_have_requirements), (
+            f"Expected one alignment per must-have requirement for {result.docid}: "
+            f"{alignment.requirement_alignment}"
+        )
+        profile_score = _score_from_must_have_alignment(alignment.requirement_alignment)
+        if result.score is not None and result.score >= 3 and profile_score < 2:
+            failures.append(
+                {
+                    "docid": result.docid,
+                    "linkedin_slug": result.profile.linkedin_slug if result.profile else None,
+                    "score": result.score,
+                    "requirement_alignment": alignment.requirement_alignment,
+                    "must_have_requirements": must_have_requirements,
+                }
+            )
+
+    assert not failures, f"Profiles with score >= 3 missed at least one must-have requirement: {failures}"
 
 
 def generate_curl_command(client_method: str, request: Any) -> str:
@@ -355,6 +464,7 @@ async def test_v2_search_requirements():
     response: V2SearchResponse = await AsyncPearchClient().search(request)
     assert len(response.search_results) == 2
     assert all(result.profile.linkedin_slug for result in response.search_results)
+    await validate_must_have_requirements_with_openrouter(response)
     validate_credits(request, response)
     credits2 = await get_credits()
     assert credits1 - credits2 == response.credits_used, "Credits check failed"
@@ -384,6 +494,7 @@ async def test_v2_pro_search_generic():
     assert all(len(result.profile.all_phone_numbers()) > 0 for result in response.search_results)
     first_page_slugs = [r.profile.linkedin_slug for r in response.search_results]
     logger.info(f"First page slugs: {first_page_slugs}")
+    await validate_must_have_requirements_with_openrouter(response)
     validate_credits(first_request, response)
     credits2 = await get_credits()
     logger.info(f"Credits2: {credits2}")
@@ -400,6 +511,7 @@ async def test_v2_pro_search_generic():
     assert len(response.search_results) == 2, "Expected 2 results, in the second page query"
     second_page_slugs = [r.profile.linkedin_slug for r in response.search_results]
     logger.info(f"Second page slugs: {second_page_slugs}")
+    await validate_must_have_requirements_with_openrouter(response)
     validate_credits(first_request, response)
     credits3 = await get_credits()
     logger.info(f"Credits3: {credits3}")
@@ -417,6 +529,7 @@ async def test_v2_pro_search_generic():
     logger.info(f"All results slugs: {[r.profile.linkedin_slug for r in all_results]}")
     assert second_page_slugs[0] == all_results[2].profile.linkedin_slug
     assert second_page_slugs[1] == all_results[3].profile.linkedin_slug
+    await validate_must_have_requirements_with_openrouter(response)
     credits4 = await get_credits()
     logger.info(f"Credits4: {credits4}")
     assert credits3 - credits4 == 0 and response.credits_used == 0, "Cached results should not cost any credits"
@@ -429,6 +542,7 @@ async def test_v2_pro_search_generic():
     generate_curl_command("search", third_request)
     response: V2SearchResponse = await AsyncPearchClient().search(third_request)
     assert len(response.search_results) == 2, f"Expected 2 results, in the follow up query, actual results: {len(response.search_results)}"
+    await validate_must_have_requirements_with_openrouter(response)
     validate_credits(third_request, response)
     credits5 = await get_credits()
     logger.info(f"Credits5: {credits5}")

@@ -249,6 +249,20 @@ class ScoredProfile(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
 
+class RequirementMatchStats(BaseModel):
+    full: float | None = None
+    partial: float | None = None
+    no: float | None = None
+    model_config = ConfigDict(extra="ignore")
+
+
+class SearchRequirementStats(BaseModel):
+    requirement: str | None = None
+    must_have: bool = False
+    match_stats: RequirementMatchStats | None = None
+    model_config = ConfigDict(extra="ignore")
+
+
 class CompanyLeadResult(BaseModel):
     company: CompanyInfo | None = None
     leads: List[ScoredProfile] | None = Field(default_factory=list)
@@ -289,6 +303,7 @@ class V2SearchResponse(BaseModel):
     credits_used: int | None = None
     credits_used_total: int | None = None
     search_results: List[ScoredProfile] | None = Field(default_factory=list)
+    search_requirements_stats: List[SearchRequirementStats] | None = Field(default_factory=list)
     model_config = ConfigDict(extra="ignore")
 
 
