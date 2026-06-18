@@ -29,6 +29,7 @@ from pearch.schema import (
     V1DeleteJobsRequest,
     V1DeleteJobsResponse,
     V1UserResponse,
+    InsightItem,
     V2SearchCompanyLeadsResponse,
     V2SearchRequest,
     V2SearchCompanyLeadsRequest,
@@ -377,6 +378,8 @@ def validate_credits(request: V2SearchRequest, response: V2SearchResponse | V2Se
         response: The search response
     """
 
+    validate_requested_insights_items(request, response)
+
     type_val = request.type if request.type is not None else "pro"
     insights = request.insights if request.insights is not None else True
     high_freshness = request.high_freshness if request.high_freshness is not None else False
@@ -420,6 +423,39 @@ def validate_credits(request: V2SearchRequest, response: V2SearchResponse | V2Se
     assert response.credits_used == expected_credits or response.credits_used_total == expected_credits, f"{response.credits_used=} == {expected_credits=} or {response.credits_used_total=} == {expected_credits=}"
 
 
+def _is_not_empty(value: Any) -> bool:
+    if isinstance(value, str):
+        return bool(value.strip())
+    if isinstance(value, list):
+        return bool(value) and all(_is_not_empty(item) for item in value)
+    return value is not None
+
+
+def validate_requested_insights_items(request: V2SearchRequest, response: V2SearchResponse | V2SearchStatusResponse):
+    insights_enabled = request.insights if request.insights is not None else True
+    if not insights_enabled or not request.insights_items:
+        return
+
+    requested_items = [
+        item.value if isinstance(item, InsightItem) else item
+        for item in request.insights_items
+    ]
+    query_insight_items = [
+        item for item in requested_items if item != InsightItem.OVERALL_SUMMARY.value
+    ]
+
+    for result_idx, result in enumerate(response.search_results or []):
+        assert result.insights is not None, f"Result {result_idx} is missing insights"
+        if InsightItem.OVERALL_SUMMARY.value in requested_items:
+            assert _is_not_empty(result.insights.overall_summary), f"Result {result_idx} has empty overall_summary"
+        if query_insight_items:
+            assert result.insights.query_insights, f"Result {result_idx} is missing query_insights"
+        for insight_idx, query_insight in enumerate(result.insights.query_insights or []):
+            for item in query_insight_items:
+                value = getattr(query_insight, item)
+                assert _is_not_empty(value), f"Result {result_idx} query insight {insight_idx} has empty {item}"
+
+
 
 @pytest.mark.asyncio
 async def test_v2_fast_search():
@@ -431,6 +467,11 @@ async def test_v2_fast_search():
         reveal_emails=True,
         reveal_phones=True,
         insights=True,
+        insights_items=[
+            InsightItem.OVERALL_SUMMARY,
+            InsightItem.RATIONALE,
+            InsightItem.SHORT_RATIONALE,
+        ],
         high_freshness=True,
         profile_scoring=True,
         filter_out_no_emails=True,
@@ -481,6 +522,11 @@ async def test_v2_pro_search_generic():
         reveal_emails=True,
         reveal_phones=True,
         insights=True,
+        insights_items=[
+            InsightItem.OVERALL_SUMMARY,
+            InsightItem.RATIONALE,
+            InsightItem.SHORT_RATIONALE,
+        ],
         high_freshness=True,
         profile_scoring=True,
         filter_out_no_emails=True,
@@ -530,6 +576,7 @@ async def test_v2_pro_search_generic():
     assert second_page_slugs[0] == all_results[2].profile.linkedin_slug
     assert second_page_slugs[1] == all_results[3].profile.linkedin_slug
     await validate_must_have_requirements_with_openrouter(response)
+    validate_requested_insights_items(first_request, response)
     credits4 = await get_credits()
     logger.info(f"Credits4: {credits4}")
     assert credits3 - credits4 == 0 and response.credits_used == 0, "Cached results should not cost any credits"
@@ -547,9 +594,70 @@ async def test_v2_pro_search_generic():
     credits5 = await get_credits()
     logger.info(f"Credits5: {credits5}")
     assert credits4 - credits5 == response.credits_used, "Credits check failed"
- 
-  
-  
+
+
+@pytest.mark.asyncio
+async def test_v2_free_masked_search():
+    # In free mode the response is masked even when the user has credits:
+    # only id, masked name and location are surfaced from the profile (so a
+    # candidate can't be re-identified by googling an exact quote), insights
+    # are always on, and no credits are charged.
+    credits_before = await get_credits()
+    request = V2SearchRequest(
+        query="software engineers in San Francisco",
+        limit=3,
+        free=True,
+    )
+    generate_curl_command("search", request)
+
+    client = AsyncPearchClient()
+    raw = await client._make_request(
+        method="POST",
+        endpoint="v2/search",
+        data=request.model_dump(exclude_none=True, by_alias=True),
+    )
+    response = V2SearchResponse(**raw)
+    assert response.search_results, "Expected masked search results"
+
+    allowed_profile_keys = {
+        "uuid",
+        "first_name",
+        "middle_name",
+        "last_name",
+        "location",
+    }
+    cheat_vector_keys = (
+        "linkedin_slug",
+        "docid",
+        "title",
+        "summary",
+        "experiences",
+        "educations",
+        "expertise",
+        "picture_url",
+        "awards",
+        "certifications",
+    )
+    for result in raw["search_results"]:
+        profile = result["profile"]
+        leaked = set(profile.keys()) - allowed_profile_keys
+        assert not leaked, f"Masked profile leaked non-whitelisted fields: {leaked}"
+        for key in cheat_vector_keys:
+            assert key not in profile, f"Masked profile must not expose '{key}'"
+        uuid.UUID(profile["uuid"])
+        # Name is masked: first character preserved, the rest replaced with 'x'.
+        first_name = profile.get("first_name")
+        assert first_name, "Masked profile must still expose a (masked) name"
+        if len(first_name) > 1:
+            assert set(first_name[1:]) == {"x"}, f"Name is not masked: {first_name}"
+        # Insights are always on in free mode.
+        assert result.get("insights"), "Insights must be present in free mode"
+
+    # Free search never charges the user, even with a positive balance.
+    assert response.credits_used == 0, "Free search must not charge credits"
+    credits_after = await get_credits()
+    assert credits_before == credits_after, "Free search must not change the credit balance"
+
 
 def validate_company_leads_credits(request: V2SearchCompanyLeadsRequest, response: V2SearchCompanyLeadsResponse):
     expected_credits = 0

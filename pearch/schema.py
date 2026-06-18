@@ -443,6 +443,7 @@ class V2SearchRequest(BaseModel):
     require_phone_numbers: bool | None = None
     require_phones_or_emails: bool | None = None
     show_phone_numbers: bool | None = None
+    free: bool | None = None
     async_: bool | None = Field(default=None, alias="async")
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
 
