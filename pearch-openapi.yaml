@@ -46,6 +46,8 @@ paths:
 
         **Cost: (number of profiles returned) × (credits for `type` + `insights` + `profile_scoring` (0) + `high_freshness` + `reveal_emails` + `reveal_phones`)**
 
+        **Rate limit: 60 actual search requests per user per 60 seconds.** `/v2/search`, `/v2/search/submit`, and `/v2/search/count` share this limit. Fully cached thread reloads that do not run a new search use a separate higher limit of 120 cached requests per user per 60 seconds. When the rate limit is exceeded, the API returns HTTP 429 with details about the triggered window, current value, and limit.
+
       security:
         - bearerAuth: []
       requestBody:
@@ -221,6 +223,8 @@ paths:
           description: Invalid API key
         "400":
           description: Invalid parameter values. JSON body contains the error message.
+        "429":
+          description: Rate limit exceeded. JSON body contains the triggered window, current value, and limit.
 
   /v2/search/count:
     post:
@@ -238,6 +242,8 @@ paths:
         Expect slower response for expected large counts. E.g. for title="manager" from "US" you should expect slower response and approximate=true in the response. For title="meteorologist" from "tokio" expect faster response and approximate=false in the response.
 
         **Cost: 2 credits per call**
+
+        **Rate limit: 60 requests per user per 60 seconds.** This endpoint shares the same rate limit as actual `/v2/search` and `/v2/search/submit` executions. When the rate limit is exceeded, the API returns HTTP 429 with details about the triggered window, current value, and limit.
 
         _Check out official [Python client](https://github.com/Pearch-ai/pearch-client)_
       security:
@@ -285,6 +291,8 @@ paths:
           description: Invalid API key
         "400":
           description: Invalid parameter values. JSON body contains the error message.
+        "429":
+          description: Rate limit exceeded. JSON body contains the triggered window, current value, and limit.
 
  
   /v2/search_company_leads:
@@ -457,6 +465,8 @@ paths:
         All the same search parameters are supported as the synchronous `/v2/search` endpoint, including `thread_id` for continuation and pagination.
 
         **Cost: (number of profiles returned) × (credits for `type` + `insights` + `profile_scoring` (0) + `high_freshness` + `reveal_emails` + `reveal_phones`)**
+
+        **Rate limit: 60 actual search requests per user per 60 seconds.** `/v2/search`, `/v2/search/submit`, and `/v2/search/count` share this limit. Fully cached thread reloads that do not run a new search use a separate higher limit of 120 cached requests per user per 60 seconds. When the rate limit is exceeded, the API returns HTTP 429 with details about the triggered window, current value, and limit.
         
         _Check out official [Python client](https://github.com/Pearch-ai/pearch-client)_
       security:
@@ -588,6 +598,8 @@ paths:
           description: Invalid parameter values. JSON body contains the error message.
         "401":
           description: Invalid API key
+        "429":
+          description: Rate limit exceeded. JSON body contains the triggered window, current value, and limit.
 
   /v2/search/status/{task_id}:
     get:
@@ -677,6 +689,8 @@ paths:
         Run a search query. Parameter are accepted both as query parameters with GET request and as JSON body with POST request.
 
         **Cost: 1 credits per candidate if `type='fast'`, 7 credits per candidate if `type='pro'` + 2 credits per candidate if `filter_out_no_emails` is true**
+
+        **Rate limit: 60 requests per user per 60 seconds.** When the rate limit is exceeded, the API returns HTTP 429 with details about the triggered window, current value, and limit.
 
 
         _Check out official [Python client](https://github.com/Pearch-ai/pearch-client)_
@@ -1162,6 +1176,8 @@ paths:
           description: Invalid parameter values. 
         "401":
           description: Invalid API key
+        "429":
+          description: Rate limit exceeded. JSON body contains the triggered window, current value, and limit.
 
   /v1/profile:
     get:
@@ -1179,6 +1195,8 @@ paths:
         You can provide either `docid` (LinkedIn profile ID) or `email`. If only `email` is provided, the system will attempt to resolve it to a LinkedIn profile.
 
         **Cost: 1 credit + extra credits for each of `high_freshness`, `reveal_emails`, `reveal_phones` and `with_profile` parameters if enabled. `reveal_emails` and `reveal_phones` are 6 credits each when contact data is found. Email lookup adds +1 credit.**
+
+        **Rate limit: 60 requests per user per 60 seconds.** When the rate limit is exceeded, the API returns HTTP 429 with details about the triggered window, current value, and limit.
       security:
         - bearerAuth: []
       parameters:
@@ -1245,6 +1263,8 @@ paths:
           description: Profile not found
         "400":
           description: Invalid parameter values or missing required parameters. At least one of `docid` or `email` must be provided. JSON body contains the error message.
+        "429":
+          description: Rate limit exceeded. JSON body contains the triggered window, current value, and limit.
 
   /v1/user:
     get:

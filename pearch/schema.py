@@ -425,7 +425,7 @@ class V2SearchRequest(BaseModel):
     insights_items: List[InsightItem] | None = None
     high_freshness: bool | None = None
     profile_scoring: bool | None = None
-    fill_with_low_confidence_results: bool | None = True
+    fill_with_low_confidence_results: bool | None = None
     custom_filters: CustomFilters | None = None
     custom_filters_mode: CustomFiltersMode | None = None
     strict_filters: bool | None = None

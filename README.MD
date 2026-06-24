@@ -25,6 +25,14 @@ pip install -e git+https://github.com/Pearch-ai/pearch-client#egg=pearch-client
 
 Check out API documentation: https://apidocs.pearch.ai/reference/post_v2-search
 
+## Rate Limits
+
+Rate limits are per user and use a rolling 60 second window. When a limit is exceeded, the API returns HTTP 429 with details about the triggered window, current value, and limit.
+
+- `/v2/search`, `/v2/search/submit`, and `/v2/search/count`: 60 actual search/count requests per 60 seconds, shared across these endpoints. Fully cached `/v2/search` thread reloads that do not run a new search use a separate 120 requests per 60 seconds limit.
+- `/v1/search`: 60 requests per 60 seconds.
+- `/v1/profile`: 60 requests per 60 seconds.
+
 ### Async client (/v2/search)
 
 ```python

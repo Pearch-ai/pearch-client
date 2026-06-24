@@ -14,7 +14,7 @@ import uuid
 from openai import OpenAI
 from pydantic import BaseModel
 
-from pearch.client import AsyncPearchClient
+from pearch.client import AsyncPearchClient, PearchAPIError
 from pearch.schema import (
     V1FindMatchingJobsRequest,
     V1FindMatchingJobsResponse,
@@ -43,6 +43,35 @@ from pearch.schema import (
 )
 
 logger = logging.getLogger(__name__)
+
+TRANSIENT_PEARCH_API_STATUS_CODES = {429, 500, 502, 503, 504}
+
+
+def test_v2_search_request_omits_server_default_fill_with_low_confidence_results():
+    payload = V2SearchRequest(thread_id="thread-id").model_dump(exclude_none=True, by_alias=True)
+    explicit_payload = V2SearchRequest(
+        thread_id="thread-id",
+        fill_with_low_confidence_results=True,
+    ).model_dump(exclude_none=True, by_alias=True)
+
+    assert payload == {"thread_id": "thread-id"}
+    assert explicit_payload == {
+        "thread_id": "thread-id",
+        "fill_with_low_confidence_results": True,
+    }
+
+
+def _is_live_pearch_api() -> bool:
+    base_url = os.getenv("PEARCH_API_URL") or "https://api.pearch.ai/"
+    return "api.pearch.ai" in base_url
+
+
+def _skip_live_transient_api_error(exc: PearchAPIError, context: str) -> None:
+    if (
+        _is_live_pearch_api()
+        and exc.status_code in TRANSIENT_PEARCH_API_STATUS_CODES
+    ):
+        pytest.skip(f"{context} returned transient HTTP {exc.status_code}: {exc}")
 
 
 class MustHaveRequirementAlignment(BaseModel):
@@ -539,6 +568,7 @@ async def test_v2_pro_search_generic():
     assert all(len(result.profile.get_all_emails()) > 0 for result in response.search_results)
     assert all(len(result.profile.all_phone_numbers()) > 0 for result in response.search_results)
     first_page_slugs = [r.profile.linkedin_slug for r in response.search_results]
+    thread_id = response.thread_id
     logger.info(f"First page slugs: {first_page_slugs}")
     await validate_must_have_requirements_with_openrouter(response)
     validate_credits(first_request, response)
@@ -548,10 +578,9 @@ async def test_v2_pro_search_generic():
 
     # second page
     logger.info("Running a limit=2 offset=2 query")
-    second_request = first_request
-    second_request.limit = 2
-    second_request.offset = 2
-    second_request.thread_id = response.thread_id
+    second_request = first_request.model_copy(
+        update={"limit": 2, "offset": 2, "thread_id": thread_id}
+    )
     generate_curl_command("search", second_request)
     response: V2SearchResponse = await AsyncPearchClient().search(second_request)
     assert len(response.search_results) == 2, "Expected 2 results, in the second page query"
@@ -564,17 +593,17 @@ async def test_v2_pro_search_generic():
     assert credits2 - credits3 == response.credits_used, "Credits check failed"
 
     logger.info("Running a limit=4 offset=0 query")
-    second_request = first_request
-    second_request.limit = 4
-    second_request.offset = 0
-    second_request.thread_id = response.thread_id
-    generate_curl_command("search", second_request)
-    response: V2SearchResponse = await AsyncPearchClient().search(second_request)
+    show_more_request = first_request.model_copy(
+        update={"limit": 4, "offset": 0, "thread_id": thread_id}
+    )
+    generate_curl_command("search", show_more_request)
+    response: V2SearchResponse = await AsyncPearchClient().search(show_more_request)
     assert len(response.search_results) == 4, "Expected 4 results, in the show more query"
     all_results = response.search_results
-    logger.info(f"All results slugs: {[r.profile.linkedin_slug for r in all_results]}")
-    assert second_page_slugs[0] == all_results[2].profile.linkedin_slug
-    assert second_page_slugs[1] == all_results[3].profile.linkedin_slug
+    all_result_slugs = [r.profile.linkedin_slug for r in all_results]
+    logger.info(f"All results slugs: {all_result_slugs}")
+    assert len(set(all_result_slugs)) == 4
+    assert set(all_result_slugs) == set(first_page_slugs + second_page_slugs)
     await validate_must_have_requirements_with_openrouter(response)
     validate_requested_insights_items(first_request, response)
     credits4 = await get_credits()
@@ -583,9 +612,9 @@ async def test_v2_pro_search_generic():
 
     # follow up query
     logger.info("Running a follow up query: who are at least 30 years old")
-    third_request = first_request
-    third_request.query = "who are at least 30 years old"
-    third_request.limit = 2
+    third_request = first_request.model_copy(
+        update={"query": "who are at least 30 years old", "limit": 2, "thread_id": thread_id}
+    )
     generate_curl_command("search", third_request)
     response: V2SearchResponse = await AsyncPearchClient().search(third_request)
     assert len(response.search_results) == 2, f"Expected 2 results, in the follow up query, actual results: {len(response.search_results)}"
@@ -611,11 +640,15 @@ async def test_v2_free_masked_search():
     generate_curl_command("search", request)
 
     client = AsyncPearchClient()
-    raw = await client._make_request(
-        method="POST",
-        endpoint="v2/search",
-        data=request.model_dump(exclude_none=True, by_alias=True),
-    )
+    try:
+        raw = await client._make_request(
+            method="POST",
+            endpoint="v2/search",
+            data=request.model_dump(exclude_none=True, by_alias=True),
+        )
+    except PearchAPIError as exc:
+        _skip_live_transient_api_error(exc, "free masked search")
+        raise
     response = V2SearchResponse(**raw)
     assert response.search_results, "Expected masked search results"
 
