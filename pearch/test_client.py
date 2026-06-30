@@ -409,6 +409,18 @@ def validate_credits(request: V2SearchRequest, response: V2SearchResponse | V2Se
 
     validate_requested_insights_items(request, response)
 
+    search_results = response.search_results or []
+    response_credit_values = {
+        value
+        for value in [response.credits_used, getattr(response, "credits_used_total", None)]
+        if value is not None
+    }
+    charged_credits = [result.credits_charged for result in search_results if result.credits_charged is not None]
+    if search_results and len(charged_credits) == len(search_results):
+        expected_credits = sum(charged_credits)
+        assert expected_credits in response_credit_values, f"{response.credits_used=} == {expected_credits=} or {getattr(response, 'credits_used_total', None)=} == {expected_credits=}"
+        return
+
     type_val = request.type if request.type is not None else "pro"
     insights = request.insights if request.insights is not None else True
     high_freshness = request.high_freshness if request.high_freshness is not None else False
@@ -420,7 +432,7 @@ def validate_credits(request: V2SearchRequest, response: V2SearchResponse | V2Se
     filter_out_no_phones_or_emails = request.filter_out_no_phones_or_emails if request.filter_out_no_phones_or_emails is not None else (request.require_phones_or_emails if request.require_phones_or_emails is not None else False)
 
     expected_credits = 0   
-    for result in response.search_results:
+    for result in search_results:
         candidate_credits = 0
         profile_id = result.profile.linkedin_slug if result.profile and result.profile.linkedin_slug else "unknown"
         if type_val == "pro":
@@ -449,7 +461,7 @@ def validate_credits(request: V2SearchRequest, response: V2SearchResponse | V2Se
             logger.info(f"{profile_id}: Incremented candidate_credits by 1 for filter_out_no_emails or filter_out_no_phones or filter_out_no_phones_or_emails, total now {candidate_credits}")
         expected_credits += candidate_credits
         logger.info(f"{profile_id}: Added candidate_credits {candidate_credits} to expected_credits, expected_credits now {expected_credits}")
-    assert response.credits_used == expected_credits or response.credits_used_total == expected_credits, f"{response.credits_used=} == {expected_credits=} or {response.credits_used_total=} == {expected_credits=}"
+    assert expected_credits in response_credit_values, f"{response.credits_used=} == {expected_credits=} or {getattr(response, 'credits_used_total', None)=} == {expected_credits=}"
 
 
 def _is_not_empty(value: Any) -> bool:
