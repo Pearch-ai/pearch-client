@@ -1190,11 +1190,11 @@ paths:
         - Test this endpoint in the [playground](https://chat.pearch.ai/api-enrichment)
         - Check out official [Python client](https://github.com/Pearch-ai/pearch-client)        
         
-        Retrieve enriched user profile based on the provided Linkedin profile ID, masked search UUID, or email address as a query parameter. Linkedin profile ID is the part that comes after `https://www.linkedin.com/in/` in the profile URL.
+        Retrieve enriched user profile based on the provided Linkedin profile ID or email address as a query parameter. Linkedin profile ID is the part that comes after `https://www.linkedin.com/in/` in the profile URL.
         
-        You can provide `docid` (LinkedIn profile ID), `uuid` (the candidate UUID returned by masked/free search), or `email`. Use `uuid` to reveal contact details for a selected candidate returned by a masked/free `/v2/search` response, without running the search again. In masked/free search results, pass either `search_results[].profile.uuid` or `search_results[].docid` as the `uuid` parameter. If only `email` is provided, the system will attempt to resolve it to a LinkedIn profile.
+        You can provide `docid` (LinkedIn profile ID) or `email`. If only `email` is provided, the system will attempt to resolve it to a LinkedIn profile.
 
-        **Cost: 1 credit + extra credits for each of `high_freshness`, `reveal_emails`, `reveal_phones` and `with_profile` parameters if enabled. `reveal_emails` and `reveal_phones` are 6 credits each when contact data is found. Email lookup adds +1 credit. Masked/free search reveal via `uuid` uses the masked profile enrichment cost (25 credits by default).**
+        **Cost: 1 credit + extra credits for each of `high_freshness`, `reveal_emails`, `reveal_phones` and `with_profile` parameters if enabled. `reveal_emails` and `reveal_phones` are 6 credits each when contact data is found. Email lookup adds +1 credit.**
 
         **Rate limit: 60 requests per user per 60 seconds.** When the rate limit is exceeded, the API returns HTTP 429 with details about the triggered window, current value, and limit.
       security:
@@ -1205,23 +1205,15 @@ paths:
           required: false
           schema:
             type: string
-          description: The linkedin profile ID of the profile to retrieve. Linkedin profile ID is the part that comes after `https://www.linkedin.com/in/` in the profile URL. Provide `docid`, `uuid`, or `email`.
+          description: The linkedin profile ID of the profile to retrieve. Linkedin profile ID is the part that comes after `https://www.linkedin.com/in/` in the profile URL. Provide `docid` or `email`.
           example: "hrachik"
-        - name: uuid
-          in: query
-          required: false
-          schema:
-            type: string
-            format: uuid
-          description: "Candidate UUID returned by masked/free search. Use this to reveal contact details for selected masked candidates without running the search again. Pass `search_results[].profile.uuid` or `search_results[].docid` from the masked/free search response. **Cost: masked profile enrichment cost, 25 credits by default**"
-          example: "11111111-1111-4111-8111-111111111111"
         - name: email
           in: query
           required: false
           schema:
             type: string
             format: email
-          description: "Email address to look up. If provided without `docid` or `uuid`, the system will resolve the email to a LinkedIn profile.  **Cost: +1 credit for email lookup**"
+          description: "Email address to look up. If provided without `docid`, the system will resolve the email to a LinkedIn profile. **Cost: +1 credit for email lookup**"
           example: "mz@pearch.ai"
         - name: high_freshness
           in: query
@@ -1270,7 +1262,7 @@ paths:
         "404":
           description: Profile not found
         "400":
-          description: Invalid parameter values or missing required parameters. At least one of `docid`, `uuid`, or `email` must be provided. JSON body contains the error message.
+          description: Invalid parameter values or missing required parameters. At least one of `docid` or `email` must be provided. JSON body contains the error message.
         "429":
           description: Rate limit exceeded. JSON body contains the triggered window, current value, and limit.
 
