@@ -59,9 +59,21 @@ paths:
               properties:
                 query:
                   type: string
-                  description: The human readable search query string. The query can be a simple search query like "software engineer from Ohio" or a more complex query like "Find me engineers in California speaking at least basic english working in software industry with experience at FAANG with 2+ years of experience and at least 500 followers and at least BS degree". Query parameter can handle full job descriptions, but passing specific subset of important requirements normally works better
+                  description: The human readable search query string. The query can be a simple search query like "software engineer from Ohio" or a more complex query like "Find me engineers in California speaking at least basic english working in software industry with experience at FAANG with 2+ years of experience and at least 500 followers and at least BS degree". Query parameter can handle full job descriptions, but passing specific subset of important requirements normally works better. Provide either `query` or `search_requirements` when `thread_id` is omitted. If both `query` and `search_requirements` are provided, `search_requirements` takes precedence for search execution.
                   example: "Software engineer with Python experience from Florida who is interested in science"
                   default: "Software engineer with Python experience from Florida who is interested in science"
+                search_requirements:
+                  type: array
+                  description: Structured search requirements. Use this when you already have a list of requirement texts and whether each one is mandatory. Each item supports only requirement text and `must_have`. If this parameter is provided, it overrides `query` for search execution.
+                  items:
+                    $ref: '#/components/schemas/SearchRequirement'
+                  example:
+                    - search_requirement: "software engineer"
+                      must_have: true
+                    - search_requirement: "located in Dallas"
+                      must_have: true
+                    - search_requirement: "has a sense of humor"
+                      must_have: false
                 thread_id:
                   type: string
                   description: "Unique identifier for the thread. This is returned by every `/v2/search` call and is used to run follow-up queries on the same thread. There are now two alternative ways to call with `thread_id`: (1) with an increased `limit` and an empty or omitted `query`, to request more results (in this case results are appended, and you are only charged for additional, new results) or (2) with a new `query` to perform a follow-up conversational search; in this case, the new query should only specify additional requirements or changes as in a natural conversation, and the results are replaced instead of appended. Running a search with the same `thread_id` and same `limit` as the previous request will return the same results as before without incurring additional charges."
@@ -149,8 +161,6 @@ paths:
                   type: boolean
                   default: false
                   description: If true, the search will be processed asynchronously. The endpoint will return immediately with thread ID that can be used to check the status and retrieve results when ready.
-              required:
-                - query
       responses:
         "200":
           description: Search completed and results returned
@@ -476,9 +486,21 @@ paths:
               properties:
                 query:
                   type: string
-                  description: The human readable search query string. The query can be a simple search query like "software engineer from Ohio" or a more complex query like "Find me engineers in California speaking at least basic english working in software industry with experience at FAANG with 2+ years of experience and at least 500 followers and at least BS degree". Query parameter can handle full job descriptions, but passing specific subset of important requirements normally works better
+                  description: The human readable search query string. The query can be a simple search query like "software engineer from Ohio" or a more complex query like "Find me engineers in California speaking at least basic english working in software industry with experience at FAANG with 2+ years of experience and at least 500 followers and at least BS degree". Query parameter can handle full job descriptions, but passing specific subset of important requirements normally works better. Provide either `query` or `search_requirements` when `thread_id` is omitted. If both `query` and `search_requirements` are provided, `search_requirements` takes precedence for search execution.
                   example: "Software engineer with Python experience from Florida who is interested in science"
                   default: "Software engineer with Python experience from Florida who is interested in science"
+                search_requirements:
+                  type: array
+                  description: Structured search requirements. Use this when you already have a list of requirement texts and whether each one is mandatory. Each item supports only requirement text and `must_have`. If this parameter is provided, it overrides `query` for search execution.
+                  items:
+                    $ref: '#/components/schemas/SearchRequirement'
+                  example:
+                    - search_requirement: "software engineer"
+                      must_have: true
+                    - search_requirement: "located in Dallas"
+                      must_have: true
+                    - search_requirement: "has a sense of humor"
+                      must_have: false
                 thread_id:
                   type: string
                   description: "Unique identifier for the thread. This is returned by every `/v2/search` and `/v2/search/submit` call and is used to run follow-up queries on the same thread. There are now two alternative ways to call with `thread_id`: (1) with an increased `limit` and an empty or omitted `query`, to request more results (in this case results are appended, and you are only charged for additional, new results) or (2) with a new `query` to perform a follow-up conversational search; in this case, the new query should only specify additional requirements or changes as in a natural conversation, and the results are replaced instead of appended. Running a search with the same `thread_id` and same `limit` as the previous request will return the same results as before without incurring additional charges."
@@ -1663,6 +1685,22 @@ paths:
    
 components:
   schemas:
+    SearchRequirement:
+      type: object
+      description: A structured search requirement with text and whether it is mandatory.
+      additionalProperties: false
+      required:
+        - search_requirement
+      properties:
+        search_requirement:
+          type: string
+          description: Requirement text to match against candidate profiles.
+          example: "software engineer"
+        must_have:
+          type: boolean
+          default: false
+          description: "Whether this requirement is mandatory. If false, the requirement is treated as a nice-to-have. Use `must_have` sparingly: too many mandatory requirements can make the search overly restrictive and result in fewer returned profiles."
+          example: true
     
     CustomFilters:
       type: object
