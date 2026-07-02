@@ -44,7 +44,7 @@ paths:
 
         Check out other parameters below to adjust speed vs quality and additional data that can be returned by the endpoint. 
 
-        **Cost: (number of profiles returned) × (credits for `type` + `insights` + `profile_scoring` (0) + `high_freshness` + `reveal_emails` + `reveal_phones`)**
+        **Cost: (number of profiles returned) × (credits for `type` + `insights` + `high_freshness` + `reveal_emails` + `reveal_phones`).**
 
         **Rate limit: 60 actual search requests per user per 60 seconds.** `/v2/search`, `/v2/search/submit`, and `/v2/search/count` share this limit. Fully cached thread reloads that do not run a new search use a separate higher limit of 120 cached requests per user per 60 seconds. When the rate limit is exceeded, the API returns HTTP 429 with details about the triggered window, current value, and limit.
 
@@ -88,10 +88,6 @@ paths:
                   type: boolean
                   default: false
                   description: "Enable real-time profile updates for fresher data. This downloads the most recent copies of profiles directly from source websites in realtime (e.g. Linkedin). Scraped results are cached for up to 24 hours. If you are ok with profiles that may be a few months outdated, and want to save ~30 seconds, turn off high_freshness. **Cost: 2 credits per candidate**"
-                profile_scoring:
-                  type: boolean
-                  default: true
-                  description: "Enable profile scoring and reranking for better result quality. This filters out less relevant profiles and produces scores for more relevant once. Scores range from 0.0 to 4.0 where higher is better. **Included free with pro search. With fast search: 1 credit per candidate**" 
                 fill_with_low_confidence_results:
                   type: boolean
                   default: true
@@ -464,7 +460,7 @@ paths:
         
         All the same search parameters are supported as the synchronous `/v2/search` endpoint, including `thread_id` for continuation and pagination.
 
-        **Cost: (number of profiles returned) × (credits for `type` + `insights` + `profile_scoring` (0) + `high_freshness` + `reveal_emails` + `reveal_phones`)**
+        **Cost: (number of profiles returned) × (credits for `type` + `insights` + `high_freshness` + `reveal_emails` + `reveal_phones`).**
 
         **Rate limit: 60 actual search requests per user per 60 seconds.** `/v2/search`, `/v2/search/submit`, and `/v2/search/count` share this limit. Fully cached thread reloads that do not run a new search use a separate higher limit of 120 cached requests per user per 60 seconds. When the rate limit is exceeded, the API returns HTTP 429 with details about the triggered window, current value, and limit.
         
@@ -509,10 +505,6 @@ paths:
                   type: boolean
                   default: false
                   description: "Enable real-time profile updates for fresher data. This downloads the most recent copies of profiles directly from source websites in realtime (e.g. Linkedin). Scraped results are cached for up to 24 hours. If you are ok with profiles that may be a few months outdated, and want to save ~30 seconds, turn off high_freshness. **Cost: 2 credits per candidate**"
-                profile_scoring:
-                  type: boolean
-                  default: true
-                  description: "Enable profile scoring and reranking for better result quality. This filters out less relevant profiles and produces scores for more relevant once. Scores range from 0.0 to 4.0 where higher is better. **Included free with pro search. With fast search: 1 credit per candidate**" 
                 fill_with_low_confidence_results:
                   type: boolean
                   default: true
@@ -1448,7 +1440,7 @@ paths:
         
         The response is a Server-Sent Events (SSE) stream with `text/event-stream` content type. Each event contains the stream mode and data.
         
-        **Cost: (number of profiles returned) × (credits for `type` + `insights` + `profile_scoring` (0) + `high_freshness` + `reveal_emails` + `reveal_phones`)**
+        **Cost: (number of profiles returned) × (credits for `type` + `insights` + `high_freshness` + `reveal_emails` + `reveal_phones`).**
         
         Example request (Python):
         ```python
@@ -1572,10 +1564,6 @@ paths:
                         type: string
                         enum: [overall_summary, short_quotes, rationale, short_rationale]
                       description: When insights is true, optionally restrict which insight fields to include.
-                    profile_scoring:
-                      type: boolean
-                      description: "Enable profile scoring. **Cost: 0 credits**"
-                      example: true
                     high_freshness:
                       type: boolean
                       description: Enable real-time profile updates
