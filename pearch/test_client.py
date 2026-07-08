@@ -53,11 +53,16 @@ def test_v2_search_request_omits_server_default_fill_with_low_confidence_results
         thread_id="thread-id",
         fill_with_low_confidence_results=True,
     ).model_dump(exclude_none=True, by_alias=True)
+    disabled_payload = V2SearchRequest(
+        thread_id="thread-id",
+        fill_with_low_confidence_results=False,
+    ).model_dump(exclude_none=True, by_alias=True)
 
     assert payload == {"thread_id": "thread-id"}
-    assert explicit_payload == {
+    assert explicit_payload == {"thread_id": "thread-id"}
+    assert disabled_payload == {
         "thread_id": "thread-id",
-        "fill_with_low_confidence_results": True,
+        "fill_with_low_confidence_results": False,
     }
 
 
