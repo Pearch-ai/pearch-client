@@ -1832,11 +1832,11 @@ components:
         min_total_experience_years:
           type: number
           description: Minimum total years of professional experience
-          example: 5
+          example: 5.5
         max_total_experience_years:
           type: number
           description: Maximum total years of professional experience
-          example: 15
+          example: 15.5
         min_estimated_age:
           type: number
           description: Minimum estimated age
@@ -1949,7 +1949,7 @@ components:
         industries: ["health", "pharma"]
         locations: ["San Francisco", "New York"]
         titles: ["software engineer", "data scientist"]
-        min_total_experience_years: 5
+        min_total_experience_years: 5.5
         studied_at_top_universities: true
       
     Language:
