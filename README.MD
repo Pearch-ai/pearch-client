@@ -78,6 +78,16 @@ with PearchClient() as client:
     results = client.search(V2SearchRequest(query=QUERY))
 ```
 
+Set `time_budget` to customize the target search time in seconds. When omitted, it defaults to 30 seconds for `type="fast"` and 200 seconds for `type="pro"`:
+
+```python
+results = client.search(V2SearchRequest(
+    query=QUERY,
+    type="fast",
+    time_budget=45,
+))
+```
+
 ## Custom Filters
 
 Use structured `CustomFilters` for type-safe filtering with IDE autocomplete:

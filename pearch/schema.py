@@ -421,6 +421,7 @@ class V2SearchRequest(BaseModel):
     search_requirements: List[SearchRequirement] | None = None
     thread_id: str | None = None
     type: Literal["superfast", "fast", "pro"] | None = None
+    time_budget: int | None = Field(default=None, gt=0)
     insights: bool | None = None
     insights_items: List[InsightItem] | None = None
     high_freshness: bool | None = None
