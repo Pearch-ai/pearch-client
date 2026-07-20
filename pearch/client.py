@@ -15,9 +15,14 @@ from .schema import (
     V1ApiCallHistoryResponse,
     V1CreateApiKeyRequest,
     V1CreateOrganizationApiKeyResponse,
+    V1InviteOrganizationMemberRequest,
+    V1InviteOrganizationMemberResponse,
     V1OrganizationApiKeysResponse,
+    V1OrganizationMembersResponse,
     V1SearchRequest,
     V1ProSearchResponse,
+    V1UpdateOrganizationMemberRoleRequest,
+    V1UpdateOrganizationMemberRoleResponse,
     V1UpsertJobsRequest,
     V1UpsertJobsResponse,
     V1ListJobsRequest,
@@ -506,6 +511,55 @@ class PearchClient:
             endpoint=f"v1/organizations/{org_id}/api_keys/{key_id}",
         )
 
+    def list_organization_members(self, org_id: str) -> V1OrganizationMembersResponse:
+        logger.info(f"Listing members for organization: {org_id}")
+        response_data = self._make_request(
+            method="GET",
+            endpoint=f"v1/organizations/{org_id}/members",
+        )
+        return V1OrganizationMembersResponse(**response_data)
+
+    def invite_organization_member(
+        self,
+        org_id: str,
+        request: V1InviteOrganizationMemberRequest,
+    ) -> V1InviteOrganizationMemberResponse:
+        logger.info(f"Inviting member to organization: {org_id}")
+        response_data = self._make_request(
+            method="POST",
+            endpoint=f"v1/organizations/{org_id}/members",
+            data=request.model_dump(exclude_none=True),
+        )
+        return V1InviteOrganizationMemberResponse(**response_data)
+
+    def update_organization_member_role(
+        self,
+        org_id: str,
+        member_id: str,
+        request: V1UpdateOrganizationMemberRoleRequest,
+    ) -> V1UpdateOrganizationMemberRoleResponse:
+        logger.info(f"Updating organization member role: {member_id}")
+        response_data = self._make_request(
+            method="PATCH",
+            endpoint=f"v1/organizations/{org_id}/members/{member_id}",
+            data=request.model_dump(exclude_none=True),
+        )
+        return V1UpdateOrganizationMemberRoleResponse(**response_data)
+
+    def delete_organization_member(self, org_id: str, member_id: str) -> None:
+        logger.info(f"Deleting organization member: {member_id}")
+        self._make_request(
+            method="DELETE",
+            endpoint=f"v1/organizations/{org_id}/members/{member_id}",
+        )
+
+    def delete_organization_member_invite(self, org_id: str, invite_id: str) -> None:
+        logger.info(f"Deleting organization member invite: {invite_id}")
+        self._make_request(
+            method="DELETE",
+            endpoint=f"v1/organizations/{org_id}/members/invites/{invite_id}",
+        )
+
     def get_user(self) -> V1UserResponse:
         """
         Get user information, remaining credits, and pricing details
@@ -946,6 +1000,55 @@ class AsyncPearchClient:
         await self._make_request(
             method="DELETE",
             endpoint=f"v1/organizations/{org_id}/api_keys/{key_id}",
+        )
+
+    async def list_organization_members(self, org_id: str) -> V1OrganizationMembersResponse:
+        logger.info(f"Listing members async for organization: {org_id}")
+        response_data = await self._make_request(
+            method="GET",
+            endpoint=f"v1/organizations/{org_id}/members",
+        )
+        return V1OrganizationMembersResponse(**response_data)
+
+    async def invite_organization_member(
+        self,
+        org_id: str,
+        request: V1InviteOrganizationMemberRequest,
+    ) -> V1InviteOrganizationMemberResponse:
+        logger.info(f"Inviting member async to organization: {org_id}")
+        response_data = await self._make_request(
+            method="POST",
+            endpoint=f"v1/organizations/{org_id}/members",
+            data=request.model_dump(exclude_none=True),
+        )
+        return V1InviteOrganizationMemberResponse(**response_data)
+
+    async def update_organization_member_role(
+        self,
+        org_id: str,
+        member_id: str,
+        request: V1UpdateOrganizationMemberRoleRequest,
+    ) -> V1UpdateOrganizationMemberRoleResponse:
+        logger.info(f"Updating organization member role async: {member_id}")
+        response_data = await self._make_request(
+            method="PATCH",
+            endpoint=f"v1/organizations/{org_id}/members/{member_id}",
+            data=request.model_dump(exclude_none=True),
+        )
+        return V1UpdateOrganizationMemberRoleResponse(**response_data)
+
+    async def delete_organization_member(self, org_id: str, member_id: str) -> None:
+        logger.info(f"Deleting organization member async: {member_id}")
+        await self._make_request(
+            method="DELETE",
+            endpoint=f"v1/organizations/{org_id}/members/{member_id}",
+        )
+
+    async def delete_organization_member_invite(self, org_id: str, invite_id: str) -> None:
+        logger.info(f"Deleting organization member invite async: {invite_id}")
+        await self._make_request(
+            method="DELETE",
+            endpoint=f"v1/organizations/{org_id}/members/invites/{invite_id}",
         )
 
     async def get_user(self) -> V1UserResponse:
