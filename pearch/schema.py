@@ -575,6 +575,7 @@ class ApiCallHistoryEntry(BaseModel):
 class V1ApiCallHistoryRequest(BaseModel):
     limit: int | None = Field(default=10, ge=1, le=1000)
     paths: List[str] | None = None
+    api_key: str | None = None
     model_config = ConfigDict(extra="ignore")
 
 
@@ -582,6 +583,52 @@ class V1ApiCallHistoryResponse(BaseModel):
     api_call_history: List[ApiCallHistoryEntry] | None = Field(default_factory=list)
     user: str | None = None
     total_credits_used: int | None = None
+    model_config = ConfigDict(extra="ignore")
+
+
+class ApiKeyMetadata(BaseModel):
+    id: str
+    name: str
+    preview: str
+    created_at: str
+    last_used_at: str | None = None
+    revoked_at: str | None = None
+    model_config = ConfigDict(extra="ignore")
+
+
+class OrganizationMemberApiKeys(BaseModel):
+    user_id: str
+    email: str | None = None
+    role: str
+    api_keys: List[ApiKeyMetadata] = Field(default_factory=list)
+    model_config = ConfigDict(extra="ignore")
+
+
+class V1ApiKeyCapabilitiesResponse(BaseModel):
+    owner_managed_member_keys: bool
+    version: int
+    model_config = ConfigDict(extra="ignore")
+
+
+class V1OrganizationApiKeysResponse(BaseModel):
+    organization_id: str
+    members: List[OrganizationMemberApiKeys] = Field(default_factory=list)
+    model_config = ConfigDict(extra="ignore")
+
+
+class V1CreateApiKeyRequest(BaseModel):
+    name: str = Field(min_length=1, max_length=100)
+    model_config = ConfigDict(extra="forbid")
+
+
+class V1CreateOrganizationApiKeyResponse(BaseModel):
+    api_key: str
+    id: str
+    name: str
+    preview: str
+    created_at: str
+    member_user_id: str
+    organization_id: str
     model_config = ConfigDict(extra="ignore")
 
 

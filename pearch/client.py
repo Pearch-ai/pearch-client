@@ -6,12 +6,16 @@ import httpx
 
 from .schema import (
     Profile,
+    V1ApiKeyCapabilitiesResponse,
     V1FindMatchingJobsRequest,
     V1FindMatchingJobsResponse,
     V1ProfileRequest,
     V1ProfileResponse,
     V1ApiCallHistoryRequest,
     V1ApiCallHistoryResponse,
+    V1CreateApiKeyRequest,
+    V1CreateOrganizationApiKeyResponse,
+    V1OrganizationApiKeysResponse,
     V1SearchRequest,
     V1ProSearchResponse,
     V1UpsertJobsRequest,
@@ -193,6 +197,8 @@ class PearchClient:
             )
 
         response.raise_for_status()
+        if response.status_code == 204:
+            return {}
         return response.json()
 
     # V2 API Methods
@@ -463,6 +469,43 @@ class PearchClient:
 
         return V1ApiCallHistoryResponse(**response_data)
 
+    def get_api_key_capabilities(self) -> V1ApiKeyCapabilitiesResponse:
+        logger.info("Retrieving API key capabilities")
+        response_data = self._make_request(
+            method="GET",
+            endpoint="v1/api_keys/capabilities",
+        )
+        return V1ApiKeyCapabilitiesResponse(**response_data)
+
+    def list_organization_api_keys(self, org_id: str) -> V1OrganizationApiKeysResponse:
+        logger.info(f"Listing API keys for organization: {org_id}")
+        response_data = self._make_request(
+            method="GET",
+            endpoint=f"v1/organizations/{org_id}/api_keys",
+        )
+        return V1OrganizationApiKeysResponse(**response_data)
+
+    def create_organization_api_key(
+        self,
+        org_id: str,
+        member_id: str,
+        request: V1CreateApiKeyRequest,
+    ) -> V1CreateOrganizationApiKeyResponse:
+        logger.info(f"Creating API key for organization member: {member_id}")
+        response_data = self._make_request(
+            method="POST",
+            endpoint=f"v1/organizations/{org_id}/members/{member_id}/api_keys",
+            data=request.model_dump(exclude_none=True),
+        )
+        return V1CreateOrganizationApiKeyResponse(**response_data)
+
+    def delete_organization_api_key(self, org_id: str, key_id: str) -> None:
+        logger.info(f"Deleting API key for organization: {org_id}")
+        self._make_request(
+            method="DELETE",
+            endpoint=f"v1/organizations/{org_id}/api_keys/{key_id}",
+        )
+
     def get_user(self) -> V1UserResponse:
         """
         Get user information, remaining credits, and pricing details
@@ -612,6 +655,8 @@ class AsyncPearchClient:
             )
 
         response.raise_for_status()
+        if response.status_code == 204:
+            return {}
         return response.json()
 
     # V2 API Methods
@@ -865,6 +910,43 @@ class AsyncPearchClient:
         )
 
         return V1ApiCallHistoryResponse(**response_data)
+
+    async def get_api_key_capabilities(self) -> V1ApiKeyCapabilitiesResponse:
+        logger.info("Retrieving API key capabilities async")
+        response_data = await self._make_request(
+            method="GET",
+            endpoint="v1/api_keys/capabilities",
+        )
+        return V1ApiKeyCapabilitiesResponse(**response_data)
+
+    async def list_organization_api_keys(self, org_id: str) -> V1OrganizationApiKeysResponse:
+        logger.info(f"Listing API keys async for organization: {org_id}")
+        response_data = await self._make_request(
+            method="GET",
+            endpoint=f"v1/organizations/{org_id}/api_keys",
+        )
+        return V1OrganizationApiKeysResponse(**response_data)
+
+    async def create_organization_api_key(
+        self,
+        org_id: str,
+        member_id: str,
+        request: V1CreateApiKeyRequest,
+    ) -> V1CreateOrganizationApiKeyResponse:
+        logger.info(f"Creating API key async for organization member: {member_id}")
+        response_data = await self._make_request(
+            method="POST",
+            endpoint=f"v1/organizations/{org_id}/members/{member_id}/api_keys",
+            data=request.model_dump(exclude_none=True),
+        )
+        return V1CreateOrganizationApiKeyResponse(**response_data)
+
+    async def delete_organization_api_key(self, org_id: str, key_id: str) -> None:
+        logger.info(f"Deleting API key async for organization: {org_id}")
+        await self._make_request(
+            method="DELETE",
+            endpoint=f"v1/organizations/{org_id}/api_keys/{key_id}",
+        )
 
     async def get_user(self) -> V1UserResponse:
         """
