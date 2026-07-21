@@ -324,7 +324,7 @@ paths:
         - When you want to generate personalized outreach messages for the identified leads, pass the outreach message instruction: `{"company_query": "manufacturers of aviation parts", "lead_query": "CTOs and engineering managers", "outreach_message_instruction": "Suggest buying my (Rob) SaaS recruitment product <300 characters, email style, casual, personal touch"}`
         - if you don't have good intuition about leads to target, use a very broad lead query like `{..., "lead_query": "people who I can contact regarding partnerships or any c-level (CEO CFO COO CTO CIO CMO CHRO CPO CLO CSO) /founder/director/owner roles"}`
         
-        **Cost: (number of companies returned) × (5 + `company_high_freshness` if enabled) + (number of leads returned) × (2 + sum of credits for `outreach_message_instruction`, `reveal_emails`, `reveal_phones`, `filter_out_no_emails`, `filter_out_no_phones`, `high_freshness`)** 
+        **Cost: (number of companies returned) × (5) + (number of leads returned) × (2 + sum of credits for `outreach_message_instruction`, `reveal_emails`, `reveal_phones`, `high_freshness`, plus 1 credit when `filter_out_no_emails` and `filter_out_no_phones` are both enabled)**
 
         _Check out official [Python client](https://github.com/Pearch-ai/pearch-client)_
       security:
@@ -376,11 +376,11 @@ paths:
                 filter_out_no_emails:
                   type: boolean
                   default: false
-                  description: "Only return leads with at least one email address. Leads will have additional `has_email` field set to true. **Cost: 1 credit per candidate**. Deprecated name: `require_emails`"
+                  description: "Only return leads with at least one email address. Leads will have an additional `has_email` field set to true. **Combined cost: 1 credit per returned lead when both `filter_out_no_emails` and `filter_out_no_phones` are enabled.** Deprecated name: `require_emails`"
                 filter_out_no_phones:
                   type: boolean
                   default: false
-                  description: "Only return leads with at least one phone number. Leads will have additional `has_phone_numbers` field set to true. **Cost: 1 credit per candidate**. Deprecated name: `require_phone_numbers`"
+                  description: "Only return leads with at least one phone number. Leads will have an additional `has_phone_numbers` field set to true. **Combined cost: 1 credit per returned lead when both `filter_out_no_emails` and `filter_out_no_phones` are enabled.** Deprecated name: `require_phone_numbers`"
                 high_freshness:
                   type: boolean
                   default: false
@@ -388,7 +388,7 @@ paths:
                 company_high_freshness:
                   type: boolean
                   default: false
-                  description: "Enable real-time company data updates for fresher company information. This looks up companies on the internet in realtime to get the most current data. **Cost: 2 credits per company**"
+                  description: "Enable real-time company data updates for fresher company information. This looks up companies on the internet in realtime and is included in the company search cost."
               required:
                 - company_query
       responses:
