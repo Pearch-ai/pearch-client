@@ -1227,7 +1227,7 @@ paths:
         
         You can provide `docid` (LinkedIn profile ID) or `email`. If only `email` is provided, the system will attempt to resolve it to a LinkedIn profile.
 
-        **Cost: 1 credit + extra credits for each of `high_freshness`, `reveal_emails`, `reveal_phones` and `with_profile` parameters if enabled. `reveal_emails` and `reveal_phones` are 6 credits each when contact data is found. Email lookup adds +1 credit.**
+        **Costs are additive: `with_profile` costs 1 credit, `high_freshness` costs 2 credits, and `reveal_emails` and `reveal_phones` cost 6 credits each when contact data is found. Looking up a profile by `email` instead of `docid` costs 6 credits and is separate from `reveal_emails`.**
 
         **Rate limit: 60 requests per user per 60 seconds.** When the rate limit is exceeded, the API returns HTTP 429 with details about the triggered window, current value, and limit.
       security:
@@ -1246,7 +1246,7 @@ paths:
           schema:
             type: string
             format: email
-          description: "Email address to look up. If provided without `docid`, the system will resolve the email to a LinkedIn profile. **Cost: +1 credit for email lookup**"
+          description: "Email address to look up. If provided without `docid`, the system will resolve the email to a LinkedIn profile. This lookup is separate from `reveal_emails`. **Cost: 6 credits for email lookup**"
           example: "mz@pearch.ai"
         - name: high_freshness
           in: query
