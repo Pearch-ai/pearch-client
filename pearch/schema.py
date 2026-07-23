@@ -605,8 +605,7 @@ class ApiKeyMetadata(BaseModel):
 
 
 class OrganizationMemberApiKeys(BaseModel):
-    id: str
-    user_id: str | None = None
+    user_id: str
     email: str | None = None
     role: str
     api_keys: List[ApiKeyMetadata] = Field(default_factory=list)
@@ -636,43 +635,51 @@ class V1CreateOrganizationApiKeyResponse(BaseModel):
     name: str
     preview: str
     created_at: str
-    member_id: str
+    member_user_id: str
     organization_id: str
     model_config = ConfigDict(extra="ignore")
 
 
 class OrganizationMember(BaseModel):
-    id: str
-    user_id: str | None = None
+    user_id: str
     email: str
     name: str | None = None
     role: OrganizationRole
-    added_by: str | None = None
+    invited_by: str | None = None
     created_at: str
     model_config = ConfigDict(extra="ignore")
 
 
-class V1AddOrganizationMemberRequest(BaseModel):
-    email: str
-    role: OrganizationRole = OrganizationRole.MEMBER
-    model_config = ConfigDict(extra="forbid")
-
-
-class V1AddOrganizationMemberResponse(BaseModel):
-    organization_id: str
+class OrganizationPendingInvite(BaseModel):
     id: str
-    user_id: str | None = None
     email: str
-    name: str | None = None
     role: OrganizationRole
-    added_by: str | None = None
-    created_at: str
+    expires_at: str
+    invited_by: str | None = None
     model_config = ConfigDict(extra="ignore")
 
 
 class V1OrganizationMembersResponse(BaseModel):
     organization_id: str
     members: List[OrganizationMember] = Field(default_factory=list)
+    pending_invites: List[OrganizationPendingInvite] = Field(default_factory=list)
+    model_config = ConfigDict(extra="ignore")
+
+
+class V1InviteOrganizationMemberRequest(BaseModel):
+    email: str
+    role: OrganizationRole = OrganizationRole.MEMBER
+    expires_in_days: int = Field(default=7, ge=1, le=30)
+    model_config = ConfigDict(extra="forbid")
+
+
+class V1InviteOrganizationMemberResponse(BaseModel):
+    invite_id: str
+    email: str
+    role: OrganizationRole
+    expires_at: str
+    invite_token: str
+    invite_url: str
     model_config = ConfigDict(extra="ignore")
 
 
@@ -683,7 +690,7 @@ class V1UpdateOrganizationMemberRoleRequest(BaseModel):
 
 class V1UpdateOrganizationMemberRoleResponse(BaseModel):
     organization_id: str
-    member_id: str
+    user_id: str
     updated: bool
     previous_role: OrganizationRole
     role: OrganizationRole

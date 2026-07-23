@@ -1398,7 +1398,7 @@ paths:
       tags:
         - Account
       description: |
-        List API-managed members for an organization. Members may exist without a Pearch account. Only organization owners can use this endpoint.
+        List active members and pending invitations for an organization. Only organization owners can use this endpoint.
 
         **Cost: 0 credits**
       security:
@@ -1423,12 +1423,12 @@ paths:
         "403":
           description: Only organization owners can manage members
     post:
-      operationId: post_v1-organization-member
-      summary: Add an organization member
+      operationId: post_v1-organization-member-invite
+      summary: Invite an organization member
       tags:
         - Account
       description: |
-        Add an API-managed member by email. A Pearch account is not required. This membership controls owner-managed API keys and does not grant platform login access. Only organization owners can use this endpoint.
+        Invite a member to an organization. Only organization owners can use this endpoint.
 
         **Cost: 0 credits**
       security:
@@ -1446,22 +1446,22 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/AddOrganizationMemberRequest'
+              $ref: '#/components/schemas/InviteOrganizationMemberRequest'
       responses:
         "201":
-          description: Organization member added successfully
+          description: Organization member invitation created successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AddOrganizationMemberResponse'
+                $ref: '#/components/schemas/InviteOrganizationMemberResponse'
         "400":
-          description: Invalid member request
+          description: Invalid invitation request
         "401":
           description: Invalid API key
         "403":
           description: Only organization owners can manage members
         "409":
-          description: The email is already an active API-managed member
+          description: The invited user is already an organization member
 
   /v1/organizations/{org_id}/members/{member_id}:
     patch:
@@ -1486,7 +1486,7 @@ paths:
         - name: member_id
           in: path
           required: true
-          description: API-managed member identifier
+          description: Organization member user identifier
           schema:
             type: string
             format: uuid
@@ -1511,6 +1511,8 @@ paths:
           description: Only organization owners can manage members
         "404":
           description: Organization member not found
+        "409":
+          description: The last organization owner cannot be demoted
     delete:
       operationId: delete_v1-organization-member
       summary: Remove an organization member
@@ -1533,7 +1535,7 @@ paths:
         - name: member_id
           in: path
           required: true
-          description: API-managed member identifier
+          description: Organization member user identifier
           schema:
             type: string
             format: uuid
@@ -1546,6 +1548,45 @@ paths:
           description: Only organization owners can manage members
         "404":
           description: Organization member not found
+        "409":
+          description: The last organization owner cannot be removed and owners cannot remove themselves
+
+  /v1/organizations/{org_id}/members/invites/{invite_id}:
+    delete:
+      operationId: delete_v1-organization-member-invite
+      summary: Delete a pending organization invitation
+      tags:
+        - Account
+      description: |
+        Delete a pending organization member invitation. Only organization owners can use this endpoint.
+
+        **Cost: 0 credits**
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: org_id
+          in: path
+          required: true
+          description: Organization identifier
+          schema:
+            type: string
+            format: uuid
+        - name: invite_id
+          in: path
+          required: true
+          description: Pending invitation identifier
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Pending organization invitation deleted successfully
+        "401":
+          description: Invalid API key
+        "403":
+          description: Only organization owners can manage members
+        "404":
+          description: Pending organization invitation not found
 
   /v1/organizations/{org_id}/api_keys:
     get:
@@ -1554,7 +1595,7 @@ paths:
       tags:
         - Account
       description: |
-        List API-managed members and the masked metadata for their API keys. Only organization owners can use this endpoint.
+        List organization members and the masked metadata for their API keys. Only organization owners can use this endpoint.
 
         **Cost: 0 credits**
       security:
@@ -1604,7 +1645,7 @@ paths:
         - name: member_id
           in: path
           required: true
-          description: API-managed member identifier
+          description: Organization member user identifier
           schema:
             type: string
             format: uuid
@@ -1682,23 +1723,17 @@ components:
     OrganizationMember:
       type: object
       required:
-        - id
         - user_id
         - email
         - name
         - role
-        - added_by
+        - invited_by
         - created_at
       properties:
-        id:
-          type: string
-          format: uuid
-          description: API-managed member identifier
         user_id:
           type: string
           format: uuid
-          nullable: true
-          description: Linked Pearch user identifier, when one exists
+          description: Member user identifier
         email:
           type: string
           format: email
@@ -1709,21 +1744,51 @@ components:
           description: Member display name
         role:
           $ref: '#/components/schemas/OrganizationRole'
-        added_by:
+        invited_by:
           type: string
           format: uuid
           nullable: true
-          description: User who added the member
+          description: User who invited the member
         created_at:
           type: string
           format: date-time
           description: Membership creation timestamp
+
+    OrganizationPendingInvite:
+      type: object
+      required:
+        - id
+        - email
+        - role
+        - expires_at
+        - invited_by
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Invitation identifier
+        email:
+          type: string
+          format: email
+          description: Invited email address
+        role:
+          $ref: '#/components/schemas/OrganizationRole'
+        expires_at:
+          type: string
+          format: date-time
+          description: Invitation expiration timestamp
+        invited_by:
+          type: string
+          format: uuid
+          nullable: true
+          description: User who created the invitation
 
     OrganizationMembersResponse:
       type: object
       required:
         - organization_id
         - members
+        - pending_invites
       properties:
         organization_id:
           type: string
@@ -1733,8 +1798,12 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/OrganizationMember'
+        pending_invites:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrganizationPendingInvite'
 
-    AddOrganizationMemberRequest:
+    InviteOrganizationMemberRequest:
       type: object
       additionalProperties: false
       required:
@@ -1743,23 +1812,49 @@ components:
         email:
           type: string
           format: email
-          description: API-managed member email address
+          description: Email address to invite
         role:
           allOf:
             - $ref: '#/components/schemas/OrganizationRole'
           default: member
+        expires_in_days:
+          type: integer
+          minimum: 1
+          maximum: 30
+          default: 7
+          description: Number of days before the invitation expires
 
-    AddOrganizationMemberResponse:
-      allOf:
-        - $ref: '#/components/schemas/OrganizationMember'
-        - type: object
-          required:
-            - organization_id
-          properties:
-            organization_id:
-              type: string
-              format: uuid
-              description: Organization identifier
+    InviteOrganizationMemberResponse:
+      type: object
+      required:
+        - invite_id
+        - email
+        - role
+        - expires_at
+        - invite_token
+        - invite_url
+      properties:
+        invite_id:
+          type: string
+          format: uuid
+          description: Invitation identifier
+        email:
+          type: string
+          format: email
+          description: Invited email address
+        role:
+          $ref: '#/components/schemas/OrganizationRole'
+        expires_at:
+          type: string
+          format: date-time
+          description: Invitation expiration timestamp
+        invite_token:
+          type: string
+          description: Invitation token
+        invite_url:
+          type: string
+          format: uri
+          description: URL used to accept the invitation
 
     UpdateOrganizationMemberRoleRequest:
       type: object
@@ -1774,7 +1869,7 @@ components:
       type: object
       required:
         - organization_id
-        - member_id
+        - user_id
         - updated
         - previous_role
         - role
@@ -1783,10 +1878,10 @@ components:
           type: string
           format: uuid
           description: Organization identifier
-        member_id:
+        user_id:
           type: string
           format: uuid
-          description: API-managed member identifier
+          description: Member user identifier
         updated:
           type: boolean
           description: Whether the member role was updated
@@ -1836,21 +1931,15 @@ components:
       type: object
       description: Organization member and their API keys
       required:
-        - id
         - user_id
         - email
         - role
         - api_keys
       properties:
-        id:
-          type: string
-          format: uuid
-          description: API-managed member identifier
         user_id:
           type: string
           format: uuid
-          nullable: true
-          description: Linked Pearch user identifier, when one exists
+          description: Member user identifier
         email:
           type: string
           format: email
@@ -1877,7 +1966,7 @@ components:
         version:
           type: integer
           description: API key management contract version
-          example: 3
+          example: 2
 
     OrganizationApiKeysResponse:
       type: object
@@ -1915,7 +2004,7 @@ components:
         - name
         - preview
         - created_at
-        - member_id
+        - member_user_id
         - organization_id
       properties:
         api_key:
@@ -1936,10 +2025,10 @@ components:
           type: string
           format: date-time
           description: API key creation timestamp
-        member_id:
+        member_user_id:
           type: string
           format: uuid
-          description: API-managed member identifier
+          description: Member user identifier
         organization_id:
           type: string
           format: uuid
