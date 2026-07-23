@@ -23,7 +23,8 @@ def test_owner_managed_api_key_schemas():
         organization_id="1ad448f6-aa55-455f-a369-c26070b3fe80",
         members=[
             OrganizationMemberApiKeys(
-                user_id="d3297401-bb9b-48c0-ae5e-d481159e6d4e",
+                id="d3297401-bb9b-48c0-ae5e-d481159e6d4e",
+                user_id=None,
                 email="member@example.com",
                 role="member",
                 api_keys=[metadata],
@@ -42,15 +43,15 @@ def test_owner_managed_api_key_create_and_capabilities_schemas():
         name=request.name,
         preview="pk_sec…cret",
         created_at="2026-07-20T12:00:00Z",
-        member_user_id="d3297401-bb9b-48c0-ae5e-d481159e6d4e",
+        member_id="d3297401-bb9b-48c0-ae5e-d481159e6d4e",
         organization_id="1ad448f6-aa55-455f-a369-c26070b3fe80",
     )
     capabilities = V1ApiKeyCapabilitiesResponse(
         owner_managed_member_keys=True,
-        version=2,
+        version=3,
     )
 
-    assert response.member_user_id == "d3297401-bb9b-48c0-ae5e-d481159e6d4e"
+    assert response.member_id == "d3297401-bb9b-48c0-ae5e-d481159e6d4e"
     assert capabilities.owner_managed_member_keys is True
     assert UserInfo(api_key="existing-key").api_key == "existing-key"
 
