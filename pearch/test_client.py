@@ -310,11 +310,19 @@ async def test_find_matching_jobs():
 
 @pytest.mark.asyncio
 async def test_profile():
-    credits1 = await get_credits()
+    user_response: V1UserResponse = await AsyncPearchClient().get_user()
+    credits1 = user_response.credits_remaining
+    assert credits1 is not None
+    assert user_response.pricing is not None
+    pricing = {item.id: item.credits for item in user_response.pricing}
     request = V1ProfileRequest(docid="vslaykovsky", reveal_emails=True, reveal_phones=True)
     generate_curl_command("get_profile", request)
     response: V1ProfileResponse = await AsyncPearchClient().get_profile(request)
-    assert response.credits_used == 6 * (0 if not response.profile.get_all_emails() else 1) + 6 * (0 if not response.profile.all_phone_numbers() else 1)
+    assert response.credits_used == (
+        pricing["email_cost"] * (0 if not response.profile.get_all_emails() else 1)
+        + pricing["phone_cost"]
+        * (0 if not response.profile.all_phone_numbers() else 1)
+    )
     credits2 = await get_credits()
     assert credits1 - credits2 == response.credits_used, "Credits check failed"
 
@@ -322,7 +330,14 @@ async def test_profile():
     generate_curl_command("get_profile", request)
     response: V1ProfileResponse = await AsyncPearchClient().get_profile(request)
     assert "victor" in response.profile.first_name.lower()
-    assert response.credits_used == 2 + 6 * (0 if not response.profile.get_all_emails() else 1) + 6 * (0 if not response.profile.all_phone_numbers() else 1) + 1
+    assert response.credits_used == (
+        pricing["realtime_profiles_cost"]
+        + pricing["email_cost"]
+        * (0 if not response.profile.get_all_emails() else 1)
+        + pricing["phone_cost"]
+        * (0 if not response.profile.all_phone_numbers() else 1)
+        + pricing["profile_enrichment_cost"]
+    )
     credits3 = await get_credits()
     assert credits2 - credits3 == response.credits_used, "Credits check failed"
 
