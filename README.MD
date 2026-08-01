@@ -88,6 +88,41 @@ results = client.search(V2SearchRequest(
 ))
 ```
 
+## Count matching profiles (/v2/search/count)
+
+Use `search_count` to count profiles without returning profile records. It accepts a natural-language `query`, structured `search_requirements`, or `custom_filters`. Filters can be combined with either natural-language input.
+
+Count pricing depends on the request:
+
+| Request | Without stats | With `stats=True` |
+| --- | ---: | ---: |
+| Custom filters only | 2 credits | 7 credits |
+| `query` or `search_requirements` (with or without custom filters) | 5 credits | 10 credits |
+
+`stats=True` adds 5 credits and returns field statistics calculated from a sample of up to 1,000 matching profiles. The full matching count remains available as `response.count` and `response.stats.matched_profiles`.
+
+```python
+from pearch import CustomFilters, PearchClient, V2SearchCountRequest
+
+with PearchClient() as client:
+    response = client.search_count(V2SearchCountRequest(
+        query="Python engineers in Germany",
+        custom_filters=CustomFilters(min_total_experience_years=5),
+        stats=True,
+    ))
+
+print(response.count)
+print(response.credits_used)  # 10
+
+if response.stats:
+    skills = response.stats.fields["canonical_skills"]
+    print(skills.coverage_pct)
+    for item in skills.top_values or []:
+        print(item.value, item.profile_count, item.percentage)
+```
+
+The stats response includes typed coverage, top-value, numeric distribution, bucket, and boolean-count data. Each repeated categorical value is counted at most once per profile.
+
 ## Custom Filters
 
 Use structured `CustomFilters` for type-safe filtering with IDE autocomplete:

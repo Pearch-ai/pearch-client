@@ -240,19 +240,21 @@ paths:
   /v2/search/count:
     post:
       operationId: post_v2-search-count
-      summary: Count profiles matching custom filters
+      summary: Count profiles matching a query, search requirements, or custom filters
       tags:
         - Search
       description: |
-        Return an estimated count of profiles that match the provided `custom_filters`.
+        Return the number of profiles that match a natural-language `query`, structured `search_requirements`, or `custom_filters`.
 
-        This endpoint does not run the full search pipeline (no LLM query interpretation). It is intended for quickly checking how broad or narrow a set of filters is before running `/v2/search`.
+        Queries and search requirements use the same TPSQL parsing and filtering behavior as a superfast search, but the endpoint does not return profiles. Custom-filter-only requests continue to use the optimized custom-filter count path unless `stats` is true.
 
-        The request must include `custom_filters` with at least one non-empty constraint (for example `locations`, `titles`, `companies`, `industries`, follower count ranges, etc.).
+        Set `stats` to true to aggregate canonical profile fields from a sample of up to 1,000 matching profiles. Repeated values are counted at most once per profile. The response reports the full matching count separately from the sampled profile count. Profile statistics add 5 credits to the request cost.
+
+        The request must include at least one of `query`, `search_requirements`, or `custom_filters`. Filters can be combined with either natural-language input and are ANDed with its TPSQL filters, matching `/v2/search` behavior. If both `query` and `search_requirements` are provided, `search_requirements` takes precedence.
 
         Expect slower response for expected large counts. E.g. for title="manager" from "US" you should expect slower response and approximate=true in the response. For title="meteorologist" from "tokio" expect faster response and approximate=false in the response.
 
-        **Cost: 2 credits per call**
+        **Cost: 2 credits for a custom-filter-only request; 5 credits when `query` or `search_requirements` is present, including requests that also contain custom filters; plus 5 credits when `stats=true`.**
 
         **Rate limit: 60 requests per user per 60 seconds.** This endpoint shares the same rate limit as actual `/v2/search` and `/v2/search/submit` executions. When the rate limit is exceeded, the API returns HTTP 429 with details about the triggered window, current value, and limit.
 
@@ -266,10 +268,41 @@ paths:
             schema:
               type: object
               properties:
+                query:
+                  type: string
+                  description: Natural-language people-search query interpreted into TPSQL filters. A request using a query costs 5 credits before optional stats.
+                  example: "Software engineers in Germany with Python experience"
+                search_requirements:
+                  type: array
+                  description: Structured requirements interpreted into TPSQL filters. If present, these take precedence over `query`. A request using search requirements costs 5 credits before optional stats.
+                  items:
+                    $ref: '#/components/schemas/SearchRequirement'
                 custom_filters:
                   $ref: '#/components/schemas/CustomFilters'
-              required:
-                - custom_filters
+                custom_filters_mode:
+                  $ref: '#/components/schemas/CustomFiltersMode'
+                strict_filters:
+                  type: boolean
+                docid_blacklist:
+                  type: array
+                  items:
+                    type: string
+                docid_whitelist:
+                  type: array
+                  items:
+                    type: string
+                exclude_liked_profiles:
+                  type: boolean
+                enable_custom_search:
+                  type: boolean
+                stats:
+                  type: boolean
+                  default: false
+                  description: Return profile-field statistics calculated from up to 1,000 matching profiles for an additional 5 credits.
+              anyOf:
+                - required: [query]
+                - required: [search_requirements]
+                - required: [custom_filters]
       responses:
         "200":
           description: Count computed successfully
@@ -284,7 +317,7 @@ paths:
                     example: 1234
                   approximate:
                     type: boolean
-                    description: True if the count was extrapolated from a subset of shards (not all shards returned a count).
+                    description: True if not all backing index shards returned a count.
                     example: false
                   uuid:
                     type: string
@@ -298,6 +331,8 @@ paths:
                     type: integer
                     description: Number of credits remaining after this request.
                     example: 950
+                  stats:
+                    $ref: '#/components/schemas/SearchCountStats'
         "401":
           description: Invalid API key
         "400":
@@ -2034,6 +2069,111 @@ components:
           format: uuid
           description: Organization identifier
 
+    SearchCountStats:
+      type: object
+      required:
+        - matched_profiles
+        - sample_limit
+        - top_values_limit
+        - sample_size
+        - truncated
+        - fields
+      properties:
+        matched_profiles:
+          type: integer
+          description: Full number of profiles matching the count filter.
+        sample_limit:
+          type: integer
+          example: 1000
+        top_values_limit:
+          type: integer
+          example: 10
+        sample_size:
+          type: integer
+          description: Number of matching profiles used to compute field statistics.
+        truncated:
+          type: boolean
+          description: True when more profiles matched than were included in the sample.
+        fields:
+          type: object
+          description: |
+            Statistics keyed by profile-field name. Includes locations, countries, regions,
+            canonical skills and titles, companies and industries, education, languages,
+            age and experience distributions, gender, LinkedIn audience size, decision-maker
+            status, contact availability, current-company attributes, record counts, top-university
+            status, and last-activity recency. Raw title, raw skill, and raw company counterparts are
+            excluded when canonical fields are available. Open-to-work, profile-created,
+            certifications, programming languages, and profile-achievement fields are excluded.
+          additionalProperties:
+            $ref: '#/components/schemas/SearchCountFieldStats'
+
+    SearchCountFieldStats:
+      type: object
+      required:
+        - profiles_total
+        - profiles_non_empty
+        - profiles_empty
+        - coverage_pct
+      properties:
+        profiles_total:
+          type: integer
+        profiles_non_empty:
+          type: integer
+        profiles_empty:
+          type: integer
+        coverage_pct:
+          type: number
+        values_total:
+          type: integer
+        unique_values:
+          type: integer
+        top_values:
+          type: array
+          items:
+            type: object
+            required:
+              - value
+              - profile_count
+              - percentage
+            properties:
+              value:
+                type: string
+              profile_count:
+                type: integer
+              percentage:
+                type: number
+        min:
+          type: number
+          nullable: true
+        max:
+          type: number
+          nullable: true
+        mean:
+          type: number
+          nullable: true
+        median:
+          type: number
+          nullable: true
+        buckets:
+          type: array
+          items:
+            type: object
+            required:
+              - label
+              - profile_count
+              - percentage
+            properties:
+              label:
+                type: string
+              profile_count:
+                type: integer
+              percentage:
+                type: number
+        counts:
+          type: object
+          additionalProperties:
+            type: integer
+
     SearchRequirement:
       type: object
       description: A structured search requirement with text and whether it is mandatory.
@@ -2462,6 +2602,11 @@ components:
           type: integer
           description: Year of the last funding round
           example: 2023
+        last_funding_round_date:
+          type: string
+          format: date
+          description: Exact date of the latest funding round
+          example: "2023-09-15"
         valuation:
           type: integer
           description: Company valuation in USD
@@ -2475,6 +2620,11 @@ components:
           type: boolean
           description: Indicates if the company is considered a startup
           example: false
+        ipo_date:
+          type: string
+          format: date
+          description: Date when the company went public
+          example: "2021-04-14"
         has_ipo:
           type: boolean
           description: Indicates if the company has had an Initial Public Offering (IPO)
@@ -2490,6 +2640,10 @@ components:
         is_saas:
           type: boolean
           description: Indicates if the company provides Software as a Service
+          example: false
+        is_health_tech:
+          type: boolean
+          description: Indicates if the company operates in health technology
           example: false
         is_hiring:
           type: boolean

@@ -74,15 +74,18 @@ class CompanyInfo(BaseModel):
     funding_total_usd: int | None = None
     latest_funding_amount: int | None = None
     latest_funding_round: str | None = None
+    last_funding_round_date: Date | None = None
     last_funding_round_year: int | None = None
     valuation: int | None = None
     funding_rounds: List[FundingRound] | None = Field(default_factory=list)
 
     is_startup: bool | None = None
+    ipo_date: Date | None = None
     has_ipo: bool | None = None
     is_b2b: bool | None = None
     is_b2c: bool | None = None
     is_saas: bool | None = None
+    is_health_tech: bool | None = None
     is_hiring: bool | None = None
     backed_by_y_combinator: bool | None = None
 
@@ -461,17 +464,82 @@ class V2SearchRequest(BaseModel):
 
 
 class V2SearchCountRequest(BaseModel):
+    """Count profiles using natural-language search, structured requirements, or filters.
+
+    A filter-only request costs 2 credits. A request containing ``query`` or
+    ``search_requirements`` costs 5 credits. Setting ``stats=True`` adds 5 credits.
+    """
+
+    query: str | None = Field(
+        default=None,
+        description="Natural-language people-search query. A query-based count costs 5 credits.",
+    )
+    search_requirements: List[SearchRequirement] | None = Field(
+        default=None,
+        description="Structured search requirements. A requirements-based count costs 5 credits.",
+    )
     strict_filters: bool | None = None
-    custom_filters: CustomFilters
+    custom_filters: CustomFilters | None = None
+    custom_filters_mode: CustomFiltersMode | None = None
+    docid_blacklist: List[str] | None = None
+    docid_whitelist: List[str] | None = None
+    exclude_liked_profiles: bool | None = None
     enable_custom_search: bool | None = None
+    stats: bool | None = Field(
+        default=None,
+        description="Return statistics from up to 1,000 matching profiles for an additional 5 credits.",
+    )
+    model_config = ConfigDict(extra="ignore")
+
+
+class V2SearchCountTopValue(BaseModel):
+    value: str
+    profile_count: int
+    percentage: float
+    model_config = ConfigDict(extra="ignore")
+
+
+class V2SearchCountBucket(BaseModel):
+    label: str
+    profile_count: int
+    percentage: float
+    model_config = ConfigDict(extra="ignore")
+
+
+class V2SearchCountFieldStats(BaseModel):
+    profiles_total: int
+    profiles_non_empty: int
+    profiles_empty: int
+    coverage_pct: float
+    values_total: int | None = None
+    unique_values: int | None = None
+    top_values: List[V2SearchCountTopValue] | None = None
+    min: float | None = None
+    max: float | None = None
+    mean: float | None = None
+    median: float | None = None
+    buckets: List[V2SearchCountBucket] | None = None
+    counts: Dict[str, int] | None = None
+    model_config = ConfigDict(extra="ignore")
+
+
+class V2SearchCountStats(BaseModel):
+    matched_profiles: int
+    sample_limit: int
+    top_values_limit: int
+    sample_size: int
+    truncated: bool
+    fields: Dict[str, V2SearchCountFieldStats] = Field(default_factory=dict)
     model_config = ConfigDict(extra="ignore")
 
 
 class V2SearchCountResponse(BaseModel):
     count: int
+    approximate: bool | None = None
     uuid: str | None = None
     credits_used: int | None = None
     credits_remaining: int | None = None
+    stats: V2SearchCountStats | None = None
     model_config = ConfigDict(extra="ignore")
 
 

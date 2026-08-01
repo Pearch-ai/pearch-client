@@ -232,6 +232,17 @@ class PearchClient:
         return V2SearchResponse(**response_data)
 
     def search_count(self, request: V2SearchCountRequest) -> V2SearchCountResponse:
+        """Count profiles matching a query, search requirements, or custom filters.
+
+        Filter-only counts cost 2 credits. Counts using ``query`` or
+        ``search_requirements`` cost 5 credits. ``stats=True`` adds 5 credits.
+
+        Args:
+            request: Count criteria and optional profile statistics flag.
+
+        Returns:
+            Matching count, billing metadata, and optional typed profile statistics.
+        """
         logger.info("Executing v2 search count")
 
         response_data = self._make_request(
@@ -736,6 +747,11 @@ class AsyncPearchClient:
         return V2SearchResponse(**response_data)
 
     async def search_count(self, request: V2SearchCountRequest) -> V2SearchCountResponse:
+        """Count profiles asynchronously.
+
+        Filter-only counts cost 2 credits. Counts using ``query`` or
+        ``search_requirements`` cost 5 credits. ``stats=True`` adds 5 credits.
+        """
         logger.info("Executing async v2 search count")
 
         response_data = await self._make_request(

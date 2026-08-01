@@ -951,7 +951,7 @@ async def test_async_search_v2():
 async def test_filters():
     request = V2SearchRequest(
         query="software engineer",
-        type="fast",
+        type="pro",
         limit=2,
         filter_out_no_emails=True,
         filter_out_no_phones=True,
