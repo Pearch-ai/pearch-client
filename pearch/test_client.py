@@ -344,10 +344,15 @@ async def test_profile():
 @pytest.mark.asyncio
 async def test_v1_fast_search():
     credits1 = await get_credits()
-    request = V1SearchRequest(query="software engineer", limit=100, type="fast")
+    request = V1SearchRequest(
+        query="software engineer",
+        limit=100,
+        type="fast",
+    )
     generate_curl_command("search_v1", request)
     response = await AsyncPearchClient().search_v1(request)
-    assert any(result.linkedin_slug for result in response)
+    assert response, "Expected /v1/search to return at least one profile"
+    assert all(result.linkedin_slug for result in response)
     credits2 = await get_credits()
     assert credits1 - credits2 == len(response) * 1, "Credits check failed"
 

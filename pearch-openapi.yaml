@@ -166,6 +166,11 @@ paths:
                   type: boolean
                   default: false
                   description: If true, the search will be processed asynchronously. The endpoint will return immediately with thread ID that can be used to check the status and retrieve results when ready.
+                webhook_url:
+                  type: string
+                  format: uri
+                  description: An HTTP or HTTPS URL that will receive a POST after a successful asynchronous search. The JSON request body has exactly the same format as a successful synchronous `/v2/search` response. This parameter requires `async=true`.
+                  example: "https://client.example.com/pearch/results"
       responses:
         "200":
           description: Search completed and results returned
@@ -629,6 +634,11 @@ paths:
                     type: string
                   description: List of profile docids to limit search results to. Only profiles with these docids will be returned.
                   example: ["johndoe", "janedoe"]
+                webhook_url:
+                  type: string
+                  format: uri
+                  description: An HTTP or HTTPS URL that will receive a POST after the search completes successfully. The JSON request body has exactly the same format as a successful synchronous `/v2/search` response.
+                  example: "https://client.example.com/pearch/results"
       responses:
         "202":
           description: Search task submitted successfully
