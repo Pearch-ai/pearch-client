@@ -11,6 +11,8 @@ from .schema import (
     V1FindMatchingJobsResponse,
     V1ProfileRequest,
     V1ProfileResponse,
+    V1ProfileBatchRequest,
+    V1ProfileBatchResponse,
     V1ApiCallHistoryRequest,
     V1ApiCallHistoryResponse,
     V1CreateApiKeyRequest,
@@ -458,6 +460,18 @@ class PearchClient:
         )
 
         return V1ProfileResponse(**response_data)
+
+    def enrich_profiles(
+        self, request: V1ProfileBatchRequest
+    ) -> V1ProfileBatchResponse:
+        """Enrich a batch of profiles while preserving input order."""
+        logger.info("Enriching %s profiles", len(request.profiles))
+        response_data = self._make_request(
+            method="POST",
+            endpoint="v1/profile/batch",
+            data=request.model_dump(exclude_none=True),
+        )
+        return V1ProfileBatchResponse(**response_data)
 
     def api_call_history(self, request: V1ApiCallHistoryRequest) -> V1ApiCallHistoryResponse:
         """
@@ -954,6 +968,18 @@ class AsyncPearchClient:
             params=request.model_dump(exclude_none=True),
         )
         return V1ProfileResponse(**response_data)
+
+    async def enrich_profiles(
+        self, request: V1ProfileBatchRequest
+    ) -> V1ProfileBatchResponse:
+        """Enrich a batch of profiles while preserving input order."""
+        logger.info("Enriching %s profiles async", len(request.profiles))
+        response_data = await self._make_request(
+            method="POST",
+            endpoint="v1/profile/batch",
+            data=request.model_dump(exclude_none=True),
+        )
+        return V1ProfileBatchResponse(**response_data)
 
     async def api_call_history(self, request: V1ApiCallHistoryRequest) -> V1ApiCallHistoryResponse:
         """

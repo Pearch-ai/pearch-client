@@ -3,7 +3,7 @@ from datetime import date as Date
 from enum import Enum
 from typing import Any, Dict, List, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 logger = logging.getLogger("schema.py")
 
@@ -79,7 +79,6 @@ class CompanyInfo(BaseModel):
     valuation: int | None = None
     funding_rounds: List[FundingRound] | None = Field(default_factory=list)
 
-    is_startup: bool | None = None
     ipo_date: Date | None = None
     has_ipo: bool | None = None
     is_b2b: bool | None = None
@@ -110,6 +109,7 @@ class Experience(BaseModel):
     location_info: Dict[str, Any] | None = None
     experience_summary: str | None = None
     is_current_experience: bool | None = None
+    is_startup_experience: bool | None = None
     company_info: CompanyInfo | None = None
     model_config = ConfigDict(extra="ignore")
 
@@ -374,6 +374,31 @@ class V1ProfileResponse(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
 
+class V1ProfileBatchError(BaseModel):
+    status: str
+    model_config = ConfigDict(extra="ignore")
+
+
+class V1ProfileBatchItemResponse(BaseModel):
+    reference_id: str | None = None
+    input: Dict[str, str]
+    http: int
+    profile: Profile | None = None
+    error: V1ProfileBatchError | None = None
+    model_config = ConfigDict(extra="ignore")
+
+
+class V1ProfileBatchResponse(BaseModel):
+    uuid: str
+    results: List[V1ProfileBatchItemResponse] = Field(default_factory=list)
+    profiles_succeeded: int
+    profiles_failed: int
+    credits_remaining: int | None = None
+    credits_used: int = 0
+    credits_breakdown: Dict[str, Any] | None = None
+    model_config = ConfigDict(extra="ignore")
+
+
 # Request parameter classes for each endpoint
 
 
@@ -609,6 +634,49 @@ class V1ProfileRequest(BaseModel):
     show_emails: bool | None = None
     show_phone_numbers: bool | None = None
     model_config = ConfigDict(extra="ignore")
+
+
+class V1ProfileBatchItem(BaseModel):
+    reference_id: str | None = Field(default=None, min_length=1, max_length=512)
+    docid: str | None = Field(default=None, min_length=1, max_length=512)
+    uuid: str | None = Field(default=None, min_length=1, max_length=512)
+    email: str | None = Field(default=None, min_length=1, max_length=512)
+    model_config = ConfigDict(extra="forbid")
+
+    @model_validator(mode="after")
+    def require_one_profile_identifier(self):
+        if sum(bool(value) for value in (self.docid, self.uuid, self.email)) != 1:
+            raise ValueError("Provide exactly one of 'docid', 'uuid' or 'email'.")
+        return self
+
+
+class V1ProfileBatchRequest(BaseModel):
+    profiles: List[V1ProfileBatchItem] = Field(min_length=1, max_length=100)
+    high_freshness: bool | None = False
+    reveal_emails: bool | None = False
+    reveal_phones: bool | None = False
+    with_profile: bool | None = False
+    github_enrich: bool | None = None
+    short_response: bool = False
+    omit_fields: List[str] | None = None
+    show_emails: bool | None = None
+    show_phone_numbers: bool | None = None
+    model_config = ConfigDict(extra="forbid")
+
+    @model_validator(mode="after")
+    def reject_duplicate_identifiers(self):
+        seen = set()
+        for item in self.profiles:
+            if item.docid:
+                key = ("docid", item.docid.lower())
+            elif item.uuid:
+                key = ("uuid", item.uuid.lower())
+            else:
+                key = ("email", str(item.email).lower())
+            if key in seen:
+                raise ValueError(f"Duplicate profile identifier: '{key[0]}={key[1]}'.")
+            seen.add(key)
+        return self
 
 
 class V2SearchSubmitResponse(BaseModel):

@@ -12,7 +12,7 @@ import time
 import uuid
 
 from openai import OpenAI
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
 from pearch.client import AsyncPearchClient, PearchAPIError
 from pearch.schema import (
@@ -40,6 +40,24 @@ from pearch.schema import (
     CustomFilters,
     SearchRequirement,
     SearchRequirementStats,
+    ApiKeyMetadata,
+    OrganizationMember,
+    OrganizationMemberApiKeys,
+    OrganizationPendingInvite,
+    OrganizationRole,
+    UserInfo,
+    V1ApiKeyCapabilitiesResponse,
+    V1CreateApiKeyRequest,
+    V1CreateOrganizationApiKeyResponse,
+    V1InviteOrganizationMemberRequest,
+    V1InviteOrganizationMemberResponse,
+    V1OrganizationApiKeysResponse,
+    V1OrganizationMembersResponse,
+    V1ProfileBatchItem,
+    V1ProfileBatchRequest,
+    V1ProfileBatchResponse,
+    V1UpdateOrganizationMemberRoleRequest,
+    V1UpdateOrganizationMemberRoleResponse,
 )
 
 logger = logging.getLogger(__name__)
@@ -64,6 +82,139 @@ def test_v2_search_request_omits_server_default_fill_with_low_confidence_results
         "thread_id": "thread-id",
         "fill_with_low_confidence_results": False,
     }
+
+
+def test_owner_managed_api_key_schemas():
+    metadata = ApiKeyMetadata(
+        id="9ea5c01e-fac8-4aaf-9137-d2954afac230",
+        name="Production",
+        preview="pk_abc…1234",
+        created_at="2026-07-20T12:00:00Z",
+        last_used_at=None,
+        revoked_at=None,
+    )
+    response = V1OrganizationApiKeysResponse(
+        organization_id="1ad448f6-aa55-455f-a369-c26070b3fe80",
+        members=[
+            OrganizationMemberApiKeys(
+                user_id="d3297401-bb9b-48c0-ae5e-d481159e6d4e",
+                email="member@example.com",
+                role="member",
+                api_keys=[metadata],
+            )
+        ],
+    )
+
+    assert response.members[0].api_keys[0] == metadata
+
+
+def test_owner_managed_api_key_create_and_capabilities_schemas():
+    request = V1CreateApiKeyRequest(name="Production")
+    response = V1CreateOrganizationApiKeyResponse(
+        api_key="pk_secret",
+        id="9ea5c01e-fac8-4aaf-9137-d2954afac230",
+        name=request.name,
+        preview="pk_sec…cret",
+        created_at="2026-07-20T12:00:00Z",
+        member_user_id="d3297401-bb9b-48c0-ae5e-d481159e6d4e",
+        organization_id="1ad448f6-aa55-455f-a369-c26070b3fe80",
+    )
+    capabilities = V1ApiKeyCapabilitiesResponse(
+        owner_managed_member_keys=True,
+        version=2,
+    )
+
+    assert response.member_user_id == "d3297401-bb9b-48c0-ae5e-d481159e6d4e"
+    assert capabilities.owner_managed_member_keys is True
+    assert UserInfo(api_key="existing-key").api_key == "existing-key"
+
+
+def test_api_call_history_accepts_specific_api_key_filter():
+    request = V1ApiCallHistoryRequest(api_key="pk_specific")
+
+    assert request.model_dump(exclude_none=True)["api_key"] == "pk_specific"
+
+
+def test_organization_members_response_schema():
+    response = V1OrganizationMembersResponse(
+        organization_id="1ad448f6-aa55-455f-a369-c26070b3fe80",
+        members=[
+            OrganizationMember(
+                user_id="d3297401-bb9b-48c0-ae5e-d481159e6d4e",
+                email="member@example.com",
+                name="Member Name",
+                role=OrganizationRole.MEMBER,
+                invited_by="4b8755c7-0688-46db-8175-cfbfa5dff5a5",
+                created_at="2026-07-20T12:00:00Z",
+            )
+        ],
+        pending_invites=[
+            OrganizationPendingInvite(
+                id="de2b3790-ddd7-4b0f-bf60-c34217c26375",
+                email="invitee@example.com",
+                role=OrganizationRole.VIEWER,
+                expires_at="2026-07-27T12:00:00Z",
+                invited_by="4b8755c7-0688-46db-8175-cfbfa5dff5a5",
+            )
+        ],
+    )
+
+    assert response.members[0].role == OrganizationRole.MEMBER
+    assert response.pending_invites[0].role == OrganizationRole.VIEWER
+
+
+def test_invite_organization_member_request_defaults_and_constraints():
+    request = V1InviteOrganizationMemberRequest(email="invitee@example.com")
+
+    assert request.model_dump(mode="json") == {
+        "email": "invitee@example.com",
+        "role": "member",
+        "expires_in_days": 7,
+    }
+
+    for expires_in_days in (0, 31):
+        with pytest.raises(ValidationError):
+            V1InviteOrganizationMemberRequest(
+                email="invitee@example.com",
+                expires_in_days=expires_in_days,
+            )
+
+    with pytest.raises(ValidationError):
+        V1InviteOrganizationMemberRequest(
+            email="invitee@example.com",
+            role="invalid",
+        )
+
+
+def test_invite_organization_member_response_schema():
+    response = V1InviteOrganizationMemberResponse(
+        invite_id="de2b3790-ddd7-4b0f-bf60-c34217c26375",
+        email="invitee@example.com",
+        role="admin",
+        expires_at="2026-07-27T12:00:00Z",
+        invite_token="invite-secret",
+        invite_url="https://app.pearch.ai/invite/invite-secret",
+    )
+
+    assert response.role == OrganizationRole.ADMIN
+    assert response.invite_token == "invite-secret"
+
+
+def test_update_organization_member_role_schemas():
+    request = V1UpdateOrganizationMemberRoleRequest(role="billing")
+    response = V1UpdateOrganizationMemberRoleResponse(
+        organization_id="1ad448f6-aa55-455f-a369-c26070b3fe80",
+        user_id="d3297401-bb9b-48c0-ae5e-d481159e6d4e",
+        updated=True,
+        previous_role="member",
+        role=request.role,
+    )
+
+    assert response.model_dump(mode="json")["previous_role"] == "member"
+    assert response.model_dump(mode="json")["role"] == "billing"
+
+    with pytest.raises(ValidationError):
+        V1UpdateOrganizationMemberRoleRequest(role="invalid")
 
 
 def _is_live_pearch_api() -> bool:
@@ -192,6 +343,7 @@ def generate_curl_command(client_method: str, request: Any) -> str:
     method_mapping = {
         "find_matching_jobs": ("POST", "v1/find_matching_jobs"),
         "get_profile": ("GET", "v1/profile"),
+        "enrich_profiles": ("POST", "v1/profile/batch"),
         "api_call_history": ("GET", "v1/api_call_history"),
         "get_user": ("GET", "v1/user"),
         "search_v1": ("GET", "v1/search"),
@@ -340,6 +492,47 @@ async def test_profile():
     )
     credits3 = await get_credits()
     assert credits2 - credits3 == response.credits_used, "Credits check failed"
+
+
+@pytest.mark.asyncio
+async def test_profile_batch():
+    with pytest.raises(ValidationError, match="Provide exactly one"):
+        V1ProfileBatchItem(docid="person", email="person@example.com")
+    with pytest.raises(ValidationError, match="Duplicate profile identifier"):
+        V1ProfileBatchRequest(
+            profiles=[
+                V1ProfileBatchItem(docid="person"),
+                V1ProfileBatchItem(docid="PERSON"),
+            ]
+        )
+
+    credits_before = await get_credits()
+    request = V1ProfileBatchRequest(
+        profiles=[
+            V1ProfileBatchItem(reference_id="vlad", docid="vslaykovsky"),
+            V1ProfileBatchItem(reference_id="victor", docid="victorsunden"),
+        ],
+        with_profile=True,
+    )
+    generate_curl_command("enrich_profiles", request)
+
+    response: V1ProfileBatchResponse = await AsyncPearchClient().enrich_profiles(
+        request
+    )
+
+    assert response.profiles_succeeded == 2
+    assert response.profiles_failed == 0
+    assert [result.reference_id for result in response.results] == ["vlad", "victor"]
+    assert [result.input["docid"] for result in response.results] == [
+        "vslaykovsky",
+        "victorsunden",
+    ]
+    assert all(result.http == 200 for result in response.results)
+    assert all(result.profile and result.profile.linkedin_slug for result in response.results)
+    assert response.credits_used is not None
+    assert response.credits_remaining is not None
+    credits_after = await get_credits()
+    assert credits_before - credits_after == response.credits_used, "Credits check failed"
 
 @pytest.mark.asyncio
 async def test_v1_fast_search():
@@ -615,8 +808,10 @@ async def test_v2_pro_search_generic():
 
     # second page
     logger.info("Running a limit=2 offset=2 query")
-    second_request = first_request.model_copy(
-        update={"limit": 2, "offset": 2, "thread_id": thread_id}
+    second_request = V2SearchRequest(
+        limit=2,
+        offset=2,
+        thread_id=thread_id,
     )
     generate_curl_command("search", second_request)
     response: V2SearchResponse = await AsyncPearchClient().search(second_request)
@@ -630,8 +825,10 @@ async def test_v2_pro_search_generic():
     assert credits2 - credits3 == response.credits_used, "Credits check failed"
 
     logger.info("Running a limit=4 offset=0 query")
-    show_more_request = first_request.model_copy(
-        update={"limit": 4, "offset": 0, "thread_id": thread_id}
+    show_more_request = V2SearchRequest(
+        limit=4,
+        offset=0,
+        thread_id=thread_id,
     )
     generate_curl_command("search", show_more_request)
     response: V2SearchResponse = await AsyncPearchClient().search(show_more_request)
@@ -649,8 +846,10 @@ async def test_v2_pro_search_generic():
 
     # follow up query
     logger.info("Running a follow up query: who are at least 30 years old")
-    third_request = first_request.model_copy(
-        update={"query": "who are at least 30 years old", "limit": 2, "thread_id": thread_id}
+    third_request = V2SearchRequest(
+        query="who are at least 30 years old",
+        limit=2,
+        thread_id=thread_id,
     )
     generate_curl_command("search", third_request)
     response: V2SearchResponse = await AsyncPearchClient().search(third_request)
@@ -1006,10 +1205,8 @@ async def test_filters():
 async def test_v2_search_count():
     credits1 = await get_credits()
     request = V2SearchCountRequest(
-        custom_filters=CustomFilters(
-            locations=["Tokio"],
-            titles=["meteorologist"],
-        )
+        query="software engineers in the United States",
+        stats=True,
     )
     generate_curl_command("search_count", request)
     response = await AsyncPearchClient().search_count(request)
@@ -1017,6 +1214,8 @@ async def test_v2_search_count():
     assert response.uuid
     assert response.credits_used is not None
     assert response.credits_remaining is not None
+    assert response.stats is not None
+    assert response.stats.matched_profiles == response.count
     credits2 = await get_credits()
     assert credits1 - credits2 == response.credits_used, "Credits check failed"
 

@@ -1483,6 +1483,80 @@ paths:
         "429":
           description: Rate limit exceeded. JSON body contains the triggered window, current value, and limit.
 
+  /v1/profile/batch:
+    post:
+      operationId: post_v1-profile-batch
+      summary: Enrich profiles in a batch
+      tags:
+        - Enrichment
+      description: |
+        Enrich between 1 and 100 profiles in one request. Each item must provide exactly one `docid`, `uuid`, or `email`; enrichment options apply to the entire batch. Results preserve input order, and `reference_id` can be used to correlate results with client records.
+
+        A valid batch returns HTTP 200 even when individual profiles are not found. Inspect each result's `http`, `profile`, and `error` fields. Request validation and infrastructure errors remain top-level HTTP errors.
+
+        UUID inputs use masked profile enrichment, matching `GET /v1/profile?uuid=...`. For other identifiers, pricing is additive per successful item.
+
+        **Costs are additive per successful item: `with_profile` costs 1 credit, `high_freshness` costs 2 credits, `reveal_emails` costs 6 credits and `reveal_phones` costs 6 credits when the corresponding contact data is found, `github_enrich` costs 8 credits when applied, and resolving an `email` costs 6 credits. UUID inputs instead cost 25 credits each for masked enrichment.**
+
+        **Rate limit: 180 batch requests per user per 60 seconds.** A batch counts as one request regardless of its number of items. Batches containing email identifiers also count as one request against the account's daily email-lookup limit.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileBatchRequest'
+            example:
+              profiles:
+                - reference_id: "candidate-1"
+                  docid: "vslaykovsky"
+                - reference_id: "candidate-2"
+                  email: "person@example.com"
+              with_profile: true
+              reveal_emails: true
+      responses:
+        "200":
+          description: Batch processed. Individual items can still contain 404 outcomes.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileBatchResponse'
+              example:
+                uuid: "ec191bf9-99ff-4989-8383-c97c71fafb6d"
+                results:
+                  - reference_id: "candidate-1"
+                    input:
+                      docid: "vslaykovsky"
+                    http: 200
+                    profile:
+                      linkedin_slug: "vslaykovsky"
+                      first_name: "Vlad"
+                  - reference_id: "candidate-2"
+                    input:
+                      email: "person@example.com"
+                    http: 404
+                    error:
+                      status: "Could not find LinkedIn profile for the provided email"
+                profiles_succeeded: 1
+                profiles_failed: 1
+                credits_remaining: 993
+                credits_used: 7
+                credits_breakdown:
+                  version: 1
+                  total: 7
+                  items: []
+        "400":
+          description: Invalid JSON, batch size, identifier, duplicate, or option.
+        "401":
+          description: Invalid API key
+        "402":
+          description: Insufficient credits
+        "429":
+          description: Rate limit exceeded. JSON body contains the triggered window, current value, and limit.
+        "500":
+          description: Batch enrichment failed
+
   /v1/user:
     get:
       operationId: get_v1-user
@@ -1894,6 +1968,157 @@ paths:
 
 components:
   schemas:
+    ProfileBatchItem:
+      type: object
+      additionalProperties: false
+      description: One profile identifier and an optional client reference. Provide exactly one of `docid`, `uuid`, or `email`.
+      oneOf:
+        - required: [docid]
+        - required: [uuid]
+        - required: [email]
+      properties:
+        reference_id:
+          type: string
+          minLength: 1
+          maxLength: 512
+          description: Optional client-defined value copied to the corresponding result.
+          example: "candidate-123"
+        docid:
+          type: string
+          minLength: 1
+          maxLength: 512
+          description: LinkedIn profile slug, which is the part after `https://www.linkedin.com/in/`.
+          example: "vslaykovsky"
+        uuid:
+          type: string
+          format: uuid
+          description: UUID from a masked search result. UUID inputs use masked profile enrichment.
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        email:
+          type: string
+          format: email
+          maxLength: 512
+          description: Email address to resolve to a LinkedIn profile. This lookup is separate from `reveal_emails`.
+          example: "person@example.com"
+
+    ProfileBatchRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - profiles
+      properties:
+        profiles:
+          type: array
+          minItems: 1
+          maxItems: 100
+          description: Profiles to enrich. Results preserve this input order. Duplicate identifiers are rejected.
+          items:
+            $ref: '#/components/schemas/ProfileBatchItem'
+        high_freshness:
+          type: boolean
+          default: false
+          description: "Enable realtime profile updates for every non-UUID item. **Cost: 2 credits per successfully returned profile**"
+        reveal_emails:
+          type: boolean
+          default: false
+          description: "Include email addresses when available. **Cost: 6 credits per profile for which email data is found**. Deprecated name: `show_emails`"
+        reveal_phones:
+          type: boolean
+          default: false
+          description: "Include phone numbers when available. **Cost: 6 credits per profile for which phone data is found**. Deprecated name: `show_phone_numbers`"
+        with_profile:
+          type: boolean
+          default: false
+          description: "Include full stored profile data. **Cost: 1 credit per successfully returned profile**"
+        github_enrich:
+          type: boolean
+          description: "Add available GitHub developer fields. **Cost: 8 credits per profile enriched from GitHub**"
+        short_response:
+          type: boolean
+          default: false
+          description: Return the compact profile representation.
+        omit_fields:
+          type: array
+          description: Profile fields to remove from every successful result.
+          items:
+            type: string
+        show_emails:
+          type: boolean
+          deprecated: true
+          description: Deprecated alias for `reveal_emails`.
+        show_phone_numbers:
+          type: boolean
+          deprecated: true
+          description: Deprecated alias for `reveal_phones`.
+
+    ProfileBatchItemResult:
+      type: object
+      required:
+        - input
+        - http
+      properties:
+        reference_id:
+          type: string
+          description: Client-defined reference copied from the request item.
+        input:
+          type: object
+          additionalProperties:
+            type: string
+          description: Identifier supplied for this item.
+          example: {"docid": "vslaykovsky"}
+        http:
+          type: integer
+          description: Item-level outcome code. Currently 200 or 404.
+          enum: [200, 404]
+        profile:
+          $ref: '#/components/schemas/Profile'
+        error:
+          type: object
+          required:
+            - status
+          properties:
+            status:
+              type: string
+              example: "Profile not found"
+
+    ProfileBatchResponse:
+      type: object
+      required:
+        - uuid
+        - results
+        - profiles_succeeded
+        - profiles_failed
+        - credits_remaining
+        - credits_used
+        - credits_breakdown
+      properties:
+        uuid:
+          type: string
+          format: uuid
+          description: Unique identifier for the batch API call.
+        results:
+          type: array
+          description: Item results in the same order as the request.
+          items:
+            $ref: '#/components/schemas/ProfileBatchItemResult'
+        profiles_succeeded:
+          type: integer
+          minimum: 0
+        profiles_failed:
+          type: integer
+          minimum: 0
+        credits_remaining:
+          type: integer
+          description: Credits remaining after the batch charge.
+        credits_used:
+          type: integer
+          description: Total credits charged for successful items.
+        credits_breakdown:
+          type: object
+          nullable: true
+          description: Aggregate itemized credit charge, or null when no credits were charged.
+          additionalProperties: true
+
     OrganizationRole:
       type: string
       enum:
