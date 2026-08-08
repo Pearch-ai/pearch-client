@@ -533,8 +533,8 @@ class V2SearchCountBucket(BaseModel):
 
 class V2SearchCountFieldStats(BaseModel):
     profiles_total: int
-    profiles_non_empty: int
-    profiles_empty: int
+    profiles_non_empty: int | None = None
+    profiles_empty: int | None = None
     coverage_pct: float
     values_total: int | None = None
     unique_values: int | None = None

@@ -2485,8 +2485,6 @@ components:
       type: object
       required:
         - profiles_total
-        - profiles_non_empty
-        - profiles_empty
         - coverage_pct
       properties:
         profiles_total:
