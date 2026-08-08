@@ -30,6 +30,7 @@ Check out API documentation: https://apidocs.pearch.ai/reference/post_v2-search
 Rate limits are per user and use a rolling 60 second window. When a limit is exceeded, the API returns HTTP 429 with details about the triggered window, current value, and limit.
 
 - `/v2/search`, `/v2/search/submit`, and `/v2/search/count`: 60 actual search/count requests per 60 seconds, shared across these endpoints. Fully cached `/v2/search` thread reloads that do not run a new search use a separate 120 requests per 60 seconds limit.
+- `/v2/company`: 180 requests per 60 seconds.
 - `/v1/search`: 60 requests per 60 seconds.
 - `/v1/profile`: 60 requests per 60 seconds.
 
@@ -327,6 +328,35 @@ INFO - pearch.client - client.py:321 - Retrieving profile for docid: vslaykovsky
 INFO - httpx - _client.py:1025 - HTTP Request: GET https://api.pearch.ai/v1/profile?docid=vslaykovsky&high_freshness=false&reveal_emails=true&reveal_phones=false&with_profile=true "HTTP/1.1 200 OK"
 Profile: {"uuid":"1f3cca0a-06b2-4679-95eb-d9b1075a2764","profile":{"docid":"vslaykovsky","linkedin_slug":"vslaykovsky","first_name":"Vlad","middle_name":null,"last_name":"Sly","picture_url":"https://media.licdn.com/dms/image/v2/C4D03AQE9ZowG0kPs6A/profile-displayphoto-shrink_200_200/profile-displayphoto-shrink_200_200/0/1538525794823?e=2147483647&v=beta&t=hZOiV9Po50zLV9blRTbra2IfeXvSdkeuJyhFJ4rmr9k","title":"Machine Learning Researcher + Kaggle Grandmaster, top10","summary":"Machine Learning Researcher with extensive experience in industry. Fluent in Python, multiple years of experience building scalable backend systems in C/C++, Java and PHP.","gender":null,"is_decision_maker":1.0,"languages":[{"language":"English","proficiency":"C1"},{"language":"Russian","proficiency":"C2"}],"inferred_languages":[],"location":"Bristol, England, United Kingdom","is_top_universities":false,"is_opentowork":null,"is_hiring":null,"total_experience_years":22.0,"estimated_age":43.0,"expertise":["machine learning","
 ```
+
+### Enrich company (/v2/company)
+
+Retrieve the complete stored company document by LinkedIn company slug or website domain. Pass exactly one identifier. The endpoint does not run realtime company lookup or contact enrichment.
+
+```bash
+curl --get 'https://api.pearch.ai/v2/company' \
+  --header "Authorization: Bearer ${PEARCH_API_KEY}" \
+  --data-urlencode 'linkedin_slug=openai'
+```
+
+To look up the company by domain instead:
+
+```bash
+curl --get 'https://api.pearch.ai/v2/company' \
+  --header "Authorization: Bearer ${PEARCH_API_KEY}" \
+  --data-urlencode 'domain=https://www.openai.com/about'
+```
+
+URLs are normalized to a lowercase bare domain, so the second request looks up `openai.com`.
+
+The response contains:
+
+- `company`: the stored company document, including identifiers, description, locations, industries, employee counts, funding information, and other available metadata
+- `credits_remaining`: the balance after the request
+- `credits_used`: the credits charged for this request
+- `credits_breakdown`: an itemized charge, or `null` if no credits were charged
+
+Company enrichment costs `company_enrichment_cost` (1 credit by default). Use `GET /v1/user` to retrieve the effective cost for your account.
 
 ## OpenAI-Compatible Chat Completions (/v1/chat/completions)
 

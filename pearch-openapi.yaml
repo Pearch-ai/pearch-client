@@ -245,7 +245,7 @@ paths:
   /v2/search/count:
     post:
       operationId: post_v2-search-count
-      summary: Count profiles matching a query, search requirements, or custom filters
+      summary: Count profiles
       tags:
         - Search
       description: |
@@ -346,6 +346,145 @@ paths:
           description: Rate limit exceeded. JSON body contains the triggered window, current value, and limit.
 
  
+  /v2/company:
+    get:
+      operationId: get_v2-company
+      summary: Enrich company
+      tags:
+        - Enrichment
+      description: |
+
+        - Test this endpoint in the [playground](https://chat.pearch.ai/api-enrichment?tab=company)
+
+        Retrieve the complete stored company document using either its LinkedIn company slug or its website domain. The LinkedIn company slug is the part after `https://www.linkedin.com/company/` in a LinkedIn company URL.
+
+        Provide exactly one of `linkedin_slug` or `domain`. Domains may be passed as a bare domain or a URL; for example, `openai.com`, `www.openai.com`, and `https://www.openai.com/about` are normalized to `openai.com`.
+
+        This endpoint returns stored company data. It does not run realtime company lookup or contact enrichment.
+
+        **Cost: 1 credit per company.** Use `GET /v1/user` to retrieve the effective `company_enrichment_cost` for your account.
+
+        **Rate limit: 180 requests per user per 60 seconds.** When the rate limit is exceeded, the API returns HTTP 429 with details about the triggered window, current value, and limit.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: linkedin_slug
+          in: query
+          required: false
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 512
+          description: LinkedIn company slug. This is the part after `https://www.linkedin.com/company/` in the company URL. Provide exactly one of `linkedin_slug` or `domain`.
+          example: "openai"
+        - name: domain
+          in: query
+          required: false
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 512
+          description: Company website domain or URL. The value is normalized to a lowercase bare domain without `www.`. Provide exactly one of `domain` or `linkedin_slug`.
+          example: "openai.com"
+      responses:
+        "200":
+          description: Company retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - company
+                  - credits_remaining
+                  - credits_used
+                  - credits_breakdown
+                properties:
+                  company:
+                    $ref: '#/components/schemas/CompanyInfo'
+                  credits_remaining:
+                    type: integer
+                    description: Number of credits remaining after this request.
+                    example: 999
+                  credits_used:
+                    type: integer
+                    description: Credits charged for this request.
+                    example: 1
+                  credits_breakdown:
+                    type: object
+                    nullable: true
+                    description: Itemized credit charge, or null when no credits were charged.
+                    required:
+                      - version
+                      - total
+                      - items
+                    properties:
+                      version:
+                        type: integer
+                        enum: [1]
+                        example: 1
+                      total:
+                        type: integer
+                        example: 1
+                      items:
+                        type: array
+                        items:
+                          type: object
+                          required:
+                            - component
+                            - data_point_type
+                            - quantity
+                            - unit_cost
+                            - credits
+                          properties:
+                            component:
+                              type: string
+                              example: "company_enrichment"
+                            data_point_type:
+                              type: string
+                              example: "company"
+                            quantity:
+                              type: number
+                              example: 1
+                            unit_cost:
+                              type: number
+                              example: 1
+                            credits:
+                              type: integer
+                              example: 1
+              example:
+                company:
+                  name: "OpenAI"
+                  domain: "openai.com"
+                  website: "https://openai.com"
+                  linkedin_url: "https://www.linkedin.com/company/openai"
+                  linkedin_slug: "openai"
+                  industries: ["Artificial Intelligence (AI)", "Software"]
+                  founded_in: 2015
+                  num_employees_range: "1001-5000"
+                credits_remaining: 999
+                credits_used: 1
+                credits_breakdown:
+                  version: 1
+                  total: 1
+                  items:
+                    - component: "company_enrichment"
+                      data_point_type: "company"
+                      quantity: 1
+                      unit_cost: 1
+                      credits: 1
+        "400":
+          description: Invalid parameters. Provide exactly one valid `linkedin_slug` or `domain`; unknown parameters are rejected.
+        "401":
+          description: Invalid API key
+        "402":
+          description: Insufficient credits
+        "404":
+          description: Company not found
+        "429":
+          description: Rate limit exceeded. JSON body contains the triggered window, current value, and limit.
+        "502":
+          description: Company enrichment backend error
+
   /v2/search_company_leads:
     post:
       operationId: post_v2-search-company-leads
@@ -2201,6 +2340,11 @@ components:
           description: "Whether this requirement is mandatory. If false, the requirement is treated as a nice-to-have. Use `must_have` sparingly: too many mandatory requirements can make the search overly restrictive and result in fewer returned profiles."
           example: true
     
+    CustomFiltersMode:
+      type: string
+      enum: [exact, smart]
+      description: "Mode for handling custom filters. 'exact' uses only the supplied custom filters; 'smart' merges them with LLM-generated filters."
+
     CustomFilters:
       type: object
       description: |
@@ -2626,10 +2770,6 @@ components:
           description: List of funding rounds
           items:
             $ref: '#/components/schemas/FundingRound'
-        is_startup:
-          type: boolean
-          description: Indicates if the company is considered a startup
-          example: false
         ipo_date:
           type: string
           format: date
@@ -2740,6 +2880,10 @@ components:
         is_current_experience:
           type: boolean
           description: Whether this is the current role
+          example: true
+        is_startup_experience:
+          type: boolean
+          description: Whether this role overlapped the funded company's first seven years
           example: true
 
     Education:
