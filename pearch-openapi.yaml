@@ -1396,6 +1396,243 @@ paths:
         "429":
           description: Rate limit exceeded. JSON body contains the triggered window, current value, and limit.
 
+  /v1/search/feedback:
+    post:
+      operationId: post_v1-search-feedback
+      summary: Submit search result feedback
+      tags:
+        - Search
+      description: |
+        Submit thumbs-up or thumbs-down feedback for a profile returned by a search.
+
+        Use the `uuid` from the search response together with the profile `linkedin_slug`.
+        `reason` is optional and is typically provided for downvotes.
+
+        `uuid` must be a stable identifier for the search being rated. When rating results
+        inside a chat thread, send the `thread_id`: reopening a thread serves the cached
+        ranking but returns a new per-call `uuid`, so keying on it would lose the feedback.
+        Pass that per-call value as the optional `search_call_uuid` instead.
+
+        A rating belongs to its author: re-submitting for the same `(uuid, linkedin_slug)`
+        updates that user's rating, while a different user rating the same profile in the
+        same search keeps a separate rating.
+
+        An existing `reason` is kept when the rating is unchanged and omitted, and cleared when the rating changes.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - uuid
+                - linkedin_slug
+                - rating
+              properties:
+                uuid:
+                  type: string
+                  format: uuid
+                  description: |
+                    Stable search identifier: `thread_id` when rating a chat thread,
+                    otherwise the `uuid` returned by `/v1/search` or `/v2/search`.
+                  example: "ec191bf9-99ff-4989-8383-c97c71fafb6d"
+                linkedin_slug:
+                  type: string
+                  description: LinkedIn slug of the rated profile.
+                  example: "jason-tysl"
+                rating:
+                  type: string
+                  enum: [up, down]
+                  description: Feedback rating.
+                  example: "down"
+                reason:
+                  type: string
+                  description: Optional free-form reason for the rating.
+                  example: "Wrong location"
+                search_call_uuid:
+                  type: string
+                  format: uuid
+                  description: |
+                    Optional uuid of the individual search call that produced the rated
+                    ranking. Changes every time a thread is reopened.
+                  example: "1b0f4f2a-1a3f-4a2f-9c5b-3f8d5a2e77c1"
+            example:
+              uuid: "ec191bf9-99ff-4989-8383-c97c71fafb6d"
+              linkedin_slug: "jason-tysl"
+              rating: "down"
+              reason: "Wrong location"
+              search_call_uuid: "1b0f4f2a-1a3f-4a2f-9c5b-3f8d5a2e77c1"
+      responses:
+        "200":
+          description: Feedback saved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  id:
+                    type: integer
+                    example: 123
+                  uuid:
+                    type: string
+                    format: uuid
+                    example: "ec191bf9-99ff-4989-8383-c97c71fafb6d"
+                  linkedin_slug:
+                    type: string
+                    example: "jason-tysl"
+                  rating:
+                    type: string
+                    enum: [up, down]
+                    example: "down"
+                  reason:
+                    type: string
+                    nullable: true
+                    example: "Wrong location"
+                  created_by:
+                    type: string
+                    nullable: true
+                    description: Author of this rating.
+                    example: "analyst@example.com"
+        "400":
+          description: Invalid parameter values
+        "401":
+          description: Invalid API key
+        "403":
+          description: Invalid API key
+    get:
+      operationId: get_v1-search-feedback
+      summary: List search result feedback
+      tags:
+        - Search
+      description: |
+        List all feedback submitted for a single search, by any user.
+
+        Use this to restore thumbs state when a result page is reopened: a profile can
+        carry one rating per user, so match on `created_by` to find the caller's own.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: uuid
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Search uuid returned by `/v1/search` or `/v2/search`.
+          example: "ec191bf9-99ff-4989-8383-c97c71fafb6d"
+      responses:
+        "200":
+          description: Feedback for the search
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  uuid:
+                    type: string
+                    format: uuid
+                    example: "ec191bf9-99ff-4989-8383-c97c71fafb6d"
+                  feedback:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        linkedin_slug:
+                          type: string
+                          example: "jason-tysl"
+                        rating:
+                          type: string
+                          enum: [up, down]
+                          example: "down"
+                        reason:
+                          type: string
+                          nullable: true
+                          example: "Wrong location"
+                        created_by:
+                          type: string
+                          nullable: true
+                          example: "analyst@example.com"
+                        updated_at:
+                          type: string
+                          format: date-time
+                          nullable: true
+                          example: "2026-08-10T12:34:56+00:00"
+        "400":
+          description: Invalid parameter values
+        "401":
+          description: Invalid API key
+        "403":
+          description: Invalid API key
+    delete:
+      operationId: delete_v1-search-feedback
+      summary: Remove search result feedback
+      tags:
+        - Search
+      description: |
+        Remove the authenticated user's own feedback for a profile returned by a search.
+        Ratings submitted by other users are left untouched.
+
+        Removing feedback that does not exist is not an error; `deleted` is `false` in that case.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - uuid
+                - linkedin_slug
+              properties:
+                uuid:
+                  type: string
+                  format: uuid
+                  description: Search uuid returned by `/v1/search` or `/v2/search`.
+                  example: "ec191bf9-99ff-4989-8383-c97c71fafb6d"
+                linkedin_slug:
+                  type: string
+                  description: LinkedIn slug of the rated profile.
+                  example: "jason-tysl"
+            example:
+              uuid: "ec191bf9-99ff-4989-8383-c97c71fafb6d"
+              linkedin_slug: "jason-tysl"
+      responses:
+        "200":
+          description: Feedback removed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  deleted:
+                    type: boolean
+                    example: true
+                  uuid:
+                    type: string
+                    format: uuid
+                    example: "ec191bf9-99ff-4989-8383-c97c71fafb6d"
+                  linkedin_slug:
+                    type: string
+                    example: "jason-tysl"
+        "400":
+          description: Invalid parameter values
+        "401":
+          description: Invalid API key
+        "403":
+          description: Invalid API key
+
   /v1/profile:
     get:
       operationId: get_v1-profile
