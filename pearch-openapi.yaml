@@ -1405,17 +1405,17 @@ paths:
       description: |
         Submit thumbs-up or thumbs-down feedback for a profile returned by a search.
 
-        Use the `uuid` from the search response together with the profile `linkedin_slug`.
-        `reason` is optional and is typically provided for downvotes.
+        Use the `chat_thread_id` from the search response together with the profile
+        `linkedin_slug`. `reason` is optional and is typically provided for downvotes.
 
-        `uuid` must be a stable identifier for the search being rated. When rating results
-        inside a chat thread, send the `thread_id`: reopening a thread serves the cached
-        ranking but returns a new per-call `uuid`, so keying on it would lose the feedback.
-        Pass that per-call value as the optional `search_call_uuid` instead.
+        Ratings are keyed on the chat thread, never on the per-call `uuid` of a search
+        response: reopening a thread serves the cached ranking but returns a new `uuid`,
+        so keying on it would lose the feedback. Pass that per-call value as the optional
+        `search_call_uuid` to record which ranking was rated.
 
-        A rating belongs to its author: re-submitting for the same `(uuid, linkedin_slug)`
-        updates that user's rating, while a different user rating the same profile in the
-        same search keeps a separate rating.
+        A rating belongs to the thread rather than to its author: there is one rating per
+        `(chat_thread_id, linkedin_slug)`, and re-submitting updates it even when a
+        different user submits it.
 
         An existing `reason` is kept when the rating is unchanged and omitted, and cleared when the rating changes.
       security:
@@ -1427,16 +1427,14 @@ paths:
             schema:
               type: object
               required:
-                - uuid
+                - chat_thread_id
                 - linkedin_slug
                 - rating
               properties:
-                uuid:
+                chat_thread_id:
                   type: string
                   format: uuid
-                  description: |
-                    Stable search identifier: `thread_id` when rating a chat thread,
-                    otherwise the `uuid` returned by `/v1/search` or `/v2/search`.
+                  description: Chat thread the rated search belongs to, as returned by `/v2/search`.
                   example: "ec191bf9-99ff-4989-8383-c97c71fafb6d"
                 linkedin_slug:
                   type: string
@@ -1459,7 +1457,7 @@ paths:
                     ranking. Changes every time a thread is reopened.
                   example: "1b0f4f2a-1a3f-4a2f-9c5b-3f8d5a2e77c1"
             example:
-              uuid: "ec191bf9-99ff-4989-8383-c97c71fafb6d"
+              chat_thread_id: "ec191bf9-99ff-4989-8383-c97c71fafb6d"
               linkedin_slug: "jason-tysl"
               rating: "down"
               reason: "Wrong location"
@@ -1478,7 +1476,7 @@ paths:
                   id:
                     type: integer
                     example: 123
-                  uuid:
+                  chat_thread_id:
                     type: string
                     format: uuid
                     example: "ec191bf9-99ff-4989-8383-c97c71fafb6d"
@@ -1510,24 +1508,23 @@ paths:
       tags:
         - Search
       description: |
-        List all feedback submitted for a single search, by any user.
+        List every rating stored for a chat thread, whoever submitted it.
 
-        Use this to restore thumbs state when a result page is reopened: a profile can
-        carry one rating per user, so match on `created_by` to find the caller's own.
+        Use this to restore thumbs state when a result page is reopened.
       security:
         - bearerAuth: []
       parameters:
         - in: query
-          name: uuid
+          name: chat_thread_id
           required: true
           schema:
             type: string
             format: uuid
-          description: Search uuid returned by `/v1/search` or `/v2/search`.
+          description: Chat thread the ratings belong to.
           example: "ec191bf9-99ff-4989-8383-c97c71fafb6d"
       responses:
         "200":
-          description: Feedback for the search
+          description: Ratings stored for the thread
           content:
             application/json:
               schema:
@@ -1536,7 +1533,7 @@ paths:
                   status:
                     type: string
                     example: "success"
-                  uuid:
+                  chat_thread_id:
                     type: string
                     format: uuid
                     example: "ec191bf9-99ff-4989-8383-c97c71fafb6d"
@@ -1577,8 +1574,8 @@ paths:
       tags:
         - Search
       description: |
-        Remove the authenticated user's own feedback for a profile returned by a search.
-        Ratings submitted by other users are left untouched.
+        Remove the rating stored for a profile in a chat thread. The rating belongs to
+        the thread, so this removes it whoever submitted it.
 
         Removing feedback that does not exist is not an error; `deleted` is `false` in that case.
       security:
@@ -1590,20 +1587,20 @@ paths:
             schema:
               type: object
               required:
-                - uuid
+                - chat_thread_id
                 - linkedin_slug
               properties:
-                uuid:
+                chat_thread_id:
                   type: string
                   format: uuid
-                  description: Search uuid returned by `/v1/search` or `/v2/search`.
+                  description: Chat thread the rated search belongs to.
                   example: "ec191bf9-99ff-4989-8383-c97c71fafb6d"
                 linkedin_slug:
                   type: string
                   description: LinkedIn slug of the rated profile.
                   example: "jason-tysl"
             example:
-              uuid: "ec191bf9-99ff-4989-8383-c97c71fafb6d"
+              chat_thread_id: "ec191bf9-99ff-4989-8383-c97c71fafb6d"
               linkedin_slug: "jason-tysl"
       responses:
         "200":
@@ -1619,7 +1616,7 @@ paths:
                   deleted:
                     type: boolean
                     example: true
-                  uuid:
+                  chat_thread_id:
                     type: string
                     format: uuid
                     example: "ec191bf9-99ff-4989-8383-c97c71fafb6d"
