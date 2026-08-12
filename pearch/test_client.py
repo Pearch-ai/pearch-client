@@ -67,7 +67,7 @@ TRANSIENT_PEARCH_API_STATUS_CODES = {429, 500, 502, 503, 504}
 
 def test_v2_search_request_omits_server_default_fill_with_low_confidence_results():
     payload = V2SearchRequest(thread_id="thread-id").model_dump(exclude_none=True, by_alias=True)
-    explicit_payload = V2SearchRequest(
+    enabled_payload = V2SearchRequest(
         thread_id="thread-id",
         fill_with_low_confidence_results=True,
     ).model_dump(exclude_none=True, by_alias=True)
@@ -77,10 +77,10 @@ def test_v2_search_request_omits_server_default_fill_with_low_confidence_results
     ).model_dump(exclude_none=True, by_alias=True)
 
     assert payload == {"thread_id": "thread-id"}
-    assert explicit_payload == {"thread_id": "thread-id"}
-    assert disabled_payload == {
+    assert disabled_payload == {"thread_id": "thread-id"}
+    assert enabled_payload == {
         "thread_id": "thread-id",
-        "fill_with_low_confidence_results": False,
+        "fill_with_low_confidence_results": True,
     }
 
 

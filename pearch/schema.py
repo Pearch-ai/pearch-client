@@ -463,8 +463,8 @@ class V2SearchRequest(BaseModel):
     high_freshness: bool | None = None
     profile_scoring: bool | None = None
     fill_with_low_confidence_results: bool = Field(
-        default=True,
-        exclude_if=lambda value: value is True,
+        default=False,
+        exclude_if=lambda value: value is False,
     )
     custom_filters: CustomFilters | None = None
     custom_filters_mode: CustomFiltersMode | None = None
