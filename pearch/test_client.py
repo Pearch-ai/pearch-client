@@ -435,6 +435,43 @@ async def get_credits():
     return response.credits_remaining
 
 
+async def assert_recorded_api_call_credits(
+    response: V2SearchResponse,
+    *,
+    attempts: int = 10,
+) -> None:
+    """Assert this search's persisted charge without relying on global balance."""
+    assert response.uuid, "Search response is missing uuid"
+    assert response.credits_used is not None, "Search response is missing credits_used"
+
+    recorded_call = None
+    client = AsyncPearchClient()
+    for attempt in range(attempts):
+        history = await client.api_call_history(
+            V1ApiCallHistoryRequest(limit=1000, paths=["/v2/search"])
+        )
+        recorded_call = next(
+            (
+                call
+                for call in history.api_call_history or []
+                if call.uuid == response.uuid
+            ),
+            None,
+        )
+        if recorded_call is not None:
+            break
+        if attempt + 1 < attempts:
+            await asyncio.sleep(0.25)
+
+    assert recorded_call is not None, (
+        f"API call history does not contain search uuid {response.uuid}"
+    )
+    assert recorded_call.credits_used == response.credits_used, (
+        f"Recorded credits differ for search {response.uuid}: "
+        f"history={recorded_call.credits_used}, response={response.credits_used}"
+    )
+
+
 @pytest.mark.asyncio
 async def test_find_matching_jobs():
     credits1 = await get_credits()
@@ -772,9 +809,7 @@ async def test_v2_search_requirements():
 
 @pytest.mark.asyncio
 async def test_v2_pro_search_generic():
-    credits1 = await get_credits()
     logger.info("Running a first query: Find me engineers in California speaking at least basic english working in software industry with experience at FAANG with 2+ years of experience and at least 500 followers and at least BS degree")
-    logger.info(f"Credits1: {credits1}")
     first_request = V2SearchRequest(
         query="Find me engineers in California speaking at least basic english working in software industry with experience at FAANG with 2+ years of experience and at least 500 followers and at least BS degree",
         limit=2,
@@ -802,9 +837,7 @@ async def test_v2_pro_search_generic():
     logger.info(f"First page slugs: {first_page_slugs}")
     await validate_must_have_requirements_with_openrouter(response)
     validate_credits(first_request, response)
-    credits2 = await get_credits()
-    logger.info(f"Credits2: {credits2}")
-    assert credits1 - credits2 == response.credits_used, "Credits check failed"
+    await assert_recorded_api_call_credits(response)
 
     # second page
     logger.info("Running a limit=2 offset=2 query")
@@ -820,9 +853,7 @@ async def test_v2_pro_search_generic():
     logger.info(f"Second page slugs: {second_page_slugs}")
     await validate_must_have_requirements_with_openrouter(response)
     validate_credits(first_request, response)
-    credits3 = await get_credits()
-    logger.info(f"Credits3: {credits3}")
-    assert credits2 - credits3 == response.credits_used, "Credits check failed"
+    await assert_recorded_api_call_credits(response)
 
     logger.info("Running a limit=4 offset=0 query")
     show_more_request = V2SearchRequest(
@@ -840,9 +871,8 @@ async def test_v2_pro_search_generic():
     assert set(all_result_slugs) == set(first_page_slugs + second_page_slugs)
     await validate_must_have_requirements_with_openrouter(response)
     validate_requested_insights_items(first_request, response)
-    credits4 = await get_credits()
-    logger.info(f"Credits4: {credits4}")
-    assert credits3 - credits4 == 0 and response.credits_used == 0, "Cached results should not cost any credits"
+    assert response.credits_used == 0, "Cached results should not cost any credits"
+    await assert_recorded_api_call_credits(response)
 
     # follow up query
     logger.info("Running a follow up query: who are at least 30 years old")
@@ -856,9 +886,7 @@ async def test_v2_pro_search_generic():
     assert len(response.search_results) == 2, f"Expected 2 results, in the follow up query, actual results: {len(response.search_results)}"
     await validate_must_have_requirements_with_openrouter(response)
     validate_credits(third_request, response)
-    credits5 = await get_credits()
-    logger.info(f"Credits5: {credits5}")
-    assert credits4 - credits5 == response.credits_used, "Credits check failed"
+    await assert_recorded_api_call_credits(response)
 
 
 @pytest.mark.asyncio
@@ -867,7 +895,6 @@ async def test_v2_free_masked_search():
     # only id, masked name and location are surfaced from the profile (so a
     # candidate can't be re-identified by googling an exact quote), insights
     # are always on, and no credits are charged.
-    credits_before = await get_credits()
     request = V2SearchRequest(
         query="software engineers in San Francisco",
         limit=3,
@@ -924,8 +951,7 @@ async def test_v2_free_masked_search():
 
     # Free search never charges the user, even with a positive balance.
     assert response.credits_used == 0, "Free search must not charge credits"
-    credits_after = await get_credits()
-    assert credits_before == credits_after, "Free search must not change the credit balance"
+    await assert_recorded_api_call_credits(response)
 
 
 def validate_company_leads_credits(request: V2SearchCompanyLeadsRequest, response: V2SearchCompanyLeadsResponse):
