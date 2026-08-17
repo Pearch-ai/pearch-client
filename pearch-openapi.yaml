@@ -1415,7 +1415,8 @@ paths:
 
         A rating belongs to the thread rather than to its author: there is one rating per
         `(chat_thread_id, linkedin_slug)`, and re-submitting updates it even when a
-        different user submits it.
+        different user submits it. `author_type` records whether the last submitter was a
+        human, an agent, or both, and is overwritten together with the rating.
 
         An existing `reason` is kept when the rating is unchanged and omitted, and cleared when the rating changes.
       security:
@@ -1449,6 +1450,15 @@ paths:
                   type: string
                   description: Optional free-form reason for the rating.
                   example: "Wrong location"
+                author_type:
+                  type: string
+                  enum: [person, agent, mixed]
+                  default: person
+                  description: |
+                    Who produced the rating: a human (`person`), an automated caller
+                    (`agent`), or both (`mixed`, e.g. a human reviewed an agent's rating).
+                    Defaults to `person` when omitted.
+                  example: "agent"
                 search_call_uuid:
                   type: string
                   format: uuid
@@ -1461,6 +1471,7 @@ paths:
               linkedin_slug: "jason-tysl"
               rating: "down"
               reason: "Wrong location"
+              author_type: "agent"
               search_call_uuid: "1b0f4f2a-1a3f-4a2f-9c5b-3f8d5a2e77c1"
       responses:
         "200":
@@ -1491,6 +1502,11 @@ paths:
                     type: string
                     nullable: true
                     example: "Wrong location"
+                  author_type:
+                    type: string
+                    enum: [person, agent, mixed]
+                    description: Who produced this rating.
+                    example: "agent"
                   created_by:
                     type: string
                     nullable: true
@@ -1553,6 +1569,10 @@ paths:
                           type: string
                           nullable: true
                           example: "Wrong location"
+                        author_type:
+                          type: string
+                          enum: [person, agent, mixed]
+                          example: "agent"
                         created_by:
                           type: string
                           nullable: true
