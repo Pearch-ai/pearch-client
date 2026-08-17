@@ -37,7 +37,7 @@ paths:
 
         Use parameters to control tradeoffs between speed and quality. Here are some recipes:        
         - For highest quality results (30-180 seconds) use pro search with insights and profile scoring enabled: `{"query": "<YOUR QUERY HERE>", "type": "pro", "insights": true, "profile_scoring": true}`
-        - For medium to high quality results use "fast" search (<30s). `{"query": "<YOUR QUERY HERE>", "type": "fast", "insights": true, "profile_scoring": true}`
+        - For medium to high quality results use "fast" search (<50s). `{"query": "<YOUR QUERY HERE>", "type": "fast", "insights": true, "profile_scoring": true}`
         - If you want to implement pagination, pass the `thread_id` of the previous request to the next request with increased `limit`. 
 
         Results are generally returned in the order of decreasing relevancy. However, you may notice results with out of order `score` values in some cases especially when requesting large number of results. It should be safe to use stable sorting by `score` field on the client side in this cases. Note that `score` field is only calculated and returned when `profile_scoring=true`.
