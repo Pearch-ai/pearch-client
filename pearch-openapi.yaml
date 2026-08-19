@@ -84,7 +84,7 @@ paths:
                   default: "pro"
                   description: |
                     The type of search to perform. 
-                    * "pro" is slower and more costly, but has higher quality and recall. Profile scoring is included at no extra cost. **Cost: 5 credits per candidate**
+                    * "pro" is slower and more costly, but has higher quality and recall. **Cost: 5 credits per candidate**
                     * "fast" is faster but may have less recall. **Cost: 1 credit per candidate**
                 time_budget:
                   type: integer
@@ -695,7 +695,7 @@ paths:
                   default: "pro"
                   description: |
                     The type of search to perform. 
-                    * "pro" is slower and more costly, but has higher quality and recall. Profile scoring is included at no extra cost. **Cost: 5 credits per candidate**
+                    * "pro" is slower and more costly, but has higher quality and recall. **Cost: 5 credits per candidate**
                     * "fast" is faster but may have less recall. **Cost: 1 credit per candidate**
                 time_budget:
                   type: integer
