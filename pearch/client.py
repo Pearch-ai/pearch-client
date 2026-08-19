@@ -32,6 +32,8 @@ from .schema import (
     V1DeleteJobsRequest,
     V1DeleteJobsResponse,
     V1UserResponse,
+    V2CompanyRequest,
+    V2CompanyResponse,
     V2SearchCompanyLeadsRequest,
     V2SearchCompanyLeadsResponse,
     V2SearchCountRequest,
@@ -279,6 +281,20 @@ class PearchClient:
         )
 
         return V2SearchCompanyLeadsResponse(**response_data)
+
+    def get_company(self, request: V2CompanyRequest) -> V2CompanyResponse:
+        """Retrieve a stored company document by LinkedIn slug or domain."""
+        logger.info(
+            "Retrieving company linkedin_slug=%s domain=%s",
+            request.linkedin_slug,
+            request.domain,
+        )
+        response_data = self._make_request(
+            method="GET",
+            endpoint="v2/company",
+            params=request.model_dump(exclude_none=True),
+        )
+        return V2CompanyResponse(**response_data)
 
     def search_submit(self, request: V2SearchRequest) -> V2SearchSubmitResponse:
         """
@@ -799,6 +815,20 @@ class AsyncPearchClient:
         )
 
         return V2SearchCompanyLeadsResponse(**response_data)
+
+    async def get_company(self, request: V2CompanyRequest) -> V2CompanyResponse:
+        """Retrieve a stored company document by LinkedIn slug or domain."""
+        logger.info(
+            "Retrieving company async linkedin_slug=%s domain=%s",
+            request.linkedin_slug,
+            request.domain,
+        )
+        response_data = await self._make_request(
+            method="GET",
+            endpoint="v2/company",
+            params=request.model_dump(exclude_none=True),
+        )
+        return V2CompanyResponse(**response_data)
 
     async def search_submit(self, request: V2SearchRequest) -> V2SearchSubmitResponse:
         """

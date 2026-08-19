@@ -33,6 +33,8 @@ from pearch.schema import (
     V2SearchCompanyLeadsResponse,
     V2SearchRequest,
     V2SearchCompanyLeadsRequest,
+    V2CompanyRequest,
+    V2CompanyResponse,
     Job,
     V2SearchResponse,
     V2SearchStatusResponse,
@@ -217,6 +219,25 @@ def test_update_organization_member_role_schemas():
         V1UpdateOrganizationMemberRoleRequest(role="invalid")
 
 
+def test_company_request_requires_exactly_one_identifier():
+    slug_request = V2CompanyRequest(linkedin_slug="openai")
+    domain_request = V2CompanyRequest(domain="https://www.openai.com/about")
+
+    assert slug_request.model_dump(exclude_none=True) == {"linkedin_slug": "openai"}
+    assert domain_request.model_dump(exclude_none=True) == {
+        "domain": "https://www.openai.com/about"
+    }
+
+    with pytest.raises(ValidationError):
+        V2CompanyRequest()
+    with pytest.raises(ValidationError):
+        V2CompanyRequest(linkedin_slug="openai", domain="openai.com")
+    with pytest.raises(ValidationError):
+        V2CompanyRequest(linkedin_slug="")
+    with pytest.raises(ValidationError):
+        V2CompanyRequest(domain="")
+
+
 def _is_live_pearch_api() -> bool:
     base_url = os.getenv("PEARCH_API_URL") or "https://api.pearch.ai/"
     return "api.pearch.ai" in base_url
@@ -352,6 +373,7 @@ def generate_curl_command(client_method: str, request: Any) -> str:
         "delete_jobs": ("POST", "v1/delete_jobs"),
         "search": ("POST", "v2/search"),
         "search_company_leads": ("POST", "v2/search_company_leads"),
+        "get_company": ("GET", "v2/company"),
         "search_count": ("POST", "v2/search/count"),
         "search_submit": ("POST", "v2/search/submit"),
         "get_search_status": ("GET", "v2/search/status"),
@@ -1065,6 +1087,37 @@ async def test_search_company_leads():
     validate_company_leads_credits(request, response)
     credits2 = await get_credits()
     assert credits1 - credits2 == response.credits_used, "Credits check failed"
+
+
+@pytest.mark.asyncio
+async def test_company():
+    user_response: V1UserResponse = await AsyncPearchClient().get_user()
+    credits1 = user_response.credits_remaining
+    assert credits1 is not None
+    assert user_response.pricing is not None
+    pricing = {item.id: item.credits for item in user_response.pricing}
+    company_cost = pricing["company_enrichment_cost"]
+
+    request = V2CompanyRequest(linkedin_slug="openai")
+    generate_curl_command("get_company", request)
+    response: V2CompanyResponse = await AsyncPearchClient().get_company(request)
+    assert response.company is not None
+    assert response.company.linkedin_slug == "openai" or (
+        response.company.name and "openai" in response.company.name.lower()
+    )
+    assert response.credits_used in (0, company_cost)
+    credits2 = await get_credits()
+    assert credits1 - credits2 == response.credits_used, "Credits check failed"
+
+    request = V2CompanyRequest(domain="https://www.openai.com/about")
+    generate_curl_command("get_company", request)
+    response = await AsyncPearchClient().get_company(request)
+    assert response.company is not None
+    assert response.company.domain == "openai.com" or response.company.linkedin_slug == "openai"
+    assert response.credits_used in (0, company_cost)
+    credits3 = await get_credits()
+    assert credits2 - credits3 == response.credits_used, "Credits check failed"
+
 
 @pytest.mark.asyncio
 async def test_get_search_status():

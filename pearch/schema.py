@@ -591,6 +591,26 @@ class V2SearchCompanyLeadsRequest(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
 
+class V2CompanyRequest(BaseModel):
+    linkedin_slug: str | None = Field(default=None, min_length=1, max_length=512)
+    domain: str | None = Field(default=None, min_length=1, max_length=512)
+    model_config = ConfigDict(extra="forbid")
+
+    @model_validator(mode="after")
+    def require_one_company_identifier(self):
+        if bool(self.linkedin_slug) == bool(self.domain):
+            raise ValueError("Provide exactly one of 'linkedin_slug' or 'domain'.")
+        return self
+
+
+class V2CompanyResponse(BaseModel):
+    company: CompanyInfo
+    credits_remaining: int | None = None
+    credits_used: int | None = None
+    credits_breakdown: Dict[str, Any] | None = None
+    model_config = ConfigDict(extra="ignore")
+
+
 class V1SearchRequest(BaseModel):
     query: str | None = None
     type: str | None = None
