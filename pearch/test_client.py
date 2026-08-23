@@ -40,6 +40,7 @@ from pearch.schema import (
     V2SearchStatusResponse,
     V2SearchCountRequest,
     CustomFilters,
+    LocationCoordinateFilter,
     SearchRequirement,
     SearchRequirementStats,
     ApiKeyMetadata,
@@ -65,6 +66,41 @@ from pearch.schema import (
 logger = logging.getLogger(__name__)
 
 TRANSIENT_PEARCH_API_STATUS_CODES = {429, 500, 502, 503, 504}
+
+
+def test_custom_filters_accept_location_coordinate_radius():
+    filters = CustomFilters(
+        location_coordinates=[
+            LocationCoordinateFilter(
+                lat=37.7749,
+                lng=-122.4194,
+                radius_miles=25.5,
+            )
+        ]
+    )
+
+    assert filters.model_dump(exclude_none=True) == {
+        "location_coordinates": [
+            {
+                "lat": 37.7749,
+                "lng": -122.4194,
+                "radius_miles": 25.5,
+            }
+        ]
+    }
+
+
+@pytest.mark.parametrize(
+    "location_filter",
+    [
+        {"lat": 91, "lng": 0, "radius_miles": 10},
+        {"lat": 0, "lng": 181, "radius_miles": 10},
+        {"lat": 0, "lng": 0, "radius_miles": 0},
+    ],
+)
+def test_custom_filters_reject_invalid_location_coordinate_radius(location_filter):
+    with pytest.raises(ValidationError):
+        CustomFilters(location_coordinates=[location_filter])
 
 
 def test_v2_search_request_omits_server_default_fill_with_low_confidence_results():

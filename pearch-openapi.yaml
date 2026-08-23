@@ -2802,6 +2802,32 @@ components:
       enum: [exact, smart]
       description: "Mode for handling custom filters. 'exact' uses only the supplied custom filters; 'smart' merges them with LLM-generated filters."
 
+    LocationCoordinateFilter:
+      type: object
+      additionalProperties: false
+      required:
+        - lat
+        - lng
+        - radius_miles
+      properties:
+        lat:
+          type: number
+          format: double
+          minimum: -90
+          maximum: 90
+          description: Latitude of the search-radius center.
+        lng:
+          type: number
+          format: double
+          minimum: -180
+          maximum: 180
+          description: Longitude of the search-radius center.
+        radius_miles:
+          type: number
+          format: double
+          exclusiveMinimum: 0
+          description: Search radius in miles.
+
     CustomFilters:
       type: object
       description: |
@@ -2819,6 +2845,12 @@ components:
             type: string
           description: Filter by location (e.g., "San Francisco", "New York", "California", "United States")
           example: ["San Francisco", "New York"]
+        location_coordinates:
+          type: array
+          items:
+            $ref: '#/components/schemas/LocationCoordinateFilter'
+          description: Filter by one or more latitude/longitude radius areas. Areas within this field are combined with OR.
+          example: [{"lat": 37.7749, "lng": -122.4194, "radius_miles": 25}]
         not_locations:
           type: array
           items:

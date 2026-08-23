@@ -402,8 +402,16 @@ class V1ProfileBatchResponse(BaseModel):
 # Request parameter classes for each endpoint
 
 
+class LocationCoordinateFilter(BaseModel):
+    lat: float = Field(ge=-90, le=90, allow_inf_nan=False)
+    lng: float = Field(ge=-180, le=180, allow_inf_nan=False)
+    radius_miles: float = Field(gt=0, allow_inf_nan=False)
+    model_config = ConfigDict(extra="forbid")
+
+
 class CustomFilters(BaseModel):
     locations: List[str] | None = None
+    location_coordinates: List[LocationCoordinateFilter] | None = None
     languages: List[str] | None = None
     titles: List[str] | None = None
     industries: List[str] | None = None

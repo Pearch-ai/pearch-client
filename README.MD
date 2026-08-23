@@ -137,6 +137,9 @@ with PearchClient() as client:
     # Create structured filters with type hints and validation
     filters = CustomFilters(
         locations=["San Francisco", "New York"],
+        location_coordinates=[
+            {"lat": 37.7749, "lng": -122.4194, "radius_miles": 25}
+        ],
         industries=["health", "pharma"],
         titles=["software engineer", "data scientist"],
         min_total_experience_years=5,
@@ -157,7 +160,7 @@ with PearchClient() as client:
 ```
 
 Available filter fields:
-- **Array filters (include)**: `locations`, `languages`, `titles`, `industries`, `companies`, `universities`, `keywords`, `degrees`, `specialization_categories`
+- **Array filters (include)**: `locations`, `location_coordinates`, `languages`, `titles`, `industries`, `companies`, `universities`, `keywords`, `degrees`, `specialization_categories`. Each `location_coordinates` item contains `lat`, `lng`, and a positive `radius_miles`; multiple radius areas are combined with OR.
 - **Array filters (exclude)**: `not_locations`, `not_languages`, `not_titles`, `not_current_titles`, `not_industries`, `not_companies`, `not_current_experience_companies`, `not_universities`, `keywords_blacklist`, `not_degrees`, `not_specialization_categories`
 - **Current-only**: `current_titles`, `current_experience_companies`
 - **Numeric ranges**: `min/max_linkedin_followers`, `min/max_total_experience_years`, `min/max_estimated_age`, `min/max_current_experience_years`
