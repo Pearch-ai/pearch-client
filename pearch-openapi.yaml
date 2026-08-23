@@ -2825,7 +2825,8 @@ components:
         radius_miles:
           type: number
           format: double
-          exclusiveMinimum: 0
+          minimum: 0
+          exclusiveMinimum: true
           description: Search radius in miles.
 
     CustomFilters:
