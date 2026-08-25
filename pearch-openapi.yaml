@@ -108,7 +108,7 @@ paths:
                 fill_with_low_confidence_results:
                   type: boolean
                   default: false
-                  description: "Fill below-limit responses with low confidence results when profile scoring exhausts candidates before reaching the requested limit. These fallback profiles are marked with their score and have credits_charged set to 0."
+                  description: "Fill below-limit responses with low confidence results when profile scoring exhausts candidates before reaching the requested limit. These fallback profiles are marked with their score and remain free for search and scoring. When contact reveal is requested, fallback profiles are enriched like regular results and credits_charged includes only contact data actually returned."
                 custom_filters:
                   $ref: '#/components/schemas/CustomFilters'
                 custom_filters_mode:
@@ -719,7 +719,7 @@ paths:
                 fill_with_low_confidence_results:
                   type: boolean
                   default: false
-                  description: "Fill below-limit responses with low confidence results when profile scoring exhausts candidates before reaching the requested limit. These fallback profiles are marked with their score and have credits_charged set to 0."
+                  description: "Fill below-limit responses with low confidence results when profile scoring exhausts candidates before reaching the requested limit. These fallback profiles are marked with their score and remain free for search and scoring. When contact reveal is requested, fallback profiles are enriched like regular results and credits_charged includes only contact data actually returned."
                 custom_filters:
                   $ref: '#/components/schemas/CustomFilters'
                 custom_filters_mode:
