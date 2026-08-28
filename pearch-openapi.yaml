@@ -59,7 +59,7 @@ paths:
               properties:
                 query:
                   type: string
-                  description: The human readable search query string. The query can be a simple search query like "software engineer from Ohio" or a more complex query like "Find me engineers in California speaking at least basic english working in software industry with experience at FAANG with 2+ years of experience and at least 500 followers and at least BS degree". Query parameter can handle full job descriptions, but passing specific subset of important requirements normally works better. Provide either `query` or `search_requirements` when `thread_id` is omitted. If both `query` and `search_requirements` are provided, `search_requirements` takes precedence for search execution.
+                  description: The human readable search query string. The query can be a simple search query like "software engineer from Ohio" or a more complex query like "Find me engineers in California speaking at least basic english working in software industry with experience at FAANG with 2+ years of experience and at least 500 followers and at least BS degree". Query parameter can handle full job descriptions, but passing specific subset of important requirements normally works better. Provide `query`, `search_requirements`, or non-empty `custom_filters` when `thread_id` is omitted. A request with only `custom_filters` uses exact filter retrieval without semantic query ranking. If both `query` and `search_requirements` are provided, `search_requirements` takes precedence for search execution.
                   example: "Software engineer with Python experience from Florida who is interested in science"
                   default: "Software engineer with Python experience from Florida who is interested in science"
                 search_requirements:
@@ -670,7 +670,7 @@ paths:
               properties:
                 query:
                   type: string
-                  description: The human readable search query string. The query can be a simple search query like "software engineer from Ohio" or a more complex query like "Find me engineers in California speaking at least basic english working in software industry with experience at FAANG with 2+ years of experience and at least 500 followers and at least BS degree". Query parameter can handle full job descriptions, but passing specific subset of important requirements normally works better. Provide either `query` or `search_requirements` when `thread_id` is omitted. If both `query` and `search_requirements` are provided, `search_requirements` takes precedence for search execution.
+                  description: The human readable search query string. The query can be a simple search query like "software engineer from Ohio" or a more complex query like "Find me engineers in California speaking at least basic english working in software industry with experience at FAANG with 2+ years of experience and at least 500 followers and at least BS degree". Query parameter can handle full job descriptions, but passing specific subset of important requirements normally works better. Provide `query`, `search_requirements`, or non-empty `custom_filters` when `thread_id` is omitted. A request with only `custom_filters` uses exact filter retrieval without semantic query ranking. If both `query` and `search_requirements` are provided, `search_requirements` takes precedence for search execution.
                   example: "Software engineer with Python experience from Florida who is interested in science"
                   default: "Software engineer with Python experience from Florida who is interested in science"
                 search_requirements:
@@ -2827,33 +2827,37 @@ components:
           format: double
           minimum: 0
           exclusiveMinimum: true
-          description: Search radius in miles.
+          maximum: 500
+          description: Search radius in miles, greater than 0 and at most 500.
 
     CustomFilters:
       type: object
       description: |
-        Custom filters in JSON format for advanced filtering. Leave empty to use default filtering logic. 
+        Custom filters in JSON format for advanced filtering. Omit the parameter to use default filtering logic.
         Format: `{"filter_name1": ["value1", "value2"], "filter_name2": ["value3", "value4"], ...}`. 
         
         Filtering logic: Conditions between different keys are joined with "AND", so all conditions must pass. Within each condition, we always use "OR". For example, `{"titles": ["swe", "mle"]}` means the profile must have either "swe" OR "mle" as a title. If you specify multiple keys like `{"titles": ["swe", "mle"], "locations": ["San Francisco"]}`, the profile must match at least one title (swe OR mle) AND be in San Francisco.
         
-        Use any string values as is. Pearch.ai internally correctly matches them to profile data. E.g. you may pass `{"industries": "health"}` to filter for profiles in health industry, this will be correctly mapped to pearch.ai internal `healthcare` industry. 
+        Canonical industry values and common aliases such as `health`, `pharma`, and `technology` are normalized deterministically. Other industry strings are resolved semantically when the selected search mode permits it. Exact-only operations return HTTP 400 when a value cannot be resolved; a requested filter is never silently dropped.
         If you want to force no filtering at all (`custom_filters` or default filters), pass empty object `"custom_filters": {}`. This will speed up search, increase recall at some relevancy cost.
       properties:
         locations:
           type: array
+          maxItems: 20
           items:
             type: string
           description: Filter by location (e.g., "San Francisco", "New York", "California", "United States")
           example: ["San Francisco", "New York"]
         location_coordinates:
           type: array
+          maxItems: 20
           items:
             $ref: '#/components/schemas/LocationCoordinateFilter'
           description: Filter by one or more latitude/longitude radius areas. Areas within this field are combined with OR.
           example: [{"lat": 37.7749, "lng": -122.4194, "radius_miles": 25}]
         not_locations:
           type: array
+          maxItems: 20
           items:
             type: string
           description: Exclude profiles by location (same format as locations)
