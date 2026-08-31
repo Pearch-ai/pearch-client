@@ -167,6 +167,12 @@ class Profile(BaseModel):
     total_experience_years: float | None = None
     estimated_age: float | None = None
     expertise: List[str] | None = Field(default_factory=list)
+    github_handle: str | None = None
+    github_url: str | None = None
+    programming_languages: List[str] | None = Field(default_factory=list)
+    github_skills: List[Dict[str, Any]] | None = Field(default_factory=list)
+    github_skills_curated: List[Dict[str, Any]] | None = Field(default_factory=list)
+    github_oss_contributions: List[Dict[str, Any]] | None = Field(default_factory=list)
     emails: List[str] | None = Field(default_factory=list)
     best_personal_email: str | None = None
     best_business_email: str | None = None
@@ -371,6 +377,7 @@ class V1ProfileResponse(BaseModel):
     profile: Profile | None = None
     credits_remaining: int | None = None
     credits_used: int | None = None
+    credits_breakdown: Dict[str, Any] | None = None
     model_config = ConfigDict(extra="ignore")
 
 
@@ -619,6 +626,56 @@ class V2CompanyResponse(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
 
+class GithubDeveloperProfile(BaseModel):
+    github_handle: str | None = None
+    github_url: str | None = None
+    linkedin_handle: str | None = None
+    first_name: str | None = None
+    last_name: str | None = None
+    full_name: str | None = None
+    programming_languages: List[str] | None = Field(default_factory=list)
+    skills: List[Dict[str, Any]] | None = Field(default_factory=list)
+    oss_contributions: List[Dict[str, Any]] | None = Field(default_factory=list)
+    github_skills: List[Dict[str, Any]] | None = Field(default_factory=list)
+    github_skills_curated: List[Dict[str, Any]] | None = Field(default_factory=list)
+    github_oss_contributions: List[Dict[str, Any]] | None = Field(default_factory=list)
+    model_config = ConfigDict(extra="ignore")
+
+
+class GithubSearchResult(BaseModel):
+    profile: GithubDeveloperProfile | None = None
+    match_metadata: Dict[str, Any] | None = None
+    model_config = ConfigDict(extra="ignore")
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_flat_result(cls, value):
+        if not isinstance(value, dict) or "profile" in value:
+            return value
+        profile = {key: item for key, item in value.items() if key != "match_metadata"}
+        return {
+            "profile": profile,
+            "match_metadata": value.get("match_metadata"),
+        }
+
+
+class V2GithubSearchRequest(BaseModel):
+    query: str = Field(min_length=1, max_length=16000)
+    locations: List[str] | None = None
+    limit: int | None = Field(default=None, ge=1, le=100)
+    model_config = ConfigDict(extra="forbid")
+
+
+class V2GithubSearchResponse(BaseModel):
+    query: str
+    results: List[GithubSearchResult] = Field(default_factory=list)
+    results_count: int
+    credits_remaining: int | None = None
+    credits_used: int | None = None
+    credits_breakdown: Dict[str, Any] | None = None
+    model_config = ConfigDict(extra="ignore")
+
+
 class V1SearchRequest(BaseModel):
     query: str | None = None
     type: str | None = None
@@ -654,14 +711,28 @@ class V1FindMatchingJobsRequest(BaseModel):
 
 
 class V1ProfileRequest(BaseModel):
-    docid: str
+    docid: str | None = None
+    uuid: str | None = None
+    email: str | None = None
+    github_id: str | None = None
     high_freshness: bool | None = False
     reveal_emails: bool | None = False
     reveal_phones: bool | None = False
     with_profile: bool | None = False
+    github_enrich: bool | None = None
     show_emails: bool | None = None
     show_phone_numbers: bool | None = None
-    model_config = ConfigDict(extra="ignore")
+    model_config = ConfigDict(extra="forbid")
+
+    @model_validator(mode="after")
+    def require_one_profile_identifier(self):
+        if not any((self.docid, self.uuid, self.email, self.github_id)):
+            raise ValueError("Provide at least one of 'docid', 'uuid', 'email' or 'github_id'.")
+        if self.uuid and (self.docid or self.email or self.github_id):
+            raise ValueError("Provide only one of 'docid', 'uuid', 'email' or 'github_id'.")
+        if self.github_id and (self.docid or self.email):
+            raise ValueError("Provide only one of 'docid', 'uuid', 'email' or 'github_id'.")
+        return self
 
 
 class V1ProfileBatchItem(BaseModel):

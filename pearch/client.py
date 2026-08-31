@@ -34,6 +34,8 @@ from .schema import (
     V1UserResponse,
     V2CompanyRequest,
     V2CompanyResponse,
+    V2GithubSearchRequest,
+    V2GithubSearchResponse,
     V2SearchCompanyLeadsRequest,
     V2SearchCompanyLeadsResponse,
     V2SearchCountRequest,
@@ -256,6 +258,14 @@ class PearchClient:
         )
 
         return V2SearchCountResponse(**response_data)
+
+    def github_search(self, request: V2GithubSearchRequest) -> V2GithubSearchResponse:
+        response_data = self._make_request(
+            method="POST",
+            endpoint="v2/github_search",
+            data=request.model_dump(exclude_none=True),
+        )
+        return V2GithubSearchResponse(**response_data)
 
     def search_company_leads(
         self, request: V2SearchCompanyLeadsRequest
@@ -791,6 +801,14 @@ class AsyncPearchClient:
         )
 
         return V2SearchCountResponse(**response_data)
+
+    async def github_search(self, request: V2GithubSearchRequest) -> V2GithubSearchResponse:
+        response_data = await self._make_request(
+            method="POST",
+            endpoint="v2/github_search",
+            data=request.model_dump(exclude_none=True),
+        )
+        return V2GithubSearchResponse(**response_data)
 
     async def search_company_leads(
         self, request: V2SearchCompanyLeadsRequest

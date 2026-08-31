@@ -345,6 +345,112 @@ paths:
         "429":
           description: Rate limit exceeded. JSON body contains the triggered window, current value, and limit.
 
+  /v2/github_search:
+    get:
+      operationId: get_v2-github-search
+      summary: Search GitHub developer profiles
+      tags:
+        - Search
+      description: |
+        Search developers using natural language query parameters.
+
+        **Cost: 8 credits per returned verified profile.**
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: query
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 16000
+        - name: locations
+          in: query
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+          style: form
+          explode: true
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+      responses:
+        "200":
+          description: GitHub developer search completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GithubSearchResponse'
+        "400":
+          description: Invalid request
+        "401":
+          description: Invalid API key
+        "429":
+          description: Rate limit exceeded
+        "502":
+          description: Invalid response from the GitHub developer provider
+        "503":
+          description: GitHub developer search is unavailable
+    post:
+      operationId: post_v2-github-search
+      summary: Search GitHub developer profiles
+      tags:
+        - Search
+      description: |
+        Search developers using natural language. Returned profiles are verified through their LinkedIn handle before billing.
+
+        Raw provider fields `skills` and `oss_contributions` are preserved. The same arrays are also returned as `github_skills` and `github_oss_contributions`; `github_skills_curated` contains a deterministic ranked subset suitable for recruiter UI.
+
+        **Cost: 8 credits per returned verified profile.**
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+                - query
+              properties:
+                query:
+                  type: string
+                  minLength: 1
+                  maxLength: 16000
+                locations:
+                  type: array
+                  items:
+                    type: string
+                limit:
+                  type: integer
+                  minimum: 1
+                  maximum: 100
+      responses:
+        "200":
+          description: GitHub developer search completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GithubSearchResponse'
+        "400":
+          description: Invalid request
+        "401":
+          description: Invalid API key
+        "429":
+          description: Rate limit exceeded
+        "502":
+          description: Invalid response from the GitHub developer provider
+        "503":
+          description: GitHub developer search is unavailable
+
  
   /v2/company:
     get:
@@ -1661,11 +1767,11 @@ paths:
         - Test this endpoint in the [playground](https://chat.pearch.ai/api-enrichment)
         - Check out official [Python client](https://github.com/Pearch-ai/pearch-client)        
         
-        Retrieve enriched user profile based on the provided Linkedin profile ID or email address as a query parameter. Linkedin profile ID is the part that comes after `https://www.linkedin.com/in/` in the profile URL.
+        Retrieve an enriched user profile using a LinkedIn profile ID, email address, or GitHub handle/URL. LinkedIn profile ID is the part that comes after `https://www.linkedin.com/in/` in the profile URL.
         
-        You can provide `docid` (LinkedIn profile ID) or `email`. If only `email` is provided, the system will attempt to resolve it to a LinkedIn profile.
+        Provide `docid`, `email`, or `github_id`. `email` is resolved to a LinkedIn profile. `github_id` returns analysis for exactly the requested GitHub account instead of the provider's automatic LinkedIn-to-GitHub mapping. When the GitHub account has no LinkedIn mapping, the response contains a GitHub-only profile.
 
-        **Costs are additive: `with_profile` costs 1 credit, `high_freshness` costs 2 credits, and `reveal_emails` and `reveal_phones` cost 6 credits each when contact data is found. Looking up a profile by `email` instead of `docid` costs 6 credits and is separate from `reveal_emails`.**
+        **Costs are additive: `with_profile` costs 1 credit, `high_freshness` costs 2 credits, `github_enrich` or `github_id` costs 8 credits when GitHub analysis is returned, and `reveal_emails` and `reveal_phones` cost 6 credits each when contact data is found. Looking up a profile by `email` instead of `docid` costs 6 credits and is separate from `reveal_emails`.**
 
         **Rate limit: 60 requests per user per 60 seconds.** When the rate limit is exceeded, the API returns HTTP 429 with details about the triggered window, current value, and limit.
       security:
@@ -1676,7 +1782,7 @@ paths:
           required: false
           schema:
             type: string
-          description: The linkedin profile ID of the profile to retrieve. Linkedin profile ID is the part that comes after `https://www.linkedin.com/in/` in the profile URL. Provide `docid` or `email`.
+          description: The LinkedIn profile ID of the profile to retrieve. Provide one of `docid`, `email`, or `github_id`.
           example: "hrachik"
         - name: email
           in: query
@@ -1686,6 +1792,20 @@ paths:
             format: email
           description: "Email address to look up. If provided without `docid`, the system will resolve the email to a LinkedIn profile. This lookup is separate from `reveal_emails`. **Cost: 6 credits for email lookup**"
           example: "mz@pearch.ai"
+        - name: github_id
+          in: query
+          required: false
+          schema:
+            type: string
+          description: "GitHub handle or profile URL to analyze directly. If a LinkedIn mapping exists, the matching Pearch profile is included; otherwise a GitHub-only profile is returned. **Cost: 8 credits when GitHub analysis is returned**"
+          example: "abouhid2"
+        - name: github_enrich
+          in: query
+          required: false
+          schema:
+            type: boolean
+          description: "Add GitHub developer fields using the account automatically mapped to the LinkedIn profile. **Cost: 8 credits when GitHub analysis is returned**"
+          example: false
         - name: high_freshness
           in: query
           required: false
@@ -1728,14 +1848,28 @@ paths:
                     example: "ec191bf9-99ff-4989-8383-c97c71fafb6d"
                   profile:
                     $ref: '#/components/schemas/Profile'
+                  credits_remaining:
+                    type: integer
+                    description: Number of credits remaining after this request.
+                  credits_used:
+                    type: integer
+                    description: Credits charged for this request.
+                  credits_breakdown:
+                    type: object
+                    nullable: true
+                    additionalProperties: true
         "401":
           description: Invalid API key
         "404":
           description: Profile not found
         "400":
-          description: Invalid parameter values or missing required parameters. At least one of `docid` or `email` must be provided. JSON body contains the error message.
+          description: Invalid parameter values or missing required parameters. JSON body contains the error message.
         "429":
           description: Rate limit exceeded. JSON body contains the triggered window, current value, and limit.
+        "502":
+          description: Invalid response from the GitHub developer provider
+        "503":
+          description: GitHub developer profile analysis is unavailable
 
   /v1/profile/batch:
     post:
@@ -1750,7 +1884,7 @@ paths:
 
         UUID inputs use masked profile enrichment, matching `GET /v1/profile?uuid=...`. For other identifiers, pricing is additive per successful item.
 
-        **Costs are additive per successful item: `with_profile` costs 1 credit, `high_freshness` costs 2 credits, `reveal_emails` costs 6 credits and `reveal_phones` costs 6 credits when the corresponding contact data is found, `github_enrich` costs 8 credits when applied, and resolving an `email` costs 6 credits. UUID inputs instead cost 25 credits each for masked enrichment.**
+        **Costs are additive per successful item: `with_profile` costs 1 credit, `high_freshness` costs 2 credits, `reveal_emails` costs 6 credits and `reveal_phones` costs 6 credits when the corresponding contact data is found, `github_enrich` costs 8 credits when GitHub analysis is returned, and resolving an `email` costs 6 credits. UUID inputs instead cost 25 credits each for masked enrichment.**
 
         **Rate limit: 180 batch requests per user per 60 seconds.** A batch counts as one request regardless of its number of items. Batches containing email identifiers also count as one request against the account's daily email-lookup limit.
       security:
@@ -2286,7 +2420,7 @@ components:
           description: "Include full stored profile data. **Cost: 1 credit per successfully returned profile**"
         github_enrich:
           type: boolean
-          description: "Add available GitHub developer fields. **Cost: 8 credits per profile enriched from GitHub**"
+          description: "Add available GitHub developer fields. **Cost: 8 credits when GitHub analysis is returned**"
         short_response:
           type: boolean
           default: false
@@ -3512,6 +3646,97 @@ components:
           items:
             $ref: '#/components/schemas/Experience'
 
+    GithubSearchResponse:
+      type: object
+      required:
+        - query
+        - results
+        - results_count
+      properties:
+        query:
+          type: string
+        results:
+          type: array
+          items:
+            oneOf:
+              - type: object
+                properties:
+                  profile:
+                    $ref: '#/components/schemas/GithubDeveloperProfile'
+                  match_metadata:
+                    type: object
+                    additionalProperties: true
+              - $ref: '#/components/schemas/GithubDeveloperProfile'
+        results_count:
+          type: integer
+        credits_remaining:
+          type: integer
+        credits_used:
+          type: integer
+        credits_breakdown:
+          type: object
+          nullable: true
+          additionalProperties: true
+
+    GithubDeveloperProfile:
+      type: object
+      additionalProperties: true
+      properties:
+        github_handle:
+          type: string
+        github_url:
+          type: string
+          format: uri
+        linkedin_handle:
+          type: string
+        programming_languages:
+          type: array
+          items:
+            type: string
+        skills:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        oss_contributions:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        github_skills:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        github_skills_curated:
+          type: array
+          items:
+            type: object
+            required:
+              - skill
+              - rank
+              - score
+            properties:
+              skill:
+                type: string
+              canonical_skill:
+                type: string
+                nullable: true
+              weight:
+                type: number
+                nullable: true
+              evidence_count:
+                type: integer
+              rank:
+                type: integer
+              score:
+                type: number
+        github_oss_contributions:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+
     Profile:
       type: object
       description: Structured profile of the candidate based on StrictProfile schema.
@@ -3599,6 +3824,35 @@ components:
           items:
             type: string
           example: ["Python", "Machine Learning", "Software Engineering"]
+        github_handle:
+          type: string
+          description: GitHub account used for developer analysis.
+        github_url:
+          type: string
+          format: uri
+          description: URL of the GitHub account used for developer analysis.
+        programming_languages:
+          type: array
+          items:
+            type: string
+        github_skills:
+          type: array
+          description: Raw GitHub skills returned by the developer-data provider.
+          items:
+            type: object
+            additionalProperties: true
+        github_skills_curated:
+          type: array
+          description: Deterministic ranked subset of GitHub skills suitable for recruiter UI.
+          items:
+            type: object
+            additionalProperties: true
+        github_oss_contributions:
+          type: array
+          description: Open-source contribution history returned by the developer-data provider.
+          items:
+            type: object
+            additionalProperties: true
         has_emails:
           type: boolean
           description: Whether the candidate has any email addresses available.
