@@ -318,18 +318,13 @@ with PearchClient() as client:
 ```
 
 Available parameters:
-- `docid`: LinkedIn profile ID
-- `email`: Email address resolved to a LinkedIn profile
-- `github_id`: GitHub handle or profile URL used for exact GitHub analysis
+- `docid` (required): LinkedIn profile ID
 - `high_freshness` (optional): Enable real-time profile updates (`realtime_profiles_cost`)
-- `github_enrich` (optional): Add GitHub analysis for the account mapped to the LinkedIn profile (`github_enrich_cost` when analysis is returned)
 - `reveal_emails` (optional): Include email addresses if available (`email_cost` when emails are found). Deprecated: `show_emails` (still supported but deprecated)
 - `reveal_phones` (optional): Include phone numbers if available (`phone_cost` when phone numbers are found). Deprecated: `show_phone_numbers` (still supported but deprecated)
 - `with_profile` (optional): Include full profile data in response (`profile_enrichment_cost`)
 
 Use `GET /v1/user` to retrieve the effective credit value for each pricing key.
-
-Exactly one identifier is normally sufficient. For backward compatibility, `docid` may be supplied with `email`; `docid` takes precedence.
 
 Output:
 ```bash
@@ -337,20 +332,6 @@ INFO - pearch.client - client.py:321 - Retrieving profile for docid: vslaykovsky
 INFO - httpx - _client.py:1025 - HTTP Request: GET https://api.pearch.ai/v1/profile?docid=vslaykovsky&high_freshness=false&reveal_emails=true&reveal_phones=false&with_profile=true "HTTP/1.1 200 OK"
 Profile: {"uuid":"1f3cca0a-06b2-4679-95eb-d9b1075a2764","profile":{"docid":"vslaykovsky","linkedin_slug":"vslaykovsky","first_name":"Vlad","middle_name":null,"last_name":"Sly","picture_url":"https://media.licdn.com/dms/image/v2/C4D03AQE9ZowG0kPs6A/profile-displayphoto-shrink_200_200/profile-displayphoto-shrink_200_200/0/1538525794823?e=2147483647&v=beta&t=hZOiV9Po50zLV9blRTbra2IfeXvSdkeuJyhFJ4rmr9k","title":"Machine Learning Researcher + Kaggle Grandmaster, top10","summary":"Machine Learning Researcher with extensive experience in industry. Fluent in Python, multiple years of experience building scalable backend systems in C/C++, Java and PHP.","gender":null,"is_decision_maker":1.0,"languages":[{"language":"English","proficiency":"C1"},{"language":"Russian","proficiency":"C2"}],"inferred_languages":[],"location":"Bristol, England, United Kingdom","is_top_universities":false,"is_opentowork":null,"is_hiring":null,"total_experience_years":22.0,"estimated_age":43.0,"expertise":["machine learning","
 ```
-
-### Search GitHub developers (/v2/github_search)
-
-```python
-from pearch import PearchClient, V2GithubSearchRequest
-
-with PearchClient() as client:
-    response = client.github_search(V2GithubSearchRequest(
-        query="React and Node.js backend engineer",
-        limit=10,
-    ))
-```
-
-Results preserve raw `skills` and `oss_contributions`, add the canonical aliases `github_skills` and `github_oss_contributions`, and include the deterministic `github_skills_curated` ranking.
 
 ### Enrich profiles in a batch (/v1/profile/batch)
 
