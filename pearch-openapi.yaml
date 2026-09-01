@@ -346,58 +346,6 @@ paths:
           description: Rate limit exceeded. JSON body contains the triggered window, current value, and limit.
 
   /v2/github_search:
-    get:
-      operationId: get_v2-github-search
-      summary: Search GitHub developer profiles
-      tags:
-        - Search
-      description: |
-        Search developers using natural language query parameters.
-
-        **Cost: 8 credits per returned verified profile.**
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: query
-          in: query
-          required: true
-          schema:
-            type: string
-            minLength: 1
-            maxLength: 16000
-        - name: locations
-          in: query
-          required: false
-          schema:
-            type: array
-            items:
-              type: string
-          style: form
-          explode: true
-        - name: limit
-          in: query
-          required: false
-          schema:
-            type: integer
-            minimum: 1
-            maximum: 100
-      responses:
-        "200":
-          description: GitHub developer search completed
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/GithubSearchResponse'
-        "400":
-          description: Invalid request
-        "401":
-          description: Invalid API key
-        "429":
-          description: Rate limit exceeded
-        "502":
-          description: Invalid response from the GitHub developer provider
-        "503":
-          description: GitHub developer search is unavailable
     post:
       operationId: post_v2-github-search
       summary: Search GitHub developer profiles
