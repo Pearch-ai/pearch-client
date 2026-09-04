@@ -1396,29 +1396,44 @@ paths:
         "429":
           description: Rate limit exceeded. JSON body contains the triggered window, current value, and limit.
 
-  /v1/search/feedback:
+  /v2/search/feedback:
     post:
-      operationId: post_v1-search-feedback
+      operationId: post_v2-search-feedback
       summary: Submit search result feedback
       tags:
         - Search
       description: |
         Submit thumbs-up or thumbs-down feedback for a profile returned by a search.
 
-        Use the `chat_thread_id` from the search response together with the profile
-        `linkedin_slug`. `reason` is optional and is typically provided for downvotes.
+        To identify the result being rated, copy these values from a completed `/v2/search`
+        response:
+
+        1. `thread_id` to `chat_thread_id`;
+        2. `uuid` to `search_call_uuid`;
+        3. `search_results[].profile.linkedin_slug` to `linkedin_slug`.
+
+        The specified search call must belong to the thread and be completed. The profile
+        must also be present in the thread's current completed ranking. When feedback is
+        saved, Pearch stores the profile as it appeared in that ranking together with a
+        high-freshness snapshot of the profile.
 
         Ratings are keyed on the chat thread, never on the per-call `uuid` of a search
         response: reopening a thread serves the cached ranking but returns a new `uuid`,
-        so keying on it would lose the feedback. Pass that per-call value as the optional
-        `search_call_uuid` to record which ranking was rated.
+        so keying on it would lose the feedback. `search_call_uuid` records the individual
+        API interaction from which the rating was submitted; cached interactions resolve
+        through the thread's completed search state.
 
         A rating belongs to the thread rather than to its author: there is one rating per
         `(chat_thread_id, linkedin_slug)`, and re-submitting updates it even when a
         different user submits it. `author_type` records whether the last submitter was a
         human, an agent, or both, and is overwritten together with the rating.
 
-        An existing `reason` is kept when the rating is unchanged and omitted, and cleared when the rating changes.
+        `reason` is optional and is typically provided for downvotes. On an update, omitting
+        it keeps the existing reason when the rating is unchanged and clears the reason when
+        the rating changes. A blank or `null` reason is treated like an omitted reason.
+
+        String values are trimmed; `rating` and `author_type` are case-insensitive. Unknown
+        request fields are rejected.
       security:
         - bearerAuth: []
       requestBody:
@@ -1427,19 +1442,21 @@ paths:
           application/json:
             schema:
               type: object
+              additionalProperties: false
               required:
                 - chat_thread_id
                 - linkedin_slug
                 - rating
+                - search_call_uuid
               properties:
                 chat_thread_id:
                   type: string
                   format: uuid
-                  description: Chat thread the rated search belongs to, as returned by `/v2/search`.
+                  description: The `thread_id` returned by `/v2/search`.
                   example: "ec191bf9-99ff-4989-8383-c97c71fafb6d"
                 linkedin_slug:
                   type: string
-                  description: LinkedIn slug of the rated profile.
+                  description: The rated profile's `search_results[].profile.linkedin_slug` value.
                   example: "jason-tysl"
                 rating:
                   type: string
@@ -1448,6 +1465,7 @@ paths:
                   example: "down"
                 reason:
                   type: string
+                  nullable: true
                   description: Optional free-form reason for the rating.
                   example: "Wrong location"
                 author_type:
@@ -1463,8 +1481,9 @@ paths:
                   type: string
                   format: uuid
                   description: |
-                    Optional uuid of the individual search call that produced the rated
-                    ranking. Changes every time a thread is reopened.
+                    The `uuid` of the individual `/v2/search` call that produced the rated
+                    ranking. It changes every time a thread is reopened and must belong to
+                    `chat_thread_id`.
                   example: "1b0f4f2a-1a3f-4a2f-9c5b-3f8d5a2e77c1"
             example:
               chat_thread_id: "ec191bf9-99ff-4989-8383-c97c71fafb6d"
@@ -1518,15 +1537,20 @@ paths:
           description: Invalid API key
         "403":
           description: Invalid API key
+        "404":
+          description: The search call does not belong to the thread, or the profile is absent from its current completed ranking
+        "502":
+          description: The high-freshness profile source returned no profile
     get:
-      operationId: get_v1-search-feedback
+      operationId: get_v2-search-feedback
       summary: List search result feedback
       tags:
         - Search
       description: |
         List every rating stored for a chat thread, whoever submitted it.
 
-        Use this to restore thumbs state when a result page is reopened.
+        Use this to restore thumbs state when a result page is reopened. A valid thread with
+        no ratings and an unknown thread both return an empty `feedback` array.
       security:
         - bearerAuth: []
       parameters:
@@ -1589,7 +1613,7 @@ paths:
         "403":
           description: Invalid API key
     delete:
-      operationId: delete_v1-search-feedback
+      operationId: delete_v2-search-feedback
       summary: Remove search result feedback
       tags:
         - Search
@@ -1597,7 +1621,9 @@ paths:
         Remove the rating stored for a profile in a chat thread. The rating belongs to
         the thread, so this removes it whoever submitted it.
 
-        Removing feedback that does not exist is not an error; `deleted` is `false` in that case.
+        Removing feedback that does not exist is not an error; `deleted` is `false` in that
+        case. This also means an unknown thread returns a successful response with
+        `deleted: false`.
       security:
         - bearerAuth: []
       requestBody:
@@ -1606,6 +1632,7 @@ paths:
           application/json:
             schema:
               type: object
+              additionalProperties: false
               required:
                 - chat_thread_id
                 - linkedin_slug
