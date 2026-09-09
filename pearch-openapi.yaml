@@ -1750,7 +1750,7 @@ paths:
 
         UUID inputs use masked profile enrichment, matching `GET /v1/profile?uuid=...`. For other identifiers, pricing is additive per successful item.
 
-        **Costs are additive per successful item: `with_profile` costs 1 credit, `high_freshness` costs 2 credits, `reveal_emails` costs 6 credits and `reveal_phones` costs 6 credits when the corresponding contact data is found, `github_enrich` costs 8 credits when applied, and resolving an `email` costs 6 credits. UUID inputs instead cost 25 credits each for masked enrichment.**
+        **Costs are additive per successful item: `with_profile` costs 1 credit, `high_freshness` costs 2 credits, `reveal_emails` costs 6 credits and `reveal_phones` costs 6 credits when the corresponding contact data is found, and resolving an `email` costs 6 credits. UUID inputs instead cost 25 credits each for masked enrichment.**
 
         **Rate limit: 180 batch requests per user per 60 seconds.** A batch counts as one request regardless of its number of items. Batches containing email identifiers also count as one request against the account's daily email-lookup limit.
       security:
@@ -2284,9 +2284,6 @@ components:
           type: boolean
           default: false
           description: "Include full stored profile data. **Cost: 1 credit per successfully returned profile**"
-        github_enrich:
-          type: boolean
-          description: "Add available GitHub developer fields. **Cost: 8 credits per profile enriched from GitHub**"
         short_response:
           type: boolean
           default: false
