@@ -2887,21 +2887,21 @@ components:
       properties:
         locations:
           type: array
-          maxItems: 20
+          maxItems: 50
           items:
             type: string
           description: Filter by location (e.g., "San Francisco", "New York", "California", "United States")
           example: ["San Francisco", "New York"]
         location_coordinates:
           type: array
-          maxItems: 20
+          maxItems: 50
           items:
             $ref: '#/components/schemas/LocationCoordinateFilter'
           description: Filter by one or more latitude/longitude radius areas. Areas within this field are combined with OR.
           example: [{"lat": 37.7749, "lng": -122.4194, "radius_miles": 25}]
         not_locations:
           type: array
-          maxItems: 20
+          maxItems: 50
           items:
             type: string
           description: Exclude profiles by location (same format as locations)
