@@ -104,7 +104,7 @@ paths:
                 high_freshness:
                   type: boolean
                   default: false
-                  description: "Enable real-time profile updates for fresher data. This downloads the most recent copies of profiles directly from source websites in realtime (e.g. Linkedin). If you are ok with profiles that may be a few months outdated, and want to save ~30 seconds, turn off high_freshness. **Cost: 2 credits per candidate**"
+                  description: "Enable real-time profile updates for fresher data. This downloads the most recent copies of profiles directly from source websites in realtime (e.g. Linkedin). If you are ok with profiles that may be a few months outdated, and want to save ~30 seconds, turn off high_freshness. Refreshed roles include `employment_type` when the source provides it. **Cost: 2 credits per candidate**"
                 fill_with_low_confidence_results:
                   type: boolean
                   default: false
@@ -563,7 +563,7 @@ paths:
                 high_freshness:
                   type: boolean
                   default: false
-                  description: "Enable real-time profile updates for fresher lead data. This downloads the most recent copies of profiles directly from source websites in realtime (e.g. Linkedin). If you are ok with profiles that may be a few months outdated, and want to save ~30 seconds, turn off high_freshness. **Cost: 1 credit per lead**"
+                  description: "Enable real-time profile updates for fresher lead data. This downloads the most recent copies of profiles directly from source websites in realtime (e.g. Linkedin). If you are ok with profiles that may be a few months outdated, and want to save ~30 seconds, turn off high_freshness. Refreshed roles include `employment_type` when the source provides it. **Cost: 1 credit per lead**"
                 company_high_freshness:
                   type: boolean
                   default: false
@@ -715,7 +715,7 @@ paths:
                 high_freshness:
                   type: boolean
                   default: false
-                  description: "Enable real-time profile updates for fresher data. This downloads the most recent copies of profiles directly from source websites in realtime (e.g. Linkedin). If you are ok with profiles that may be a few months outdated, and want to save ~30 seconds, turn off high_freshness. **Cost: 2 credits per candidate**"
+                  description: "Enable real-time profile updates for fresher data. This downloads the most recent copies of profiles directly from source websites in realtime (e.g. Linkedin). If you are ok with profiles that may be a few months outdated, and want to save ~30 seconds, turn off high_freshness. Refreshed roles include `employment_type` when the source provides it. **Cost: 2 credits per candidate**"
                 fill_with_low_confidence_results:
                   type: boolean
                   default: false
@@ -1718,7 +1718,7 @@ paths:
           required: false
           schema:
             type: boolean
-          description: "Enable real-time profile updates for fresher data. This downloads the most recent copies of profiles directly from source websites in realtime (e.g. Linkedin). If you are ok with profiles that may be a few months outdated, turn off high_freshness. **Cost: 2 credits**"
+          description: "Enable real-time profile updates for fresher data. This downloads the most recent copies of profiles directly from source websites in realtime (e.g. Linkedin). If you are ok with profiles that may be a few months outdated, turn off high_freshness. Refreshed roles include `employment_type` when the source provides it. **Cost: 2 credits**"
           example: false
         - name: reveal_emails
           in: query
@@ -2298,7 +2298,7 @@ components:
         high_freshness:
           type: boolean
           default: false
-          description: "Enable realtime profile updates for every non-UUID item. **Cost: 2 credits per successfully returned profile**"
+          description: "Enable realtime profile updates for every non-UUID item. Refreshed roles include `employment_type` when the source provides it. **Cost: 2 credits per successfully returned profile**"
         reveal_emails:
           type: boolean
           default: false
@@ -3370,6 +3370,11 @@ components:
           type: string
           description: Job title for the role
           example: "Software Engineer II"
+        employment_type:
+          type: string
+          nullable: true
+          description: "Employment type supplied by the profile source, such as Full-time, Part-time, Contract, Freelance, or Self-employed. With high_freshness=true, refreshed profiles include this field when the source provides it. It may be absent or null when unavailable, including in older indexed profiles."
+          example: "Contract"
         start_date:
           type: string
           format: date

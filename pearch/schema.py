@@ -101,6 +101,7 @@ class Experience(BaseModel):
     company: str | None = None
     company_domain: str | None = None
     title: str | None = None
+    employment_type: str | None = None
     start_date: Date | None = None
     end_date: Date | None = None
     duration_years: float | None = None
