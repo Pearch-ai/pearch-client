@@ -211,7 +211,7 @@ paths:
                     example: "Done"
                   total_estimate:
                     type: integer
-                    description: The estimated total number of search results available. See also `total_estimate_is_lower_bound` to understand if the estimate is a lower bound. Search is currently capped at 1000 results regardless of `total_estimate_is_lower_bound` value, future search vesions will significantly increase this limit.
+                    description: The estimated total number of search results available. This supersedes the count returned by `/v2/search/count` as the more accurate estimate of total results. See also `total_estimate_is_lower_bound` to understand if the estimate is a lower bound. Search is currently capped at 1000 results regardless of `total_estimate_is_lower_bound` value, future search vesions will significantly increase this limit.
                     example: 1000
                   total_estimate_is_lower_bound:
                     type: boolean
@@ -249,6 +249,8 @@ paths:
       tags:
         - Search
       description: |
+        **Do not use this endpoint if you only want to estimate the total number of results for a query.** Use `total_estimate` from the `/v2/search` response instead; it supersedes this endpoint's count as the more accurate estimate.
+
         Return the number of profiles that match a natural-language `query`, structured `search_requirements`, or `custom_filters`.
 
         Queries and search requirements use the same TPSQL parsing and filtering behavior as a superfast search, but the endpoint does not return profiles. Custom-filter-only requests continue to use the optimized custom-filter count path unless `stats` is true.
