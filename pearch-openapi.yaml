@@ -38,7 +38,7 @@ paths:
         Use parameters to control tradeoffs between speed and quality. Here are some recipes:        
         - For highest quality results (30-180 seconds) use pro search with insights and profile scoring enabled: `{"query": "<YOUR QUERY HERE>", "type": "pro", "insights": true, "profile_scoring": true}`
         - For medium to high quality results use "fast" search (<50s). `{"query": "<YOUR QUERY HERE>", "type": "fast", "insights": true, "profile_scoring": true}`
-        - If you want to implement pagination, pass the `thread_id` of the previous request to the next request with increased `limit`. 
+        - For pagination, pass the previous response's `thread_id` with only `limit` and optionally `offset`. Do not resend or change search/filter parameters; including them with `thread_id` returns HTTP 400.
 
         Results are generally returned in the order of decreasing relevancy. However, you may notice results with out of order `score` values in some cases especially when requesting large number of results. It should be safe to use stable sorting by `score` field on the client side in this cases. Note that `score` field is only calculated and returned when `profile_scoring=true`.
 
@@ -76,7 +76,7 @@ paths:
                       must_have: false
                 thread_id:
                   type: string
-                  description: "Unique identifier for the thread. This is returned by every `/v2/search` call and is used to run follow-up queries on the same thread. There are now two alternative ways to call with `thread_id`: (1) with an increased `limit` and an empty or omitted `query`, to request more results (in this case results are appended, and you are only charged for additional, new results) or (2) with a new `query` to perform a follow-up conversational search; in this case, the new query should only specify additional requirements or changes as in a natural conversation, and the results are replaced instead of appended. Running a search with the same `thread_id` and same `limit` as the previous request will return the same results as before without incurring additional charges."
+                  description: "Unique identifier returned by every `/v2/search` call. Reuse it only for pagination by sending `thread_id` with `limit` and optionally `offset`; omit `query` and all search/filter parameters. Adding or changing search/filter parameters, including `query`, `search_requirements`, `custom_filters`, `docid_blacklist`, or `docid_whitelist`, returns HTTP 400. Running a search with the same `thread_id` and same `limit` returns the same results without additional charges."
                   example: "ec191bf9-99ff-4989-8383-c97c71fafb6d"
                 type:
                   type: string
@@ -185,7 +185,7 @@ paths:
                     example: "ec191bf9-99ff-4989-8383-c97c71fafb6d"
                   thread_id:
                     type: string
-                    description: Unique identifier for the thread. This is used to run follow up queries on the same thread.
+                    description: Unique identifier for pagination of this result set.
                     example: "ec191bf9-99ff-4989-8383-c97c71fafb6d"
                   query:
                     type: string
@@ -238,7 +238,7 @@ paths:
         "401":
           description: Invalid API key
         "400":
-          description: Invalid parameter values. JSON body contains the error message.
+          description: "Invalid parameter values. A request that combines `thread_id` with search or filter parameters is rejected with status: `thread_id only supports pagination parameters for this client. Unsupported with thread_id: <field names>`."
         "429":
           description: Rate limit exceeded. JSON body contains the triggered window, current value, and limit.
 
@@ -524,7 +524,7 @@ paths:
                   default: "AI startups in San Francisco with 50-200 employees"
                 thread_id:
                   type: string
-                  description: "Unique identifier for the thread. This is returned by every `/v2/search_company_leads` call and used to run follow up queries on the same thread. Pass `thread_id` to get more results. You are only charged for additional results, not for the initial request. Running search with `thread_id` and same `limit` as previous request will return the same results as the previous request without additional charges."
+                  description: "Unique identifier returned by every `/v2/search_company_leads` call. Reuse it only to paginate the existing result set. Search parameters must not be supplied with `thread_id`; doing so returns HTTP 400. You are charged only for additional results. Running a search with the same `thread_id` and same `limit` returns the same results without additional charges."
                   example: "ec191bf9-99ff-4989-8383-c97c71fafb6d"
                 lead_query:
                   type: string
@@ -586,7 +586,7 @@ paths:
                     example: "f47ac10b-58cc-4372-a567-0e02b2c3d479"
                   thread_id:
                     type: string
-                    description: Thread identifier that can be used for follow-up searches.
+                    description: Thread identifier that can be used to paginate the existing result set.
                     example: "ec191bf9-99ff-4989-8383-c97c71fafb6d"
                   query:
                     type: string
@@ -652,9 +652,9 @@ paths:
       description: |
         Submit a search query to be processed asynchronously in the background. This endpoint returns immediately with a task ID and thread ID that can be used to check the status, retrieve results when ready, and paginate through search results.
         
-        This is useful for long-running searches that may take several minutes to complete. The search will continue processing in the background while you can use the task ID to monitor progress and retrieve results. The thread ID can be used for pagination and follow-up searches by passing it in subsequent requests to either `/v2/search` or `/v2/search/submit`.
+        This is useful for long-running searches that may take several minutes to complete. The search will continue processing in the background while you can use the task ID to monitor progress and retrieve results. The thread ID can be used only to paginate the existing result set through `/v2/search` or `/v2/search/submit`.
         
-        All the same search parameters are supported as the synchronous `/v2/search` endpoint, including `thread_id` for continuation and pagination.
+        Initial searches support the same parameters as synchronous `/v2/search`. For pagination with `thread_id`, send only `limit` and optionally `offset`; search or filter parameters return HTTP 400.
 
         **Cost: (number of profiles returned) × (credits for `type` + `insights` + `high_freshness` + `reveal_emails` + `reveal_phones`).**
 
@@ -689,7 +689,7 @@ paths:
                       must_have: false
                 thread_id:
                   type: string
-                  description: "Unique identifier for the thread. This is returned by every `/v2/search` and `/v2/search/submit` call and is used to run follow-up queries on the same thread. There are now two alternative ways to call with `thread_id`: (1) with an increased `limit` and an empty or omitted `query`, to request more results (in this case results are appended, and you are only charged for additional, new results) or (2) with a new `query` to perform a follow-up conversational search; in this case, the new query should only specify additional requirements or changes as in a natural conversation, and the results are replaced instead of appended. Running a search with the same `thread_id` and same `limit` as the previous request will return the same results as before without incurring additional charges."
+                  description: "Unique identifier returned by every `/v2/search` and `/v2/search/submit` call. Reuse it only for pagination by sending `thread_id` with `limit` and optionally `offset`; omit `query` and all search/filter parameters. Adding or changing search/filter parameters, including `query`, `search_requirements`, `custom_filters`, `docid_blacklist`, or `docid_whitelist`, returns HTTP 400. Running a search with the same `thread_id` and same `limit` returns the same results without additional charges."
                   example: "ec191bf9-99ff-4989-8383-c97c71fafb6d"
                 type:
                   type: string
@@ -794,7 +794,7 @@ paths:
                     example: "ec191bf9-99ff-4989-8383-c97c71fafb6d"
                   thread_id:
                     type: string
-                    description: Thread ID for the search session, can be used for pagination and follow up searches using /v2/search or /v2/search/submit. If the search is still in progress, then running /v2/search,/v2/search/submit with this thread_id will return HTTP 202 status code. 
+                    description: Thread ID for pagination through `/v2/search` or `/v2/search/submit`. If the search is still in progress, using this `thread_id` returns HTTP 202. Search or filter parameters supplied with `thread_id` return HTTP 400.
                     example: "550e8400-e29b-41d4-a716-446655440000"
                   status:
                     type: string
@@ -805,7 +805,7 @@ paths:
                     description: Human-readable message about the task submission.
                     example: "Search task submitted successfully"
         "400":
-          description: Invalid parameter values. JSON body contains the error message.
+          description: "Invalid parameter values. A request that combines `thread_id` with search or filter parameters is rejected with status: `thread_id only supports pagination parameters for this client. Unsupported with thread_id: <field names>`."
         "401":
           description: Invalid API key
         "429":
