@@ -335,6 +335,9 @@ def _score_from_must_have_alignment(alignment: list[str]) -> int:
 
 
 async def validate_must_have_requirements_with_openrouter(response: V2SearchResponse):
+    if os.getenv("RUN_PEARCH_CLIENT_QUALITY_TESTS") != "1":
+        logger.info("Not running client-side must-have scoring: RUN_PEARCH_CLIENT_QUALITY_TESTS is not set")
+        return
     if not os.getenv("OPENROUTER_API_KEY"):
         logger.info("Not running client-side must-have scoring: OPENROUTER_API_KEY is not set")
         return
