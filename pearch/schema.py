@@ -317,6 +317,8 @@ class V2SearchResponse(BaseModel):
     status: str | None = None
     total_estimate: int | None = None
     total_estimate_is_lower_bound: bool | None = None
+    has_more_results: bool | None = None
+    stop_reason: str | None = None
     credits_remaining: int | None = None
     credits_used: int | None = None
     credits_used_total: int | None = None

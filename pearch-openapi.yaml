@@ -217,6 +217,15 @@ paths:
                     type: boolean
                     description: Indicates whether the total_estimate is a lower bound. If true, there may be more results available than the estimate suggests.
                     example: false
+                  has_more_results:
+                    type: boolean
+                    description: Whether this thread can return further results through pagination (`thread_id` with `offset`/`limit`). `false` means every candidate the thread fetched has already been scored and returned; further calls with a larger `offset` return no new profiles. Unlike `total_estimate`, which extrapolates the size of the matching population, this reflects what the thread actually holds.
+                    example: true
+                  stop_reason:
+                    type: string
+                    enum: [target_reached, time_budget_exhausted, candidate_pool_exhausted]
+                    description: Why the search stopped evaluating candidates. `target_reached` means the requested number of matching profiles was found. `time_budget_exhausted` means a time or work budget ended the search before the fetched candidates were fully evaluated; paginating on the same `thread_id` continues where it stopped. `candidate_pool_exhausted` means every fetched candidate was evaluated and no further matches remain in this thread; a larger initial `limit` or a broader query is needed for more.
+                    example: target_reached
                   credits_remaining:
                     type: integer
                     description: Number of credits remaining for the user.
