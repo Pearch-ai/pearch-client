@@ -3620,7 +3620,33 @@ components:
         location:
           type: string
           description: Current location of the candidate.
-          example: "Dayton, Ohio, United States"
+          example: "Bristol, England, United Kingdom"
+        location_coordinates:
+          type: object
+          description: Coordinates of the candidate's current location, when available.
+          properties:
+            lng:
+              type: number
+              format: double
+              example: -2.6
+            lat:
+              type: number
+              format: double
+              example: 51.5
+            country_code:
+              type: string
+              description: Country code associated with the coordinates, when available.
+              example: "GB"
+        location_country_code:
+          type: string
+          description: ISO 3166-1 alpha-2 country code of the candidate's current location.
+          example: "GB"
+        location_regions:
+          type: array
+          description: Geographic regions associated with the candidate's current location.
+          items:
+            type: string
+          example: ["Europe", "EMEA"]
         is_top_universities:
           type: boolean
           description: Whether the candidate attended a top university.

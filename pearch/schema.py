@@ -46,6 +46,12 @@ class Language(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
 
+class LocationCoordinates(BaseModel):
+    lng: float | None = None
+    lat: float | None = None
+    country_code: str | None = None
+
+
 class CompanyInfo(BaseModel):
     name: str | None = None
     domain: str | None = None
@@ -162,6 +168,9 @@ class Profile(BaseModel):
     languages: List[Language] | None = Field(default_factory=list)
     inferred_languages: List[Language] | None = Field(default_factory=list)
     location: str | None = None
+    location_coordinates: LocationCoordinates | None = None
+    location_country_code: str | None = None
+    location_regions: List[str] | None = Field(default_factory=list)
     is_top_universities: bool | None = None
     is_opentowork: bool | None = None
     is_hiring: bool | None = None

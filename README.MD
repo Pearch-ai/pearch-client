@@ -25,6 +25,17 @@ pip install -e git+https://github.com/Pearch-ai/pearch-client#egg=pearch-client
 
 Check out API documentation: https://apidocs.pearch.ai/reference/post_v2-search
 
+Candidate profiles can include the following location fields when available:
+
+```json
+{
+  "location": "Bristol, England, United Kingdom",
+  "location_coordinates": {"lng": -2.6, "lat": 51.5},
+  "location_country_code": "GB",
+  "location_regions": ["Europe", "EMEA"]
+}
+```
+
 With `high_freshness=True`, refreshed profiles include `employment_type` at `profile.experiences[].company_roles[].employment_type` when the source provides it. Values can include `Full-time`, `Part-time`, `Contract`, `Freelance`, or `Self-employed`. The SDK preserves the value on each role. The field is optional and may be absent or null when unavailable, including in older indexed profiles.
 
 ## Rate Limits
