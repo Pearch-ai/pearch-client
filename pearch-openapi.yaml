@@ -1699,11 +1699,11 @@ paths:
         - Test this endpoint in the [playground](https://chat.pearch.ai/api-enrichment)
         - Check out official [Python client](https://github.com/Pearch-ai/pearch-client)        
         
-        Retrieve enriched user profile based on the provided Linkedin profile ID or email address as a query parameter. Linkedin profile ID is the part that comes after `https://www.linkedin.com/in/` in the profile URL.
+        Retrieve an enriched profile using a LinkedIn profile ID, profile UUID, or email address. A LinkedIn profile ID is the part after `https://www.linkedin.com/in/` in the profile URL.
         
-        You can provide `docid` (LinkedIn profile ID) or `email`. If only `email` is provided, the system will attempt to resolve it to a LinkedIn profile.
+        Provide a LinkedIn profile ID in `docid`, a profile UUID in either `uuid` or `docid`, or an `email`. If only `email` is provided, the system attempts to resolve it to a LinkedIn profile. A UUID in either field uses masked profile enrichment and includes the full profile and available emails and phones.
 
-        **Costs are additive: `with_profile` costs 1 credit, `high_freshness` costs 2 credits, and `reveal_emails` and `reveal_phones` cost 6 credits each when contact data is found. Looking up a profile by `email` instead of `docid` costs 6 credits and is separate from `reveal_emails`.**
+        **Costs: A UUID in `uuid` or `docid` costs 25 credits for masked enrichment. For a LinkedIn slug in `docid`, costs are additive: `with_profile` costs 1 credit, `high_freshness` costs 2 credits, and `reveal_emails` and `reveal_phones` cost 6 credits each when contact data is found. Looking up a profile by `email` costs 6 credits and is separate from `reveal_emails`.**
 
         **Rate limit: 60 requests per user per 60 seconds.** When the rate limit is exceeded, the API returns HTTP 429 with details about the triggered window, current value, and limit.
       security:
@@ -1714,8 +1714,16 @@ paths:
           required: false
           schema:
             type: string
-          description: The linkedin profile ID of the profile to retrieve. Linkedin profile ID is the part that comes after `https://www.linkedin.com/in/` in the profile URL. Provide `docid` or `email`.
+          description: "LinkedIn profile slug (the part after `https://www.linkedin.com/in/`) or a profile UUID. Slugs use additive profile and contact pricing. A UUID uses masked enrichment, as with `uuid`. **Cost: 25 credits for UUID lookup**"
           example: "hrachik"
+        - name: uuid
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+          description: "Profile UUID, including one from a masked search result. Uses masked enrichment, as does a UUID in `docid`. **Cost: 25 credits for UUID lookup**"
+          example: "550e8400-e29b-41d4-a716-446655440000"
         - name: email
           in: query
           required: false
@@ -1771,7 +1779,7 @@ paths:
         "404":
           description: Profile not found
         "400":
-          description: Invalid parameter values or missing required parameters. At least one of `docid` or `email` must be provided. JSON body contains the error message.
+          description: Invalid parameter values or missing required parameters. At least one of `docid`, `uuid`, or `email` must be provided. JSON body contains the error message.
         "429":
           description: Rate limit exceeded. JSON body contains the triggered window, current value, and limit.
 
@@ -1786,9 +1794,9 @@ paths:
 
         A valid batch returns HTTP 200 even when individual profiles are not found. Inspect each result's `http`, `profile`, and `error` fields. Request validation and infrastructure errors remain top-level HTTP errors.
 
-        UUID inputs use masked profile enrichment, matching `GET /v1/profile?uuid=...`. For other identifiers, pricing is additive per successful item.
+        A UUID in either `uuid` or `docid` uses masked profile enrichment, matching `GET /v1/profile` with either field. A LinkedIn slug in `docid` uses additive pricing per successful item.
 
-        **Costs are additive per successful item: `with_profile` costs 1 credit, `high_freshness` costs 2 credits, `reveal_emails` costs 6 credits and `reveal_phones` costs 6 credits when the corresponding contact data is found, and resolving an `email` costs 6 credits. UUID inputs instead cost 25 credits each for masked enrichment.**
+        **Costs: A UUID in either `uuid` or `docid` costs 25 credits per successful item for masked enrichment. For a LinkedIn slug in `docid`, costs are additive per successful item: `with_profile` costs 1 credit, `high_freshness` costs 2 credits, `reveal_emails` costs 6 credits and `reveal_phones` costs 6 credits when the corresponding contact data is found, and resolving an `email` costs 6 credits.**
 
         **Rate limit: 180 batch requests per user per 60 seconds.** A batch counts as one request regardless of its number of items. Batches containing email identifiers also count as one request against the account's daily email-lookup limit.
       security:
@@ -2279,12 +2287,12 @@ components:
           type: string
           minLength: 1
           maxLength: 512
-          description: LinkedIn profile slug, which is the part after `https://www.linkedin.com/in/`.
+          description: "LinkedIn profile slug (the part after `https://www.linkedin.com/in/`) or a profile UUID. Slugs use additive profile and contact pricing; UUIDs use masked enrichment. **Cost: 25 credits for UUID lookup**"
           example: "vslaykovsky"
         uuid:
           type: string
           format: uuid
-          description: UUID from a masked search result. UUID inputs use masked profile enrichment.
+          description: "Profile UUID, including one from a masked search result. Uses masked enrichment, as does a UUID in `docid`. **Cost: 25 credits for UUID lookup**"
           example: "550e8400-e29b-41d4-a716-446655440000"
         email:
           type: string
