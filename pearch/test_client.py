@@ -14,7 +14,7 @@ import uuid
 from openai import OpenAI
 from pydantic import BaseModel, ValidationError
 
-from pearch.client import AsyncPearchClient, PearchAPIError
+from pearch.client import AsyncPearchClient, PearchAPIError, PearchValidationError
 from pearch.schema import (
     V1FindMatchingJobsRequest,
     V1FindMatchingJobsResponse,
@@ -935,7 +935,9 @@ async def test_v2_pro_search_generic():
     assert response.credits_used == 0, "Cached results should not cost any credits"
     await assert_recorded_api_call_credits(response)
 
-    # follow up query
+    # Refining the query on an existing thread is a follow-up, not pagination, and
+    # enable_thread_followup_queries is off by default: the request is rejected rather
+    # than silently re-running the search under the original criteria.
     logger.info("Running a follow up query: who are at least 30 years old")
     third_request = V2SearchRequest(
         query="who are at least 30 years old",
@@ -943,10 +945,14 @@ async def test_v2_pro_search_generic():
         thread_id=thread_id,
     )
     generate_curl_command("search", third_request)
-    response: V2SearchResponse = await AsyncPearchClient().search(third_request)
-    assert len(response.search_results) == 2, f"Expected 2 results, in the follow up query, actual results: {len(response.search_results)}"
-    await validate_must_have_requirements_with_openrouter(response)
-    validate_credits(third_request, response)
+    with pytest.raises(PearchValidationError):
+        await AsyncPearchClient().search(third_request)
+
+    # The thread still serves pages, and a page it already holds costs nothing.
+    repeat_request = V2SearchRequest(limit=2, offset=2, thread_id=thread_id)
+    response: V2SearchResponse = await AsyncPearchClient().search(repeat_request)
+    assert [r.profile.linkedin_slug for r in response.search_results] == second_page_slugs
+    assert response.credits_used == 0, "Cached results should not cost any credits"
     await assert_recorded_api_call_credits(response)
 
 
@@ -1243,6 +1249,8 @@ async def test_async_search_v2():
             break
         await asyncio.sleep(5)
 
+    # Narrowing the query on an existing thread is a follow-up, not pagination, and
+    # enable_thread_followup_queries is off by default, so the API rejects it.
     followup_request = V2SearchRequest(
         thread_id=response.thread_id,
         query="in Seattle",
@@ -1251,20 +1259,26 @@ async def test_async_search_v2():
         async_=True,
     )
     generate_curl_command("search", followup_request)
-    followup_response = await AsyncPearchClient().search(followup_request)
-    assert followup_response.status == "pending", "Async submit did not return pending"
-    check_followup = V2SearchRequest(thread_id=followup_response.thread_id)
+    with pytest.raises(PearchValidationError):
+        await AsyncPearchClient().search(followup_request)
+
+    # Asking the same thread for a further page is pagination, which async accepts, and
+    # billing stays cumulative across both runs of the thread.
+    more_request = V2SearchRequest(
+        thread_id=response.thread_id,
+        offset=2,
+        limit=2,
+        async_=True,
+    )
+    generate_curl_command("search", more_request)
+    more_response = await AsyncPearchClient().search(more_request)
+    assert more_response.status == "pending", "Async pagination did not return pending"
+    check_more = V2SearchRequest(thread_id=more_response.thread_id)
     while True:
-        followup_results = await AsyncPearchClient().search(check_followup)
-        if followup_results.status == "Done":
-            assert len(followup_results.search_results) == 2
-            for result in followup_results.search_results:
-                profile_dump = result.profile.model_dump()
-                profile_json = str(profile_dump).lower()
-                assert "seattle" in profile_json or "bellevue" in profile_json
-                assert "software engineer" in profile_json
-            credits3 = await get_credits()            
-            assert credits1 - credits3 == followup_results.credits_used_total, f"Credits charged {credits1 - credits3} <> credits used total {followup_results.credits_used_total}"
+        more_results = await AsyncPearchClient().search(check_more)
+        if more_results.status == "Done":
+            credits3 = await get_credits()
+            assert credits1 - credits3 == more_results.credits_used_total, f"Credits charged {credits1 - credits3} <> credits used total {more_results.credits_used_total}"
             break
         await asyncio.sleep(5)
 
