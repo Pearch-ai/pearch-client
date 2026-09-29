@@ -93,6 +93,10 @@ class CompanyInfo(BaseModel):
     is_health_tech: bool | None = None
     is_hiring: bool | None = None
     backed_by_y_combinator: bool | None = None
+    # Y Combinator batch as YC writes it, e.g. "W22": season letter (W Winter,
+    # S Summer, F Fall, P Spring) plus a two-digit year.
+    yc_batch: str | None = None
+    yc_batch_year: int | None = None
 
     icon: str | None = None
     website_score: int | None = None
