@@ -3094,14 +3094,14 @@ components:
           type: array
           items:
             type: string
-            enum: [bachelor, master, MBA, doctor, postdoc]
+            enum: [associate, bachelor, master, MBA, doctor, postdoc]
           description: Filter by degree types
           example: ["bachelor", "master"]
         not_degrees:
           type: array
           items:
             type: string
-            enum: [bachelor, master, MBA, doctor, postdoc]
+            enum: [associate, bachelor, master, MBA, doctor, postdoc]
           description: Exclude profiles by degree types (same enum as degrees)
           example: ["bachelor"]
         specialization_categories:
@@ -3488,10 +3488,11 @@ components:
             - Law & Criminal Justice
         degree:
           type: array
-          description: 'List of degrees obtained: "bachelor", "master", "MBA", "doctor", "postdoc"'
+          description: 'List of degrees obtained: "associate", "bachelor", "master", "MBA", "doctor", "postdoc"'
           items:
             type: string
             enum:
+              - associate
               - bachelor
               - master
               - MBA
