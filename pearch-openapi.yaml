@@ -265,7 +265,7 @@ paths:
 
         The request accepts only `query`. Search settings such as `type`, `limit`, `custom_filters`, and `search_requirements` are not accepted by this endpoint.
 
-        **Cost: 1 credit per successful parsing request, regardless of the number of requirements.** The credit is deducted after requirements are produced. Invalid requests, insufficient-credit rejections, and parsing failures are not charged. If credit lookup is temporarily unavailable, parsing can succeed without a charge; `credits_used` is 0 and `credits_breakdown` is null.
+        **Cost: 2 credits per successful parsing request, regardless of the number of requirements.** Credits are deducted after requirements are produced. Invalid requests, insufficient-credit rejections, and parsing failures are not charged. If credit lookup is temporarily unavailable, parsing can succeed without a charge; `credits_used` is 0.
 
         **Rate limit: 60 requests per user per 60 seconds by default.** This endpoint shares the limit with actual `/v2/search`, `/v2/search/submit`, and `/v2/search/count` executions. Fully cached search reloads have a separate limit.
       security:
@@ -299,7 +299,6 @@ paths:
                   - search_requirements
                   - credits_used
                   - credits_remaining
-                  - credits_breakdown
                 properties:
                   query:
                     type: string
@@ -316,54 +315,11 @@ paths:
                             - must_have
                   credits_used:
                     type: integer
-                    enum: [0, 1]
-                    description: Credits charged for this request; normally 1, or 0 during a credit-service fallback.
+                    enum: [0, 2]
+                    description: Credits charged for this request; normally 2, or 0 during a credit-service fallback.
                   credits_remaining:
                     type: integer
                     description: Remaining balance reported by the service. During a credit-service fallback, this can be a placeholder rather than the actual account balance.
-                  credits_breakdown:
-                    type: object
-                    nullable: true
-                    description: Itemized parsing charge, or null when no credits were charged.
-                    required:
-                      - version
-                      - total
-                      - items
-                    properties:
-                      version:
-                        type: integer
-                        enum: [1]
-                      total:
-                        type: integer
-                        enum: [1]
-                      items:
-                        type: array
-                        minItems: 1
-                        maxItems: 1
-                        items:
-                          type: object
-                          required:
-                            - component
-                            - data_point_type
-                            - quantity
-                            - unit_cost
-                            - credits
-                          properties:
-                            component:
-                              type: string
-                              enum: [query_parse]
-                            data_point_type:
-                              type: string
-                              enum: [query]
-                            quantity:
-                              type: number
-                              enum: [1]
-                            unit_cost:
-                              type: number
-                              enum: [1]
-                            credits:
-                              type: integer
-                              enum: [1]
               example:
                 query: "Software engineers in Germany, preferably with fintech experience"
                 search_requirements:
@@ -373,17 +329,8 @@ paths:
                     must_have: true
                   - search_requirement: "Has fintech experience"
                     must_have: false
-                credits_used: 1
-                credits_remaining: 99
-                credits_breakdown:
-                  version: 1
-                  total: 1
-                  items:
-                    - component: query_parse
-                      data_point_type: query
-                      quantity: 1
-                      unit_cost: 1
-                      credits: 1
+                credits_used: 2
+                credits_remaining: 98
         "400":
           description: Invalid JSON, missing or blank query, a non-string query, unknown request fields, or a query from which no requirements could be extracted. No credits are charged. The JSON body contains `http` and `status`.
           content:
