@@ -251,6 +251,179 @@ paths:
         "429":
           description: Rate limit exceeded. JSON body contains the triggered window, current value, and limit.
 
+  /v2/search/parse:
+    post:
+      operationId: post_v2-search-parse
+      summary: Parse search requirements
+      x-internal: true
+      tags:
+        - Search
+      description: |
+        Turn a natural-language people-search query or job description into structured search requirements. This endpoint uses the same query parser as the default `/v2/search` configuration and does not retrieve profiles.
+
+        The response contains the trimmed `query` and a `search_requirements` array. Each requirement includes its text and `must_have`: true for a mandatory requirement, false for a preferred requirement. Review or edit these requirements, then pass the array to `/v2/search`. When both `query` and `search_requirements` are supplied to search, `search_requirements` takes precedence.
+
+        The request accepts only `query`. Search settings such as `type`, `limit`, `custom_filters`, and `search_requirements` are not accepted by this endpoint.
+
+        **Cost: 1 credit per successful parsing request, regardless of the number of requirements.** The credit is deducted after requirements are produced. Invalid requests, insufficient-credit rejections, and parsing failures are not charged. If credit lookup is temporarily unavailable, parsing can succeed without a charge; `credits_used` is 0 and `credits_breakdown` is null.
+
+        **Rate limit: 60 requests per user per 60 seconds by default.** This endpoint shares the limit with actual `/v2/search`, `/v2/search/submit`, and `/v2/search/count` executions. Fully cached search reloads have a separate limit.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+                - query
+              properties:
+                query:
+                  type: string
+                  minLength: 1
+                  pattern: '\S'
+                  description: Natural-language people-search query or job description. Leading and trailing whitespace is removed; the remaining query must not be empty.
+            example:
+              query: "Software engineers in Germany, preferably with fintech experience"
+      responses:
+        "200":
+          description: Search requirements parsed successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - query
+                  - search_requirements
+                  - credits_used
+                  - credits_remaining
+                  - credits_breakdown
+                properties:
+                  query:
+                    type: string
+                    description: The input query with leading and trailing whitespace removed.
+                  search_requirements:
+                    type: array
+                    minItems: 1
+                    description: Parsed requirements ready to pass to `/v2/search`. Both `search_requirement` and `must_have` are returned for every item.
+                    items:
+                      allOf:
+                        - $ref: '#/components/schemas/SearchRequirement'
+                        - type: object
+                          required:
+                            - must_have
+                  credits_used:
+                    type: integer
+                    enum: [0, 1]
+                    description: Credits charged for this request; normally 1, or 0 during a credit-service fallback.
+                  credits_remaining:
+                    type: integer
+                    description: Remaining balance reported by the service. During a credit-service fallback, this can be a placeholder rather than the actual account balance.
+                  credits_breakdown:
+                    type: object
+                    nullable: true
+                    description: Itemized parsing charge, or null when no credits were charged.
+                    required:
+                      - version
+                      - total
+                      - items
+                    properties:
+                      version:
+                        type: integer
+                        enum: [1]
+                      total:
+                        type: integer
+                        enum: [1]
+                      items:
+                        type: array
+                        minItems: 1
+                        maxItems: 1
+                        items:
+                          type: object
+                          required:
+                            - component
+                            - data_point_type
+                            - quantity
+                            - unit_cost
+                            - credits
+                          properties:
+                            component:
+                              type: string
+                              enum: [query_parse]
+                            data_point_type:
+                              type: string
+                              enum: [query]
+                            quantity:
+                              type: number
+                              enum: [1]
+                            unit_cost:
+                              type: number
+                              enum: [1]
+                            credits:
+                              type: integer
+                              enum: [1]
+              example:
+                query: "Software engineers in Germany, preferably with fintech experience"
+                search_requirements:
+                  - search_requirement: "Has software engineering experience"
+                    must_have: true
+                  - search_requirement: "Located in Germany"
+                    must_have: true
+                  - search_requirement: "Has fintech experience"
+                    must_have: false
+                credits_used: 1
+                credits_remaining: 99
+                credits_breakdown:
+                  version: 1
+                  total: 1
+                  items:
+                    - component: query_parse
+                      data_point_type: query
+                      quantity: 1
+                      unit_cost: 1
+                      credits: 1
+        "400":
+          description: Invalid JSON, missing or blank query, a non-string query, unknown request fields, or a query from which no requirements could be extracted. No credits are charged. The JSON body contains `http` and `status`.
+          content:
+            application/json:
+              example:
+                http: 400
+                status: "Bad Request"
+        "402":
+          description: Insufficient available credits to pay for parsing. No credits are charged. The JSON body includes `http`, `status`, `code`, and a top-up `action`.
+          content:
+            application/json:
+              example:
+                http: 402
+                status: "Payment Required"
+                code: insufficient_credits
+                action:
+                  text: "Top up"
+                  url: "https://pearch.ai/pricing"
+        "403":
+          description: Missing or invalid API key. No credits are charged.
+          content:
+            application/json:
+              example:
+                http: 403
+                status: "Forbidden"
+        "429":
+          description: Shared search rate limit exceeded. No credits are charged. The JSON body contains `http` and `status`.
+          content:
+            application/json:
+              example:
+                http: 429
+                status: "Too Many Requests"
+        "500":
+          description: Parsing or credit deduction failed. A parsing failure occurs before credit deduction. The JSON body contains `http` and `status`.
+          content:
+            application/json:
+              example:
+                http: 500
+                status: "Internal server error"
+
   /v2/search/count:
     post:
       operationId: post_v2-search-count
