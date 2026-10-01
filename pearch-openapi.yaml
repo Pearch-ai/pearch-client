@@ -3031,7 +3031,7 @@ components:
         
         Filtering logic: Conditions between different keys are joined with "AND", so all conditions must pass. Within each condition, we always use "OR". For example, `{"titles": ["swe", "mle"]}` means the profile must have either "swe" OR "mle" as a title. If you specify multiple keys like `{"titles": ["swe", "mle"], "locations": ["San Francisco"]}`, the profile must match at least one title (swe OR mle) AND be in San Francisco.
         
-        Canonical industry values and common aliases such as `health`, `pharma`, and `technology` are normalized deterministically. Other industry strings are resolved semantically when the selected search mode permits it. Exact-only operations return HTTP 400 when a value cannot be resolved; a requested filter is never silently dropped.
+        `industries` and `not_industries` take canonical industry names such as `Health Care`, `Pharmaceutical`, `Software`, `Financial Services` or `Construction`; matching is case-insensitive. In `fast` and `superfast` search and in `/v2/search/count`, an unknown industry returns HTTP 400. In `pro` search, other strings are mapped semantically to canonical industries. An industry matches any employer in the person's career history, not only the current one.
         If you want to force no filtering at all (`custom_filters` or default filters), pass empty object `"custom_filters": {}`. This will speed up search, increase recall at some relevancy cost.
       properties:
         locations:
@@ -3095,8 +3095,8 @@ components:
           type: array
           items:
             type: string
-          description: Filter by industries (e.g., "health", "pharma", "technology", "finance")
-          example: ["health", "pharma"]
+          description: Filter by canonical industry names (e.g., "Health Care", "Pharmaceutical", "Software", "Financial Services"); case-insensitive. Matches any employer in the career history.
+          example: ["Health Care", "Pharmaceutical"]
         not_industries:
           type: array
           items:
@@ -3276,7 +3276,7 @@ components:
           example: ["Arts, Design & Architecture"]
       additionalProperties: false
       example:
-        industries: ["health", "pharma"]
+        industries: ["Health Care", "Pharmaceutical"]
         locations: ["San Francisco", "New York"]
         titles: ["software engineer", "data scientist"]
         min_total_experience_years: 5.5
