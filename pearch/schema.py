@@ -732,6 +732,7 @@ class V1ProfileRequest(BaseModel):
     email: str | None = None
     github_id: str | None = None
     high_freshness: bool | None = False
+    fast: bool = False
     reveal_emails: bool | None = False
     reveal_phones: bool | None = False
     with_profile: bool | None = False
