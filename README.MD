@@ -153,7 +153,7 @@ with PearchClient() as client:
         location_coordinates=[
             {"lat": 37.7749, "lng": -122.4194, "radius_miles": 25}
         ],
-        industries=["health", "pharma"],
+        industries=["Health Care", "Pharmaceutical"],
         titles=["software engineer", "data scientist"],
         min_total_experience_years=5,
         max_total_experience_years=15,
