@@ -158,6 +158,29 @@ class CompanyExperienceGroup(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
 
+class GithubInfo(BaseModel):
+    handle: str | None = None
+    url: str | None = None
+    source: str | None = None
+    declared_linkedin_matches: bool | None = None
+    name: str | None = None
+    company: str | None = None
+    location: str | None = None
+    bio: str | None = None
+    is_hireable: bool | None = None
+    followers: int | None = None
+    public_repos: int | None = None
+    commits_12m: int | None = None
+    programming_languages: List[str] | None = Field(default_factory=list)
+    organizations: List[str] | None = Field(default_factory=list)
+    oss_contributions: List[Dict[str, Any]] | None = Field(default_factory=list)
+    pushes_total: int | None = None
+    pull_requests_total: int | None = None
+    years_with_pushes: int | None = None
+    last_push_at: Date | None = None
+    model_config = ConfigDict(extra="ignore")
+
+
 class Profile(BaseModel):
     docid: str | None = None
     linkedin_slug: str | None = None
@@ -181,6 +204,7 @@ class Profile(BaseModel):
     total_experience_years: float | None = None
     estimated_age: float | None = None
     expertise: List[str] | None = Field(default_factory=list)
+    github: "GithubInfo | None" = None
     github_handle: str | None = None
     github_url: str | None = None
     programming_languages: List[str] | None = Field(default_factory=list)
