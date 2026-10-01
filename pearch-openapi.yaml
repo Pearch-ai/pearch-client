@@ -1823,7 +1823,7 @@ paths:
         
         Provide a LinkedIn profile ID in `docid`, a profile UUID in either `uuid` or `docid`, or an `email`. If only `email` is provided, the system attempts to resolve it to a LinkedIn profile. A UUID in either field uses masked profile enrichment and includes the full profile and available emails and phones.
 
-        Set `fast=true` to use SignalHire only for requested email and phone enrichment. This can reduce response time but may return fewer contacts than standard enrichment. The default is `false`. Use `high_freshness` separately for a current profile; this option is separate from `/v2/search`'s `type`.
+        Set `fast=true` to prioritize speed when retrieving requested emails and phone numbers. This can reduce response time but may return fewer contacts than standard enrichment. The default is `false`. Use `high_freshness` separately for a current profile; this option is separate from `/v2/search`'s `type`.
 
         **Costs: A UUID in `uuid` or `docid` costs 25 credits for masked enrichment. For a LinkedIn slug in `docid`, costs are additive: `with_profile` costs 1 credit, `high_freshness` costs 2 credits, and `reveal_emails` and `reveal_phones` cost 6 credits each when contact data is found. Looking up a profile by `email` costs 6 credits and is separate from `reveal_emails`.**
 
@@ -1867,7 +1867,7 @@ paths:
           schema:
             type: boolean
             default: false
-          description: "Use only SignalHire for requested email and phone enrichment. Can reduce response time, but may return fewer contacts than standard enrichment. Use `high_freshness` separately for a current profile. This option is separate from `/v2/search`'s `type`."
+          description: "Prioritize speed when retrieving requested emails and phone numbers. Can reduce response time, but may return fewer contacts than standard enrichment. Use `high_freshness` separately for a current profile. This option is separate from `/v2/search`'s `type`."
           example: false
         - name: reveal_emails
           in: query

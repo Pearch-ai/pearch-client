@@ -333,7 +333,7 @@ with PearchClient() as client:
 Available parameters:
 - `docid` (required): LinkedIn profile ID
 - `high_freshness` (optional): Enable real-time profile updates (`realtime_profiles_cost`)
-- `fast` (optional, default `False`): Use only SignalHire for requested email and phone enrichment. This can reduce response time but may return fewer contacts than standard enrichment. Use `high_freshness` separately for a current profile. This option is separate from `/v2/search`'s `type`.
+- `fast` (optional, default `False`): Prioritize speed when retrieving requested emails and phone numbers. This can reduce response time but may return fewer contacts than standard enrichment. Use `high_freshness` separately for a current profile. This option is separate from `/v2/search`'s `type`.
 - `reveal_emails` (optional): Include email addresses if available (`email_cost` when emails are found). Deprecated: `show_emails` (still supported but deprecated)
 - `reveal_phones` (optional): Include phone numbers if available (`phone_cost` when phone numbers are found). Deprecated: `show_phone_numbers` (still supported but deprecated)
 - `with_profile` (optional): Include full profile data in response (`profile_enrichment_cost`)
