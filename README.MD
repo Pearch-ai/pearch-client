@@ -180,6 +180,8 @@ Available filter fields:
 - **Boolean filters**: `studied_at_top_universities`, `has_startup_experience`, `has_saas_experience`, `has_b2b_experience`, `has_b2c_experience`
 - **Exact match**: `first_name`, `middle_name`, `last_name`, `gender`
 
+`industries` and `not_industries` use the canonical names in the [complete industry list](pearch-openapi.yaml) (`components.schemas.Industry`).
+
 Alternatively, use a plain dictionary for backward compatibility:
 
 ```python
