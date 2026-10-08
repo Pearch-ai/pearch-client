@@ -873,6 +873,7 @@ async def test_v2_pro_search_generic():
     logger.info("Running a first query: Find me engineers in California speaking at least basic english working in software industry with experience at FAANG with 2+ years of experience and at least 500 followers and at least BS degree")
     first_request = V2SearchRequest(
         query="Find me engineers in California speaking at least basic english working in software industry with experience at FAANG with 2+ years of experience and at least 500 followers and at least BS degree",
+        time_budget=60,
         limit=2,
         reveal_emails=True,
         reveal_phones=True,
@@ -1288,6 +1289,7 @@ async def test_filters():
     request = V2SearchRequest(
         query="software engineer",
         type="pro",
+        time_budget=60,
         limit=2,
         filter_out_no_emails=True,
         filter_out_no_phones=True,
