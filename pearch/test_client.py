@@ -906,7 +906,6 @@ async def test_v2_pro_search_generic():
     second_request = V2SearchRequest(
         limit=2,
         offset=2,
-        time_budget=60,
         thread_id=thread_id,
     )
     generate_curl_command("search", second_request)
@@ -922,7 +921,6 @@ async def test_v2_pro_search_generic():
     show_more_request = V2SearchRequest(
         limit=4,
         offset=0,
-        time_budget=60,
         thread_id=thread_id,
     )
     generate_curl_command("search", show_more_request)
@@ -944,7 +942,6 @@ async def test_v2_pro_search_generic():
     logger.info("Running a follow up query: who are at least 30 years old")
     third_request = V2SearchRequest(
         query="who are at least 30 years old",
-        time_budget=60,
         limit=2,
         thread_id=thread_id,
     )
@@ -953,7 +950,7 @@ async def test_v2_pro_search_generic():
         await AsyncPearchClient().search(third_request)
 
     # The thread still serves pages, and a page it already holds costs nothing.
-    repeat_request = V2SearchRequest(limit=2, offset=2, thread_id=thread_id, time_budget=60)
+    repeat_request = V2SearchRequest(limit=2, offset=2, thread_id=thread_id)
     response: V2SearchResponse = await AsyncPearchClient().search(repeat_request)
     assert [r.profile.linkedin_slug for r in response.search_results] == second_page_slugs
     assert response.credits_used == 0, "Cached results should not cost any credits"
