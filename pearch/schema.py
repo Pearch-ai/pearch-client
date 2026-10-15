@@ -458,7 +458,7 @@ class CustomFilters(BaseModel):
     has_b2c_experience: bool | None = None
     min_current_experience_years: float | None = None
     max_current_experience_years: float | None = None
-    degrees: List[Literal["bachelor", "master", "MBA", "doctor", "postdoc"]] | None = None
+    degrees: List[Literal["associate", "bachelor", "master", "MBA", "doctor", "postdoc"]] | None = None
     specialization_categories: List[Literal[
         "Business & Management",
         "Finance",
