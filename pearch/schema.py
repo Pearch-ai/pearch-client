@@ -140,6 +140,25 @@ class Education(BaseModel):
 
 class Certification(BaseModel):
     title: str | None = None
+    issuer: str | None = None
+    issuer_url: str | None = None
+    certificate_url: str | None = None
+    begin_date: Date | None = None
+    end_date: Date | None = None
+    model_config = ConfigDict(extra="ignore")
+
+
+class Recommendation(BaseModel):
+    recommendation: str | None = None
+    referee_name: str | None = None
+    referee_url: str | None = None
+    model_config = ConfigDict(extra="ignore")
+
+
+class Activity(BaseModel):
+    title: str | None = None
+    action: str | None = None
+    activityUrl: str | None = None
     model_config = ConfigDict(extra="ignore")
 
 
@@ -204,6 +223,8 @@ class Profile(BaseModel):
     educations: List[Education] | None = Field(default_factory=list)
     awards: List[str] | None = Field(default_factory=list)
     certifications: List[Certification] | None = Field(default_factory=list)
+    recommendations: List[Recommendation] | None = Field(default_factory=list)
+    activities: List[Activity] | None = Field(default_factory=list)
     memberships: List[Any] | None = Field(default_factory=list)
     patents: List[Patent] | None = Field(default_factory=list)
     publications: List[Any] | None = Field(default_factory=list)

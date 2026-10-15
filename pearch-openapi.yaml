@@ -4297,6 +4297,14 @@ components:
           type: boolean
           description: Indicates if the company is backed by Y Combinator
           example: false
+        yc_batch:
+          type: string
+          description: Y Combinator batch code, a season letter (W Winter, S Summer, F Fall, P Spring) plus a two-digit year
+          example: "W22"
+        yc_batch_year:
+          type: integer
+          description: Year of the Y Combinator batch
+          example: 2022
         icon:
           type: string
           description: The URL to the company's icon image
@@ -4459,6 +4467,63 @@ components:
           type: string
           description: Certification title
           example: "AWS Certified Solutions Architect"
+        issuer:
+          type: string
+          description: Issuing organization as listed on the profile
+          example: "Amazon Web Services (AWS)"
+        issuer_url:
+          type: string
+          description: Link to the issuing organization, when listed
+          example: "https://www.linkedin.com/company/amazon-web-services/"
+        certificate_url:
+          type: string
+          description: Link to the certificate or badge, when listed
+          example: "https://www.credly.com/badges/00000000-0000-0000-0000-000000000000"
+        begin_date:
+          type: string
+          format: date
+          description: Issue date
+          example: "2023-05-01"
+        end_date:
+          type: string
+          format: date
+          description: Expiry date. Absent when the profile lists no expiry, which means unknown, not expired.
+          example: "2026-05-01"
+
+    Recommendation:
+      type: object
+      description: LinkedIn recommendation written by a colleague
+      properties:
+        recommendation:
+          type: string
+          description: Recommendation text
+          example: "Jane led our data platform migration and mentored three junior engineers."
+        referee_name:
+          type: string
+          description: Name of the person who wrote the recommendation
+          example: "John Smith"
+        referee_url:
+          type: string
+          description: LinkedIn profile URL of the person who wrote the recommendation
+          example: "https://www.linkedin.com/in/john-smith"
+
+    Activity:
+      type: object
+      description: LinkedIn post the person wrote or reposted
+      properties:
+        title:
+          type: string
+          description: Truncated snippet of the post text
+          example: "Excited to share how we cut our Kubernetes costs by 40%..."
+        action:
+          type: string
+          description: "\"Posted by\" when the person wrote the post, \"Shared by\" for a repost"
+          enum: ["Posted by", "Shared by"]
+          example: "Posted by"
+        activityUrl:
+          type: string
+          description: Link to the post
+          example: "https://www.linkedin.com/feed/update/urn:li:activity:0000000000000000000"
 
     Patent:
       type: object
@@ -4694,6 +4759,16 @@ components:
           description: List of certifications.
           items:
             $ref: '#/components/schemas/Certification'
+        recommendations:
+          type: array
+          description: LinkedIn recommendations colleagues wrote about this person.
+          items:
+            $ref: '#/components/schemas/Recommendation'
+        activities:
+          type: array
+          description: LinkedIn posts the person wrote or reposted, as truncated snippets. Liked posts written by others are not returned.
+          items:
+            $ref: '#/components/schemas/Activity'
         memberships:
           type: array
           description: List of professional memberships.
