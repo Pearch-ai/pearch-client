@@ -1534,54 +1534,47 @@ paths:
       tags:
         - Search
       description: |
-        Submit feedback for a profile returned by a search: a rating, optional reasons and,
-        optionally, a verdict on every search requirement.
+        Rate a profile returned by a search and, optionally, say why and how it matches each
+        requirement of the search. Pearch uses this feedback to measure and improve search
+        quality for your account.
 
-        To identify the result being rated, copy these values from a completed `/v2/search`
-        response:
+        **Identify the result.** Copy `thread_id` to `chat_thread_id` and
+        `search_results[].profile.linkedin_slug` to `linkedin_slug` from a completed
+        `/v2/search` response. `search_call_uuid` (the response's `uuid`) is optional: without
+        it Pearch uses the thread's latest completed search, so a stored `thread_id` is enough
+        to rate results later. The profile must be in the thread's current completed ranking.
 
-        1. `thread_id` to `chat_thread_id`;
-        2. `uuid` to `search_call_uuid`;
-        3. `search_results[].profile.linkedin_slug` to `linkedin_slug`.
+        **Refer to requirements by index.** `index` and `requirement_index` are positions in the
+        search's requirement list: the order of `search_requirements_stats` in the
+        `/v2/search` response, which is also `insights.query_insights[].subquery_idx` on each
+        result. This works for searches made from a natural-language query too. You never
+        send requirement text: Pearch stores the search's requirements with the feedback and
+        returns them as `requirements`, and `GET /v2/search/feedback` lists them for a thread.
 
-        The specified search call must belong to the thread and be completed. The profile
-        must also be present in the thread's current completed ranking. When feedback is
-        saved, Pearch stores the profile as it appeared in that ranking together with a
-        high-freshness snapshot of the profile when one is available.
+        **Common uses**
 
-        Ratings are keyed on the chat thread, never on the per-call `uuid` of a search
-        response: reopening a thread serves the cached ranking but returns a new `uuid`,
-        so keying on it would lose the feedback. `search_call_uuid` records the individual
-        API interaction from which the rating was submitted; cached interactions resolve
-        through the thread's completed search state.
+        - *A thumbs button.* Send `rating` alone, then send it again with `reasons` or
+          `reason` if the user explains. The second call updates the first.
+        - *Reasons the user picks from a list.* Show the codes from
+          `GET /v2/search/feedback/reasons` that match the rating. When the user can say what a
+          reason is about, add `requirement_index`, or `not_in_request: true` when it is a
+          criterion the search never asked for, such as an employer they do not want. Both are
+          optional; leave them out when unknown.
+        - *Syncing decisions from an ATS or an agent.* Use `POST /v2/search/feedback/batch`
+          with up to 100 items per call and set `author_type` to `agent` for automated
+          decisions. Map your own reason codes to ours and keep your code in `reason`.
+        - *Verdicts on individual requirements.* Send `bullets` with a `verdict` for the
+          requirements you checked; you do not need to cover all of them.
 
-        A rating belongs to the thread rather than to its author: there is one rating per
-        `(chat_thread_id, linkedin_slug)`, and re-submitting updates it even when a
-        different user submits it. `author_type` records whether the last submitter was a
-        human, an agent, or both, and is overwritten together with the rating.
+        **Updates.** There is one rating per `(chat_thread_id, linkedin_slug)`; the latest
+        submission wins, whoever sends it. `reason`, `reasons` and `bullets` follow one rule:
+        a sent value replaces the stored one; an omitted value is kept when the rating is
+        unchanged and cleared when the rating changes.
 
-        **Reasons.** `reason` is free text. `reason_codes` takes up to three codes from
-        `GET /v2/search/feedback/reasons` that belong to the rating (`down` codes for a
-        `down` rating, `up` codes for `up`, either for `maybe`). Set `unstated` to `true`
-        when the reason is a criterion the search request never stated, for example a
-        seniority limit that was not in the query.
-
-        **Per-requirement verdicts.** Send `requirements` together with `bullets`, one
-        verdict per requirement in the same order, to say how the profile matches each
-        requirement: `meets`, `partial`, `does_not_meet` or `cannot_tell`. `prefill` records
-        the search's own verdict when the rater saw or was shown it, and `blind` is `true`
-        when the rater gave the verdicts before seeing the search's verdicts.
-
-        **Updates.** Every optional field follows the same rule: a sent value replaces the
-        stored one; when it is omitted, the stored value is kept if the rating is unchanged
-        and cleared if the rating changes. A blank or `null` `reason` is treated like an
-        omitted one. A rating stays `blind` only while every submission was blind, and
-        `duration_sec` adds up across submissions.
-
-        Requests that only send the original fields (`chat_thread_id`, `linkedin_slug`,
-        `rating`, `reason`, `author_type`, `search_call_uuid`) behave exactly as before.
-        String values are trimmed; `rating`, `author_type` and `reason_codes` are
-        case-insensitive. Unknown request fields are rejected.
+        Requests with only the original fields (`chat_thread_id`, `linkedin_slug`, `rating`,
+        `reason`, `author_type`, `search_call_uuid`) behave as before. String values are
+        trimmed; `rating`, `author_type` and reason codes are case-insensitive. Unknown fields
+        are rejected.
       security:
         - bearerAuth: []
       requestBody:
@@ -1589,186 +1582,70 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              additionalProperties: false
-              required:
-                - chat_thread_id
-                - linkedin_slug
-                - rating
-                - search_call_uuid
-              properties:
-                chat_thread_id:
-                  type: string
-                  format: uuid
-                  description: The `thread_id` returned by `/v2/search`.
-                  example: "ec191bf9-99ff-4989-8383-c97c71fafb6d"
-                linkedin_slug:
-                  type: string
-                  description: The rated profile's `search_results[].profile.linkedin_slug` value.
-                  example: "jason-tysl"
-                rating:
-                  type: string
-                  enum: [up, down, maybe]
-                  description: Feedback rating. `maybe` marks a borderline profile.
-                  example: "down"
-                reason:
-                  type: string
-                  nullable: true
-                  description: Optional free-form reason for the rating.
-                  example: "Based in Canada, the role is US only"
-                reason_codes:
-                  type: array
-                  maxItems: 3
-                  items:
-                    type: string
-                  description: Reason codes from `GET /v2/search/feedback/reasons` that match the rating.
-                  example: ["wrong_location"]
-                unstated:
-                  type: boolean
-                  nullable: true
-                  description: "`true` when the reason is a criterion the search request did not state."
-                  example: false
-                requirements:
-                  type: array
-                  minItems: 1
-                  maxItems: 50
-                  description: The requirements the verdicts in `bullets` refer to. Send together with `bullets`.
-                  items:
-                    $ref: '#/components/schemas/FeedbackRequirement'
-                bullets:
-                  type: array
-                  description: One verdict per entry of `requirements`, in the same order.
-                  items:
-                    $ref: '#/components/schemas/FeedbackBulletVerdict'
-                profile_flags:
-                  type: array
-                  items:
-                    type: string
-                    enum: [outdated, thin, mixed]
-                  description: Problems with the profile itself; `mixed` means the data belongs to more than one person.
-                blind:
-                  type: boolean
-                  nullable: true
-                  description: "`true` when the verdicts were given before the search's own verdicts were shown."
-                duration_sec:
-                  type: integer
-                  minimum: 0
-                  maximum: 86400
-                  nullable: true
-                  description: Time spent on this submission, added to the stored total.
-                author_type:
-                  type: string
-                  enum: [person, agent, mixed]
-                  default: person
-                  description: |
-                    Who produced the rating: a human (`person`), an automated caller
-                    (`agent`), or both (`mixed`, e.g. a human reviewed an agent's rating).
-                    Defaults to `person` when omitted.
-                  example: "agent"
-                search_call_uuid:
-                  type: string
-                  format: uuid
-                  description: |
-                    The `uuid` of the individual `/v2/search` call that produced the rated
-                    ranking. It changes every time a thread is reopened and must belong to
-                    `chat_thread_id`.
-                  example: "1b0f4f2a-1a3f-4a2f-9c5b-3f8d5a2e77c1"
-            example:
-              chat_thread_id: "ec191bf9-99ff-4989-8383-c97c71fafb6d"
-              linkedin_slug: "jason-tysl"
-              rating: "down"
-              reason_codes: ["wrong_location"]
-              reason: "Based in Canada, the role is US only"
-              author_type: "agent"
-              search_call_uuid: "1b0f4f2a-1a3f-4a2f-9c5b-3f8d5a2e77c1"
+              $ref: '#/components/schemas/SearchFeedbackInput'
+            examples:
+              thumbs:
+                summary: A thumbs-down with a short reason
+                value:
+                  chat_thread_id: "ec191bf9-99ff-4989-8383-c97c71fafb6d"
+                  linkedin_slug: "jason-tysl"
+                  rating: "down"
+                  reason: "Based in Canada"
+              presets:
+                summary: Reasons picked from the catalog, linked to requirements
+                value:
+                  chat_thread_id: "ec191bf9-99ff-4989-8383-c97c71fafb6d"
+                  linkedin_slug: "jason-tysl"
+                  rating: "down"
+                  reasons:
+                    - code: "wrong_location"
+                      requirement_index: 1
+                    - code: "excluded_employer"
+                      not_in_request: true
+                  reason: "Works at our client"
+              verdicts:
+                summary: Verdicts on individual requirements
+                value:
+                  chat_thread_id: "ec191bf9-99ff-4989-8383-c97c71fafb6d"
+                  linkedin_slug: "jason-tysl"
+                  rating: "up"
+                  author_type: "agent"
+                  bullets:
+                    - index: 0
+                      verdict: "meets"
+                    - index: 2
+                      verdict: "partial"
+                      note: "Go only in side projects"
       responses:
         "200":
           description: Feedback saved
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    example: "success"
-                  id:
-                    type: integer
-                    example: 123
-                  chat_thread_id:
-                    type: string
-                    format: uuid
-                    example: "ec191bf9-99ff-4989-8383-c97c71fafb6d"
-                  linkedin_slug:
-                    type: string
-                    example: "jason-tysl"
-                  rating:
-                    type: string
-                    enum: [up, down, maybe]
-                    example: "down"
-                  reason:
-                    type: string
-                    nullable: true
-                    example: "Based in Canada, the role is US only"
-                  reason_codes:
-                    type: array
-                    items:
-                      type: string
-                    example: ["wrong_location"]
-                  unstated:
-                    type: boolean
-                    nullable: true
-                  requirements:
-                    type: array
-                    nullable: true
-                    items:
-                      $ref: '#/components/schemas/FeedbackRequirement'
-                  bullets:
-                    type: array
-                    nullable: true
-                    items:
-                      $ref: '#/components/schemas/FeedbackBulletVerdict'
-                  profile_flags:
-                    type: array
-                    items:
-                      type: string
-                  blind:
-                    type: boolean
-                    nullable: true
-                  edits:
-                    type: integer
-                    description: How many times this rating was submitted again after the first submission.
-                    example: 0
-                  author_type:
-                    type: string
-                    enum: [person, agent, mixed]
-                    description: Who produced this rating.
-                    example: "agent"
-                  created_by:
-                    type: string
-                    nullable: true
-                    description: Author of this rating.
-                    example: "analyst@example.com"
+                allOf:
+                  - type: object
+                    properties:
+                      status:
+                        type: string
+                        example: "success"
+                  - $ref: '#/components/schemas/SearchFeedback'
         "400":
-          description: Invalid parameter values, including reason codes that do not match the rating
+          description: Invalid values, a reason code that does not match the rating, or a requirement index outside the search's requirements
         "401":
           description: Invalid API key
         "403":
           description: Invalid API key
         "404":
-          description: The search call does not belong to the thread, or the profile is absent from its current completed ranking
+          description: No completed search with this `search_call_uuid` in the thread, or the profile is absent from the thread's current completed ranking
     get:
       operationId: get_v2-search-feedback
       summary: List search result feedback
       tags:
         - Search
       description: |
-        List every rating stored for a chat thread, whoever submitted it.
-
-        Use this to restore rating state when a result page is reopened. A valid thread with
-        no ratings and an unknown thread both return an empty `feedback` array. Fields added
-        after the first version (`reason_codes` onwards) are empty or `null` on ratings that
-        did not set them.
+        List every rating stored for a chat thread, whoever submitted it, together with the
+        thread's requirements that `index` and `requirement_index` refer to. A thread with no
+        ratings and an unknown thread both return an empty `feedback` array.
       security:
         - bearerAuth: []
       parameters:
@@ -1794,64 +1671,15 @@ paths:
                   chat_thread_id:
                     type: string
                     format: uuid
-                    example: "ec191bf9-99ff-4989-8383-c97c71fafb6d"
+                  requirements:
+                    type: array
+                    description: The thread's current requirements, in index order.
+                    items:
+                      $ref: '#/components/schemas/FeedbackRequirement'
                   feedback:
                     type: array
                     items:
-                      type: object
-                      properties:
-                        linkedin_slug:
-                          type: string
-                          example: "jason-tysl"
-                        rating:
-                          type: string
-                          enum: [up, down, maybe]
-                          example: "down"
-                        reason:
-                          type: string
-                          nullable: true
-                          example: "Based in Canada, the role is US only"
-                        reason_codes:
-                          type: array
-                          items:
-                            type: string
-                          example: ["wrong_location"]
-                        unstated:
-                          type: boolean
-                          nullable: true
-                        requirements:
-                          type: array
-                          nullable: true
-                          items:
-                            $ref: '#/components/schemas/FeedbackRequirement'
-                        bullets:
-                          type: array
-                          nullable: true
-                          items:
-                            $ref: '#/components/schemas/FeedbackBulletVerdict'
-                        profile_flags:
-                          type: array
-                          items:
-                            type: string
-                        blind:
-                          type: boolean
-                          nullable: true
-                        edits:
-                          type: integer
-                          example: 0
-                        author_type:
-                          type: string
-                          enum: [person, agent, mixed]
-                          example: "agent"
-                        created_by:
-                          type: string
-                          nullable: true
-                          example: "analyst@example.com"
-                        updated_at:
-                          type: string
-                          format: date-time
-                          nullable: true
-                          example: "2026-08-10T12:34:56+00:00"
+                      $ref: '#/components/schemas/SearchFeedback'
         "400":
           description: Invalid parameter values
         "401":
@@ -1864,12 +1692,8 @@ paths:
       tags:
         - Search
       description: |
-        Remove the rating stored for a profile in a chat thread. The rating belongs to
-        the thread, so this removes it whoever submitted it.
-
-        Removing feedback that does not exist is not an error; `deleted` is `false` in that
-        case. This also means an unknown thread returns a successful response with
-        `deleted: false`.
+        Remove the rating stored for a profile in a chat thread, whoever submitted it.
+        Removing feedback that does not exist is not an error: `deleted` is `false`.
       security:
         - bearerAuth: []
       requestBody:
@@ -1886,12 +1710,8 @@ paths:
                 chat_thread_id:
                   type: string
                   format: uuid
-                  description: Chat thread the rated search belongs to.
-                  example: "ec191bf9-99ff-4989-8383-c97c71fafb6d"
                 linkedin_slug:
                   type: string
-                  description: LinkedIn slug of the rated profile.
-                  example: "jason-tysl"
             example:
               chat_thread_id: "ec191bf9-99ff-4989-8383-c97c71fafb6d"
               linkedin_slug: "jason-tysl"
@@ -1912,12 +1732,98 @@ paths:
                   chat_thread_id:
                     type: string
                     format: uuid
-                    example: "ec191bf9-99ff-4989-8383-c97c71fafb6d"
                   linkedin_slug:
                     type: string
-                    example: "jason-tysl"
         "400":
           description: Invalid parameter values
+        "401":
+          description: Invalid API key
+        "403":
+          description: Invalid API key
+
+  /v2/search/feedback/batch:
+    post:
+      operationId: post_v2-search-feedback-batch
+      summary: Submit search result feedback in bulk
+      tags:
+        - Search
+      description: |
+        Submit up to 100 feedback items in one call, for example when syncing recruiter
+        decisions from an ATS or results reviewed by an agent. Each item has exactly the shape
+        of a `POST /v2/search/feedback` body, items may belong to different threads, and each
+        item succeeds or fails on its own: the response is `200` with one result per item, in
+        the order sent. Failed items carry the status code the single endpoint would have
+        returned and can be retried on their own.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+                - items
+              properties:
+                items:
+                  type: array
+                  minItems: 1
+                  maxItems: 100
+                  items:
+                    $ref: '#/components/schemas/SearchFeedbackInput'
+            example:
+              items:
+                - chat_thread_id: "ec191bf9-99ff-4989-8383-c97c71fafb6d"
+                  linkedin_slug: "jason-tysl"
+                  rating: "down"
+                  author_type: "agent"
+                  reasons:
+                    - code: "too_senior"
+                      requirement_index: 2
+                  reason: "experience_above_max"
+                - chat_thread_id: "ec191bf9-99ff-4989-8383-c97c71fafb6d"
+                  linkedin_slug: "ada-lovelace"
+                  rating: "up"
+                  author_type: "agent"
+      responses:
+        "200":
+          description: One result per item
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  saved:
+                    type: integer
+                    example: 1
+                  failed:
+                    type: integer
+                    example: 1
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        index:
+                          type: integer
+                          description: Position of the item in `items`.
+                        status:
+                          type: string
+                          enum: [success, error]
+                        code:
+                          type: integer
+                          description: For failed items, the status code the single endpoint would return.
+                          example: 404
+                        error:
+                          type: string
+                        feedback:
+                          $ref: '#/components/schemas/SearchFeedback'
+        "400":
+          description: The body is not an object with 1–100 `items`
         "401":
           description: Invalid API key
         "403":
@@ -1930,7 +1836,7 @@ paths:
       tags:
         - Search
       description: |
-        The reason codes `POST /v2/search/feedback` accepts in `reason_codes`, and the
+        The reason codes `POST /v2/search/feedback` accepts in `reasons[].code`, and the
         requirement flags `POST /v2/search/query-feedback` accepts. Show `label` to users
         and `description` as a hint. Offer the codes whose `rating` matches the user's
         rating (both lists for `maybe`) and keep a free-text field next to them: `other`
@@ -2006,10 +1912,10 @@ paths:
         must-have setting, was not requested, or misreads the query, plus requirements the
         query asked for that no requirement covers.
 
-        Identify the search with `thread_id` → `chat_thread_id` and `uuid` →
-        `search_call_uuid` from a completed `/v2/search` response. `bullets[].index` refers
-        to the position of a requirement in that search's requirements; Pearch stores a
-        snapshot of those requirements with the feedback and returns it as `requirements`.
+        Identify the search with `thread_id` → `chat_thread_id` (and optionally `uuid` →
+        `search_call_uuid`) from a completed `/v2/search` response. `bullets[].index` is the
+        position of a requirement in `search_requirements_stats`; Pearch stores a snapshot of
+        those requirements with the feedback and returns it as `requirements`.
 
         There is one entry per thread and the latest submission replaces it, whoever sends
         it. `query` and `parsed_requirements` (the requirements as `/v2/search/parse`
@@ -2026,7 +1932,6 @@ paths:
               additionalProperties: false
               required:
                 - chat_thread_id
-                - search_call_uuid
               properties:
                 chat_thread_id:
                   type: string
@@ -2035,6 +1940,7 @@ paths:
                 search_call_uuid:
                   type: string
                   format: uuid
+                  description: Optional; defaults to the thread's latest completed search.
                   example: "1b0f4f2a-1a3f-4a2f-9c5b-3f8d5a2e77c1"
                 bullets:
                   type: array
@@ -2093,7 +1999,7 @@ paths:
         "403":
           description: Invalid API key
         "404":
-          description: The search call does not belong to the thread or is not completed
+          description: No completed search with this `search_call_uuid` in the thread
     get:
       operationId: get_v2-search-query-feedback
       summary: Get feedback on a search's requirements
@@ -2777,23 +2683,158 @@ components:
         must_have:
           type: boolean
           default: false
-    FeedbackBulletVerdict:
+    SearchFeedbackReason:
       type: object
       additionalProperties: false
-      required: [final]
+      required: [code]
       properties:
-        final:
+        code:
           type: string
-          enum: [meets, partial, does_not_meet, cannot_tell]
-          description: The rater's verdict on the requirement.
-        prefill:
-          type: string
-          enum: [meets, partial, does_not_meet, cannot_tell]
+          description: A code from `GET /v2/search/feedback/reasons` whose `rating` matches the feedback's rating (either list for `maybe`).
+          example: "too_senior"
+        requirement_index:
+          type: integer
+          minimum: 0
           nullable: true
-          description: The search's own verdict on the requirement, from `insights.query_insights`.
+          description: The requirement this reason is about, as a position in `search_requirements_stats`.
+          example: 2
+        not_in_request:
+          type: boolean
+          default: false
+          description: "`true` when the reason is a criterion the search did not ask for. Cannot be combined with `requirement_index`."
+    SearchFeedbackBullet:
+      type: object
+      additionalProperties: false
+      required: [index, verdict]
+      properties:
+        index:
+          type: integer
+          minimum: 0
+          description: Position of the requirement in `search_requirements_stats`.
+        verdict:
+          type: string
+          enum: [meets, partial, does_not_meet, cannot_tell]
         note:
           type: string
           maxLength: 500
+        search_verdict:
+          type: string
+          enum: [meets, partial, does_not_meet, cannot_tell]
+          nullable: true
+          readOnly: true
+          description: The search's own verdict on the requirement for this profile, filled in by Pearch from the result's insights.
+    SearchFeedbackInput:
+      type: object
+      additionalProperties: false
+      required:
+        - chat_thread_id
+        - linkedin_slug
+        - rating
+      properties:
+        chat_thread_id:
+          type: string
+          format: uuid
+          description: The `thread_id` returned by `/v2/search`.
+        linkedin_slug:
+          type: string
+          description: The rated profile's `search_results[].profile.linkedin_slug` value.
+        rating:
+          type: string
+          enum: [up, down, maybe]
+          description: "`maybe` marks a borderline profile."
+        reason:
+          type: string
+          nullable: true
+          description: Free-form reason; also the place for your own reason code.
+        reasons:
+          type: array
+          maxItems: 3
+          items:
+            $ref: '#/components/schemas/SearchFeedbackReason'
+        bullets:
+          type: array
+          maxItems: 50
+          description: Verdicts on the requirements you checked; each index at most once.
+          items:
+            $ref: '#/components/schemas/SearchFeedbackBullet'
+        author_type:
+          type: string
+          enum: [person, agent, mixed]
+          default: person
+          description: Who produced the rating; `mixed` for a human reviewing an agent's rating.
+        search_call_uuid:
+          type: string
+          format: uuid
+          nullable: true
+          description: The `uuid` of the `/v2/search` call the rating was made from. Optional; defaults to the thread's latest completed search.
+        blind:
+          type: boolean
+          nullable: true
+          description: Labeling metadata; `true` when the verdicts were given before the search's own verdicts were shown.
+        duration_sec:
+          type: integer
+          minimum: 0
+          maximum: 86400
+          nullable: true
+          description: Labeling metadata; time spent, added up across submissions.
+    SearchFeedback:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 123
+        chat_thread_id:
+          type: string
+          format: uuid
+        search_call_uuid:
+          type: string
+          format: uuid
+          nullable: true
+        linkedin_slug:
+          type: string
+          example: "jason-tysl"
+        rating:
+          type: string
+          enum: [up, down, maybe]
+        reason:
+          type: string
+          nullable: true
+        reasons:
+          type: array
+          items:
+            $ref: '#/components/schemas/SearchFeedbackReason'
+        bullets:
+          type: array
+          nullable: true
+          items:
+            $ref: '#/components/schemas/SearchFeedbackBullet'
+        requirements:
+          type: array
+          nullable: true
+          description: The search's requirements that `index` and `requirement_index` refer to.
+          items:
+            $ref: '#/components/schemas/FeedbackRequirement'
+        blind:
+          type: boolean
+          nullable: true
+        edits:
+          type: integer
+          description: How many times the rating was submitted again after the first submission.
+        author_type:
+          type: string
+          enum: [person, agent, mixed]
+        created_by:
+          type: string
+          nullable: true
+          description: Author of the latest submission.
+        created_at:
+          type: string
+          format: date-time
+          nullable: true
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
     QueryFeedbackBullet:
       type: object
       additionalProperties: false
