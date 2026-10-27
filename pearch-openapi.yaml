@@ -1905,6 +1905,95 @@ paths:
                         description:
                           type: string
                           example: "Several independent conditions are bundled into one requirement."
+              example:
+                status: success
+                version: 2026-10
+                profile_reasons:
+                - code: wrong_role
+                  rating: down
+                  label: Wrong role or function
+                  description: The current role or function is not the one the search asks for.
+                - code: too_senior
+                  rating: down
+                  label: Too senior
+                  description: More senior or more experienced than the role needs, including founders and executives.
+                - code: too_junior
+                  rating: down
+                  label: Too junior
+                  description: Less senior or less experienced than the role needs.
+                - code: missing_skill
+                  rating: down
+                  label: Missing a required skill or experience
+                  description: A specific skill, technology or kind of experience the role needs is missing.
+                - code: wrong_industry
+                  rating: down
+                  label: Wrong industry or domain
+                  description: Experience comes from a different industry or domain.
+                - code: wrong_location
+                  rating: down
+                  label: Wrong location
+                  description: Based outside the wanted area, or the shown location is wrong.
+                - code: not_currently_employed
+                  rating: down
+                  label: Not employed or independent
+                  description: Retired, on a career break, a student, a freelancer or running their own business.
+                - code: short_tenure
+                  rating: down
+                  label: Just joined or changes jobs often
+                  description: Too little time in the current role or a pattern of short tenures.
+                - code: excluded_employer
+                  rating: down
+                  label: Excluded employer
+                  description: Works for the client, used to work for the client, or works at a company that should be excluded.
+                - code: profile_data_issue
+                  rating: down
+                  label: Profile empty, outdated or wrong
+                  description: The profile has too little information, is out of date, or belongs to someone else.
+                - code: already_seen
+                  rating: down
+                  label: Already seen
+                  description: This person was already shown or contacted before.
+                - code: other
+                  rating: down
+                  label: Other
+                  description: Something else; describe it in the reason text.
+                - code: strong_match
+                  rating: up
+                  label: Strong match
+                  description: Meets what the search asks for overall.
+                - code: right_role
+                  rating: up
+                  label: Right role
+                  description: The current role or title is the one the search asks for.
+                - code: key_skill
+                  rating: up
+                  label: Has the key skill or experience
+                  description: Shows the skill or experience that matters most for the role.
+                - code: request_too_strict
+                  rating: up
+                  label: Good even though my request was stricter
+                  description: A good candidate although the search asked for more than the role really needs.
+                - code: other
+                  rating: up
+                  label: Other
+                  description: Something else; describe it in the reason text.
+                max_reason_codes: 3
+                requirement_flags:
+                - code: ambiguous
+                  label: Ambiguous
+                  description: The requirement can be read in more than one way.
+                - code: compound
+                  label: Compound
+                  description: Several independent conditions are bundled into one requirement.
+                - code: wrong_must_have
+                  label: Wrong must-have
+                  description: It should be a nice-to-have instead of a must-have, or the other way round.
+                - code: extra
+                  label: Not asked for
+                  description: The requirement was added although the request did not ask for it.
+                - code: misread
+                  label: Misread
+                  description: The requirement changes the meaning of what the query asked for.
         "401":
           description: Invalid API key
         "403":
