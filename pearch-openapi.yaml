@@ -1574,15 +1574,15 @@ paths:
         **Three levels; send as much as you have:**
 
         1. *Rating.* `rating` is `up`, `down` or `maybe`. This is all a thumbs button needs.
-        2. *Reasons.* Up to three `reasons`. Use a preset `code` from
-           `GET /v2/search/feedback/reasons` when one fits, otherwise send your own code. When
-           you know what a reason is about, add `requirement_index` for a requirement of the
-           search, or `unstated: true` for a criterion the search did not contain, such as an
-           employer you exclude.
-        3. *Verdicts, for agents.* If your system checks each requirement, send `verdicts`:
-           one verdict per requirement you checked.
+        2. *Reasons: why.* Up to three `reasons`. Use a preset `code` from
+           `GET /v2/search/feedback/reasons` when one fits, otherwise send your own code. Add
+           `unstated: true` when the reason is a criterion the search did not contain, such as
+           an employer you exclude.
+        3. *Verdicts: which requirements.* Send `verdicts` for the requirements you checked,
+           each with its `requirement_index` and a `verdict`. A recruiter who marks the
+           requirements a profile misses sends `does_not_meet` for each of them.
 
-        **Requirements are referenced by index.** `requirement_index` is the position of the
+        **Only verdicts refer to requirements.** `requirement_index` is the position of the
         requirement in the `/v2/search` response's `search_requirements`, where every entry
         carries its `requirement_index`. Searches made from a natural-language query list the
         requirements Pearch parsed from it. You never send requirement text.
@@ -1616,17 +1616,19 @@ paths:
                   rating: "down"
                   comment: "Based in Canada"
               reasons:
-                summary: Reasons picked from the catalog, linked to requirements
+                summary: Reasons with the requirement the profile misses
                 value:
                   thread_id: "ec191bf9-99ff-4989-8383-c97c71fafb6d"
                   linkedin_slug: "jason-tysl"
                   rating: "down"
                   reasons:
                     - code: "wrong_location"
-                      requirement_index: 1
                     - code: "excluded_employer"
                       unstated: true
-                  comment: "Works at our client"
+                      comment: "Works at our client"
+                  verdicts:
+                    - requirement_index: 1
+                      verdict: "does_not_meet"
               verdicts:
                 summary: Verdicts on individual requirements
                 value:
@@ -2639,16 +2641,10 @@ components:
           maxLength: 64
           description: A preset code from `GET /v2/search/feedback/reasons` when one fits, otherwise your own code. A preset code must match the feedback's rating (either list for `maybe`); your own codes are stored as sent, lowercased.
           example: "too_senior"
-        requirement_index:
-          type: integer
-          minimum: 0
-          nullable: true
-          description: The requirement this reason is about, as its `requirement_index` in the `/v2/search` response's `search_requirements`.
-          example: 2
         unstated:
           type: boolean
           default: false
-          description: "`true` when the reason is a criterion the search request did not state. Cannot be combined with `requirement_index`."
+          description: "`true` when the reason is a criterion the search request did not state."
         comment:
           type: string
           maxLength: 500
