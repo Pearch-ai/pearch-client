@@ -309,9 +309,17 @@ class RequirementMatchStats(BaseModel):
 
 
 class SearchRequirementStats(BaseModel):
+    requirement_index: int | None = None
     requirement: str | None = None
     must_have: bool = False
     match_stats: RequirementMatchStats | None = None
+    model_config = ConfigDict(extra="ignore")
+
+
+class ResponseSearchRequirement(BaseModel):
+    requirement_index: int
+    requirement: str
+    must_have: bool = False
     model_config = ConfigDict(extra="ignore")
 
 
@@ -357,6 +365,7 @@ class V2SearchResponse(BaseModel):
     credits_used: int | None = None
     credits_used_total: int | None = None
     search_results: List[ScoredProfile] | None = Field(default_factory=list)
+    search_requirements: List[ResponseSearchRequirement] | None = Field(default_factory=list)
     search_requirements_stats: List[SearchRequirementStats] | None = Field(default_factory=list)
     model_config = ConfigDict(extra="ignore")
 
