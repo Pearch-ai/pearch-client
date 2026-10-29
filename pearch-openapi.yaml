@@ -89,8 +89,7 @@ paths:
                 time_budget:
                   type: integer
                   minimum: 1
-                  default: 200
-                  description: Target search time budget in seconds. Defaults to 30 for fast search and 200 for pro search.
+                  description: Target search time budget in seconds. Defaults to 30 for fast search and 300 for pro search. Pro search requires at least 60 seconds.
                 insights:
                   type: boolean
                   default: true
@@ -860,8 +859,7 @@ paths:
                 time_budget:
                   type: integer
                   minimum: 1
-                  default: 200
-                  description: Target search time budget in seconds. Defaults to 30 for fast search and 200 for pro search.
+                  description: Target search time budget in seconds. Defaults to 30 for fast search and 300 for pro search. Pro search requires at least 60 seconds.
                 insights:
                   type: boolean
                   default: true
