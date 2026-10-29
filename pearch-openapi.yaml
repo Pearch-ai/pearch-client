@@ -1574,11 +1574,11 @@ paths:
         **Three levels; send as much as you have:**
 
         1. *Rating.* `rating` is `up`, `down` or `maybe`. This is all a thumbs button needs.
-        2. *Reasons.* Up to three `reasons` from `GET /v2/search/feedback/reasons` that match
-           the rating, plus free text or your own reason code in `comment`. When you know what
-           a reason is about, add `requirement_index` for a requirement of the search, or
-           `unstated: true` for a criterion the search did not contain, such as an employer
-           you exclude.
+        2. *Reasons.* Up to three `reasons`. Use a preset `code` from
+           `GET /v2/search/feedback/reasons` when one fits, otherwise send your own code. When
+           you know what a reason is about, add `requirement_index` for a requirement of the
+           search, or `unstated: true` for a criterion the search did not contain, such as an
+           employer you exclude.
         3. *Verdicts, for agents.* If your system checks each requirement, send `verdicts`:
            one verdict per requirement you checked.
 
@@ -1586,6 +1586,9 @@ paths:
         requirement in the `/v2/search` response's `search_requirements`, where every entry
         carries its `requirement_index`. Searches made from a natural-language query list the
         requirements Pearch parsed from it. You never send requirement text.
+
+        **Free text is always `comment`:** on a reason, on a verdict, or at the top level for
+        the profile as a whole.
 
         **Each submission replaces the stored feedback** for that `(thread_id, linkedin_slug)`,
         whoever sends it, so send the rating, reasons and comment together. To send many
@@ -1636,7 +1639,7 @@ paths:
                       verdict: "meets"
                     - requirement_index: 2
                       verdict: "partial"
-                      note: "Go only in side projects"
+                      comment: "Go only in side projects"
       responses:
         "200":
           description: Feedback saved
@@ -1651,7 +1654,7 @@ paths:
                         example: "success"
                   - $ref: '#/components/schemas/SearchFeedback'
         "400":
-          description: "Invalid request: an invalid value, a reason code that does not match the rating, or a requirement index outside the search's requirements. `status` names the field and the rule."
+          description: "Invalid request: an invalid value, a preset reason code that does not match the rating, or a requirement index outside the search's requirements. `status` names the field and the rule."
         "401":
           description: Invalid API key
         "403":
@@ -1800,9 +1803,9 @@ paths:
                   rating: "down"
                   author_type: "agent"
                   reasons:
-                    - code: "too_senior"
+                    - code: "experience_above_max"
                       unstated: true
-                  comment: "experience_above_max"
+                      comment: "Max 12 years, has 15"
                 - thread_id: "ec191bf9-99ff-4989-8383-c97c71fafb6d"
                   linkedin_slug: "ada-lovelace"
                   rating: "up"
@@ -1857,10 +1860,10 @@ paths:
       tags:
         - Search
       description: |
-        The reason codes `POST /v2/search/feedback` accepts in `reasons[].code`. Show `label`
-        to users and `description` as a hint. Offer the reason codes whose
-        `rating` matches the user's rating (both lists for `maybe`) and keep a free-text field
-        next to them: `other` is part of each list for reasons the codes do not cover.
+        Preset reason codes for `reasons[].code` in `POST /v2/search/feedback`. Use a preset when
+        one fits; any other code is accepted as your own. Show `label` to users and
+        `description` as a hint, and offer the codes whose `rating` matches the user's rating
+        (both lists for `maybe`). A preset code with the opposite rating is rejected.
 
         `version` changes whenever the lists change; codes are never reused with a
         different meaning.
@@ -2633,7 +2636,8 @@ components:
       properties:
         code:
           type: string
-          description: A code from `GET /v2/search/feedback/reasons` whose `rating` matches the feedback's rating (either list for `maybe`).
+          maxLength: 64
+          description: A preset code from `GET /v2/search/feedback/reasons` when one fits, otherwise your own code. A preset code must match the feedback's rating (either list for `maybe`); your own codes are stored as sent, lowercased.
           example: "too_senior"
         requirement_index:
           type: integer
@@ -2645,6 +2649,10 @@ components:
           type: boolean
           default: false
           description: "`true` when the reason is a criterion the search request did not state. Cannot be combined with `requirement_index`."
+        comment:
+          type: string
+          maxLength: 500
+          description: Free text about this reason.
     SearchFeedbackVerdict:
       type: object
       additionalProperties: false
@@ -2657,9 +2665,10 @@ components:
         verdict:
           type: string
           enum: [meets, partial, does_not_meet, cannot_tell]
-        note:
+        comment:
           type: string
           maxLength: 500
+          description: Free text about this verdict.
         search_verdict:
           type: string
           enum: [meets, partial, does_not_meet, cannot_tell]
@@ -2704,7 +2713,7 @@ components:
         comment:
           type: string
           nullable: true
-          description: Free text; also the place for your own reason code. `reason` is accepted as its older name.
+          description: Free text about the profile as a whole. `reason` is accepted as its older name.
         author_type:
           type: string
           enum: [person, agent, mixed]
