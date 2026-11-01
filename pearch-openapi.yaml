@@ -442,11 +442,11 @@ paths:
 
         Return the number of profiles that match a natural-language `query`, structured `search_requirements`, or `custom_filters`.
 
-        Queries and search requirements use the same TPSQL parsing and filtering behavior as a superfast search, but the endpoint does not return profiles. Custom-filter-only requests continue to use the optimized custom-filter count path unless `stats` is true.
+        Queries and search requirements use the same parsing and filtering behavior as a superfast search, but the endpoint does not return profiles. Custom-filter-only requests continue to use the optimized custom-filter count path unless `stats` is true.
 
         Set `stats` to true to aggregate canonical profile fields from a sample of up to 1,000 matching profiles. Repeated values are counted at most once per profile. The response reports the full matching count separately from the sampled profile count. Profile statistics add 5 credits to the request cost.
 
-        The request must include at least one of `query`, `search_requirements`, or `custom_filters`. Filters can be combined with either natural-language input and are ANDed with its TPSQL filters, matching `/v2/search` behavior. If both `query` and `search_requirements` are provided, `search_requirements` takes precedence.
+        The request must include at least one of `query`, `search_requirements`, or `custom_filters`. Filters can be combined with either natural-language input and are ANDed with the derived search filters, matching `/v2/search` behavior. If both `query` and `search_requirements` are provided, `search_requirements` takes precedence.
 
         Expect slower response for expected large counts. E.g. for title="manager" from "US" you should expect slower response and approximate=true in the response. For title="meteorologist" from "tokio" expect faster response and approximate=false in the response.
 
@@ -466,11 +466,11 @@ paths:
               properties:
                 query:
                   type: string
-                  description: Natural-language people-search query interpreted into TPSQL filters. A request using a query costs 5 credits before optional stats.
+                  description: Natural-language people-search query interpreted into search filters. A request using a query costs 5 credits before optional stats.
                   example: "Software engineers in Germany with Python experience"
                 search_requirements:
                   type: array
-                  description: Structured requirements interpreted into TPSQL filters. If present, these take precedence over `query`. A request using search requirements costs 5 credits before optional stats.
+                  description: Structured requirements interpreted into search filters. If present, these take precedence over `query`. A request using search requirements costs 5 credits before optional stats.
                   items:
                     $ref: '#/components/schemas/SearchRequirement'
                 custom_filters:
