@@ -1627,7 +1627,7 @@ paths:
       operationId: post_v2-search-feedback
       summary: Submit search result feedback
       tags:
-        - Search
+        - Search Feedback
       description: |
         Tell Pearch whether a profile returned by a search was right, and why. Pearch uses
         feedback to measure and improve search quality.
@@ -1733,7 +1733,7 @@ paths:
       operationId: get_v2-search-feedback
       summary: List search result feedback
       tags:
-        - Search
+        - Search Feedback
       description: |
         List every feedback stored for a thread, whoever submitted it, together with the
         thread's requirements that `requirement_index` refers to. A thread with no feedback
@@ -1782,7 +1782,7 @@ paths:
       operationId: delete_v2-search-feedback
       summary: Remove search result feedback
       tags:
-        - Search
+        - Search Feedback
       description: |
         Remove the feedback stored for a profile in a thread, whoever submitted it.
         Removing feedback that does not exist is not an error: `deleted` is `false`.
@@ -1838,7 +1838,7 @@ paths:
       operationId: post_v2-search-feedback-batch
       summary: Submit search result feedback in bulk
       tags:
-        - Search
+        - Search Feedback
       description: |
         Submit up to 100 feedback items in one call, for example when syncing recruiter
         decisions from an ATS or results reviewed by an agent. Each item has exactly the shape
@@ -1926,7 +1926,7 @@ paths:
       operationId: get_v2-search-feedback-reasons
       summary: List feedback codes
       tags:
-        - Search
+        - Search Feedback
       description: |
         Preset reason codes for `reasons[].code` in `POST /v2/search/feedback`. Use a preset when
         one fits; any other code is accepted as your own. Show `label` to users and
