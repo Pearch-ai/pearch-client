@@ -52,12 +52,12 @@ paths:
 
         Each callback includes `uuid`, `task_id` (equal to `uuid`), `thread_id`, and `task_status`. Deduplicate by `task_id`, since separate tasks can share a thread. Every retry sends identical JSON bytes.
 
-        A successful callback preserves the synchronous result fields, including `status="Done"` and `search_results`, and adds `task_id` and `task_status="completed"`. Polling uses the outer `status="completed"`; the nested result's `status="Done"` also means success.
+        A successful callback preserves the synchronous result fields, including `status="Done"`, `search_results` and `search_requirements`, and adds `task_id` and `task_status="completed"`. Polling uses the outer `status="completed"`; the nested result's `status="Done"` also means success.
 
         Example successful callback (other search-result fields omitted):
 
         ```json
-        {"uuid":"<task-uuid>","task_id":"<task-uuid>","thread_id":"<thread-uuid>","task_status":"completed","status":"Done","search_results":[]}
+        {"uuid":"<task-uuid>","task_id":"<task-uuid>","thread_id":"<thread-uuid>","task_status":"completed","status":"Done","search_results":[],"search_requirements":[{"requirement_index":0,"requirement":"Python developer","must_have":true}]}
         ```
 
         A failed callback includes `status="failed"`, `task_status="failed"`, `http`, and a public `error` message. Optional `code` and `action` fields are preserved. For example:
@@ -268,7 +268,7 @@ paths:
                       $ref: '#/components/schemas/ScoredProfile'
                   search_requirements:
                     type: array
-                    description: The requirements the search ran on, in order. A search made from a natural-language `query` lists the requirements Pearch parsed from it. Search result feedback refers to a requirement by its `requirement_index`.
+                    description: The requirements the search ran on, in order. A search made from a natural-language `query` lists the requirements Pearch parsed from it. Search result feedback refers to a requirement by its `requirement_index`; take the numbers from this list rather than from your request, because Pearch may reword a requirement, for example by prefixing `Current role:`.
                     items:
                       $ref: '#/components/schemas/ResponseSearchRequirement'
                   search_requirements_stats:
@@ -853,12 +853,12 @@ paths:
 
         Each callback includes `uuid`, `task_id` (equal to `uuid`), `thread_id`, and `task_status`. Deduplicate by `task_id`, since separate tasks can share a thread. Every retry sends identical JSON bytes.
 
-        A successful callback preserves the synchronous result fields, including `status="Done"` and `search_results`, and adds `task_id` and `task_status="completed"`. Polling uses the outer `status="completed"`; the nested result's `status="Done"` also means success.
+        A successful callback preserves the synchronous result fields, including `status="Done"`, `search_results` and `search_requirements`, and adds `task_id` and `task_status="completed"`. Polling uses the outer `status="completed"`; the nested result's `status="Done"` also means success.
 
         Example successful callback (other search-result fields omitted):
 
         ```json
-        {"uuid":"<task-uuid>","task_id":"<task-uuid>","thread_id":"<thread-uuid>","task_status":"completed","status":"Done","search_results":[]}
+        {"uuid":"<task-uuid>","task_id":"<task-uuid>","thread_id":"<thread-uuid>","task_status":"completed","status":"Done","search_results":[],"search_requirements":[{"requirement_index":0,"requirement":"Python developer","must_have":true}]}
         ```
 
         A failed callback includes `status="failed"`, `task_status="failed"`, `http`, and a public `error` message. Optional `code` and `action` fields are preserved. For example:
@@ -1088,7 +1088,7 @@ paths:
                   result:
                     type: object
                     nullable: true
-                    description: Available search results for a completed background task, with the same structure as the `/v2/search` response. May be null before completion or for an immediately returned cached result; use the original HTTP 200 response for cached calls.
+                    description: Available search results for a completed background task, with the same structure as the `/v2/search` response, including `search_requirements`. May be null before completion or for an immediately returned cached result; use the original HTTP 200 response for cached calls.
                     additionalProperties: true
                   duration:
                     type: number
