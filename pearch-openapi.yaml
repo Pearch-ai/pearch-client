@@ -36,11 +36,25 @@ paths:
         - Use the custom_filters parameter and map some or all structured parts to it. This gives you more control over filtering.
 
         Use parameters to control tradeoffs between speed and quality. Here are some recipes:        
-        - For highest quality results (30-180 seconds) use pro search with insights and profile scoring enabled: `{"query": "<YOUR QUERY HERE>", "type": "pro", "insights": true, "profile_scoring": true}`
-        - For medium to high quality results use "fast" search (<50s). `{"query": "<YOUR QUERY HERE>", "type": "fast", "insights": true, "profile_scoring": true}`
+        - For a deeper search, use Pro: `{"query": "<YOUR QUERY HERE>", "type": "pro", "insights": true}`. Pro defaults to a 300-second search budget and can finish earlier.
+        - For a faster search, use Fast: `{"query": "<YOUR QUERY HERE>", "type": "fast", "insights": true}`. Fast defaults to a 30-second search budget.
         - For pagination, pass the previous response's `thread_id` with only `limit` and optionally `offset`. Do not resend or change search/filter parameters; including them with `thread_id` returns HTTP 400.
 
-        Results are generally returned in the order of decreasing relevancy. However, you may notice results with out of order `score` values in some cases especially when requesting large number of results. It should be safe to use stable sorting by `score` field on the client side in this cases. Note that `score` field is only calculated and returned when `profile_scoring=true`.
+        ### Scoring and result order
+
+        Fast and Pro searches score and filter candidates automatically. `profile_scoring` is accepted for compatibility but currently ignored. Setting it to `true`, setting it to `false`, or omitting it does not change scoring, filtering, result order, or whether `score` is returned.
+
+        `score` is a coarse category on a 1–4 scale. A score of `4` means all mandatory requirements received full-match decisions, or no mandatory requirements were supplied. It does not mean a 100% match to every requirement. Fast uses binary mandatory-requirement decisions, so accepted candidates commonly all have `score=4` while their ranking scores differ. Preserve the API's result order rather than sorting by this coarse score.
+
+        Current raw HTTP responses can include `ultra_match_probabilities`, `ultra_requirement_importances`, `ultra_final_score` and `profile_match_score` when available. Pro returns these on each `search_results[]` item; Fast returns them inside `search_results[].profile`. `ultra_match_probabilities` contains estimated match probabilities between 0 and 1, in the order of the response's `search_requirements`. The corresponding positive weights are in `ultra_requirement_importances`. `profile_match_score` is their weighted sum, and `ultra_final_score` normalizes it to a 0–100 scale. Pro results are ordered by `ultra_final_score`. These fields are independent of `profile_scoring` and can be present with `insights=false`.
+
+        The current Python SDK's `Profile` and `ScoredProfile` models ignore these undeclared ranking fields. Use the raw HTTP JSON if you need them. `insights=true` adds explanations, quotes and per-requirement match labels; `insights=false` omits those explanations while scoring and filtering still run.
+
+        ### Streaming availability
+
+        `/v2/search` returns completed search results; it does not stream partial candidate data. For a background search, use `async=true` with a completion webhook or the documented polling flow. `/v1/chat/completions` is unavailable and returns HTTP 404.
+
+        The chat-agent endpoint `/threads/{id}/runs/stream` streams state updates after completed search stages. Updates can contain profiles, but do not deliver each candidate immediately after discovery. In Pro, the search stage can complete its full candidate search before profiles appear in the stream.
 
         Check out other parameters below to adjust speed vs quality and additional data that can be returned by the endpoint. 
 
@@ -124,10 +138,13 @@ paths:
                   type: integer
                   minimum: 1
                   description: Synonym of time_budget. Target search time in seconds, with the same defaults and validation (30 seconds for fast; 300 seconds and a 60-second minimum for pro). If both parameters are supplied, time_budget takes precedence.
+                profile_scoring:
+                  type: boolean
+                  description: 'Compatibility parameter, currently ignored. Fast and Pro searches score and filter candidates automatically. Setting this to true or false, or omitting it, does not change scoring, filtering, result order, or whether score is returned.'
                 insights:
                   type: boolean
                   default: true
-                  description: 'Enable detailed insights and analysis for search results. This includes scores for each of query requirements along with quotes from profiles that match subqueries. Check out `insights` output fields for details. This may be helpful if you share search results with users and want to provide deeper explanations of why profiles are relevant. If your product only needs highly relevant profiles without explanations, use `{"insights": false, "profile_scoring": true}` **Cost: 1 credit per candidate**'
+                  description: 'Add explanations, quotes and per-requirement match labels in `insights`. Candidate scoring and filtering still run with `insights=false`; ranking probabilities can be returned independently of this option. Use `{"insights": false}` when you do not need explanations. **Cost: 1 credit per candidate**'
                 insights_items:
                   type: array
                   items:
@@ -1060,6 +1077,8 @@ paths:
         
         Initial searches support the same parameters as synchronous `/v2/search`. For pagination with `thread_id`, send only `limit` and optionally `offset`; search or filter parameters return HTTP 400.
 
+        Scoring, result order and response fields follow `/v2/search`: `profile_scoring` is accepted but currently ignored, and `insights` controls explanations. This endpoint returns completed results through polling or a callback, not a stream of partial candidates.
+
         ### Async search callbacks
 
         A new asynchronous search returns HTTP 202 with `task_id`, `uuid` (the same identifier), and `thread_id`. A cached thread result can return HTTP 200 immediately. Use `async=true` on `/v2/search`; `/v2/search/submit` is asynchronous by default.
@@ -1141,10 +1160,13 @@ paths:
                   type: integer
                   minimum: 1
                   description: Synonym of time_budget. Target search time in seconds, with the same defaults and validation (30 seconds for fast; 300 seconds and a 60-second minimum for pro). If both parameters are supplied, time_budget takes precedence.
+                profile_scoring:
+                  type: boolean
+                  description: 'Compatibility parameter, currently ignored. Fast and Pro searches score and filter candidates automatically. Setting this to true or false, or omitting it, does not change scoring, filtering, result order, or whether score is returned.'
                 insights:
                   type: boolean
                   default: true
-                  description: 'Enable detailed insights and analysis for search results. This includes scores for each of query requirements along with quotes from profiles that match subqueries. Check out `insights` output fields for details. This may be helpful if you share search results with users and want to provide deeper explanations of why profiles are relevant. If your product only needs highly relevant profiles without explanations, use `{"insights": false, "profile_scoring": true}` **Cost: 1 credit per candidate**'
+                  description: 'Add explanations, quotes and per-requirement match labels in `insights`. Candidate scoring and filtering still run with `insights=false`; ranking probabilities can be returned independently of this option. Use `{"insights": false}` when you do not need explanations. **Cost: 1 credit per candidate**'
                 insights_items:
                   type: array
                   items:
@@ -6057,7 +6079,7 @@ components:
                       example: "I have 3+ years of experience in software development."
         score:
           type: integer
-          description: Numerical score representing candidate relevance. 4 - great candidate, 3 - good candidate, 2 - worth reviewing, 1 - irrelevant candidate. We don't return irrelevant candidates (score=1) when `profile_scoring=true` unless docid_whitelist is provided.
+          description: 'Coarse relevance category on a 1–4 scale. Fast and Pro people searches return this independently of profile_scoring. A score of 4 means all mandatory requirements received full-match decisions, or none were supplied; it is not a 100% match probability. Candidates can share score=4 while their ranking scores differ. Preserve the API result order. Low-confidence fallback results can have lower scores.'
           example: 4
           enum: [1, 2, 3, 4]
         credits_charged:

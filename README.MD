@@ -103,6 +103,27 @@ results = client.search(V2SearchRequest(
 ))
 ```
 
+## Search scoring and result order
+
+Fast and Pro searches score and filter candidates automatically. `profile_scoring` is accepted for compatibility, but currently has no effect: setting it to `True`, setting it to `False`, or omitting it does not change scoring, filtering, result order, or whether `score` is returned.
+
+`score` is a coarse category on a 1–4 scale. A score of `4` means all mandatory requirements received full-match decisions, or no mandatory requirements were supplied. It does not mean a 100% match to every requirement. Fast uses binary mandatory-requirement decisions, so accepted candidates commonly all have `score=4` while their ranking scores differ. Preserve the API's result order rather than sorting by this coarse score.
+
+Current raw HTTP responses can include the following ranking fields when available:
+
+| Field | Pro response location | Fast response location |
+| --- | --- | --- |
+| `ultra_match_probabilities` | `search_results[]` | `search_results[].profile` |
+| `ultra_requirement_importances` | `search_results[]` | `search_results[].profile` |
+| `ultra_final_score` | `search_results[]` | `search_results[].profile` |
+| `profile_match_score` | `search_results[]` | `search_results[].profile` |
+
+`ultra_match_probabilities` contains estimated match probabilities between 0 and 1, in the order of the response's `search_requirements`. `ultra_requirement_importances` contains the corresponding positive weights. `profile_match_score` is their weighted sum; `ultra_final_score` normalizes that sum to a 0–100 scale. Pro results are ordered by `ultra_final_score`. These fields are independent of `profile_scoring` and can be present with `insights=False`.
+
+The current Python SDK's `Profile` and `ScoredProfile` models do not declare these ranking fields and ignore unknown fields during parsing. Read the raw HTTP JSON if you need them; they are not available through the typed search response.
+
+Use `insights=True` to request explanations, quotes and per-requirement match labels. With `insights=False`, candidate scoring and filtering still run, but those explanations are omitted.
+
 ## Count matching profiles (/v2/search/count)
 
 Use `search_count` to count profiles without returning profile records. It accepts a natural-language `query`, structured `search_requirements`, or `custom_filters`. Filters can be combined with either natural-language input.
@@ -422,113 +443,13 @@ The response contains:
 
 Company enrichment costs `company_enrichment_cost` (1 credit by default). Use `GET /v1/user` to retrieve the effective cost for your account.
 
-## OpenAI-Compatible Chat Completions (/v1/chat/completions)
+## Streaming availability
 
-The Pearch API provides an OpenAI-compatible chat completions endpoint that supports streaming search results. This endpoint accepts the standard OpenAI format and returns search results in a streaming format.
+`/v1/chat/completions` is unavailable and returns HTTP 404. The OpenAI-compatible examples and `stream_profiles`, `profiles_batch_size` and `final_result` options previously shown here do not apply to the current search API.
 
-### Basic Usage
+The chat-agent endpoint `/threads/{id}/runs/stream` streams search-state updates after completed search stages. Updates can contain candidate profiles, but they do not deliver each candidate immediately after discovery. In Pro, the search stage can complete its full candidate search before profiles appear in the stream. This endpoint is not a replacement for streaming individual search results.
 
-```python
-from openai import OpenAI
-
-client = OpenAI(
-    base_url="https://api.pearch.ai/",
-    api_key="your-api-key"
-)
-
-# Streaming search
-stream = client.chat.completions.create(
-    model="pearch",
-    stream=True,
-    messages=[{"role": "user", "content": "software engineers at Google with 10 years of experience"}],
-    extra_body={
-        "limit": 5,
-        "type": "fast"
-    }
-)
-
-for chunk in stream:
-    if chunk.choices and len(chunk.choices) > 0:
-        delta = chunk.choices[0].delta
-        if delta and delta.content:
-            print(delta.content, end="", flush=True)
-        if chunk.choices[0].finish_reason is not None:
-            print(f"\nFinished: {chunk.choices[0].finish_reason}")
-```
-
-### Streaming Options
-
-The endpoint supports several streaming modes via `extra_body`:
-
-- **`stream_profiles`**: Control how profiles are streamed
-  - `"full"`: Stream each profile as it's found
-  - `"batch"`: Stream profiles in batches
-  - `None`: Don't stream profiles (default)
-
-- **`profiles_batch_size`**: Number of profiles per batch (default: 10)
-
-- **`final_result`**: Include full result in final chunk (default: True)
-
-### Advanced Parameters
-
-All search parameters can be passed via `extra_body`:
-
-```python
-stream = client.chat.completions.create(
-    model="pearch",
-    stream=True,
-    messages=[{"role": "user", "content": "software engineers in California"}],
-    extra_body={
-        "limit": 10,
-        "type": "pro",  # or "fast"
-        "stream_profiles": "batch",
-        "profiles_batch_size": 5,
-        "final_result": True,
-        "insights": True,
-        "high_freshness": True,
-        "reveal_emails": True,
-        "reveal_phones": True,
-        "filter_out_no_emails": True,
-        "filter_out_no_phones": True,
-        "profile_scoring": True,
-        "strict_filters": False,
-        "custom_filters": {}
-    }
-)
-```
-
-### Thread Continuation
-
-You can continue a search thread by passing `thread_id`:
-
-```python
-# First request
-stream1 = client.chat.completions.create(
-    model="pearch",
-    stream=True,
-    messages=[{"role": "user", "content": "software engineers at Google"}],
-    extra_body={"limit": 5, "type": "fast"}
-)
-
-# Extract thread_id from final chunk
-thread_id = None
-for chunk in stream1:
-    if chunk.choices and chunk.choices[0].finish_reason is not None:
-        # Extract thread_id from chunk summary if available
-        break
-
-# Continue with same thread
-stream2 = client.chat.completions.create(
-    model="pearch",
-    stream=True,
-    messages=[{"role": "user", "content": "who are at least 30 years old"}],
-    extra_body={"limit": 5, "thread_id": thread_id, "type": "fast"}
-)
-```
-
-### Note on Streaming
-
-**Important**: The `/v1/chat/completions` endpoint always returns a streaming response (SSE format), even when `stream=False` is specified. You should always use `stream=True` and process the response as a stream.
+For a background search, use [`POST /v2/search` with `async=true`](https://apidocs.pearch.ai/reference/post_v2-search) and a completion webhook or the documented polling flow. These return completed search results; they do not stream partial candidate data.
 
 ## Testing 
 
