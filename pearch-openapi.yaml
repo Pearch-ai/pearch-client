@@ -119,7 +119,11 @@ paths:
                 time_budget:
                   type: integer
                   minimum: 1
-                  description: Target search time budget in seconds. Defaults to 30 for fast search and 300 for pro search. Pro search requires at least 60 seconds.
+                  description: Target search time budget in seconds. Defaults to 30 for fast search and 300 for pro search. Pro search requires at least 60 seconds. Synonym of timeout; time_budget takes precedence if both are supplied.
+                timeout:
+                  type: integer
+                  minimum: 1
+                  description: Synonym of time_budget. Target search time in seconds, with the same defaults and validation (30 seconds for fast; 300 seconds and a 60-second minimum for pro). If both parameters are supplied, time_budget takes precedence.
                 insights:
                   type: boolean
                   default: true
@@ -921,7 +925,11 @@ paths:
                 time_budget:
                   type: integer
                   minimum: 1
-                  description: Target search time budget in seconds. Defaults to 30 for fast search and 300 for pro search. Pro search requires at least 60 seconds.
+                  description: Target search time budget in seconds. Defaults to 30 for fast search and 300 for pro search. Pro search requires at least 60 seconds. Synonym of timeout; time_budget takes precedence if both are supplied.
+                timeout:
+                  type: integer
+                  minimum: 1
+                  description: Synonym of time_budget. Target search time in seconds, with the same defaults and validation (30 seconds for fast; 300 seconds and a 60-second minimum for pro). If both parameters are supplied, time_budget takes precedence.
                 insights:
                   type: boolean
                   default: true

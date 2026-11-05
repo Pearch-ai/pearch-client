@@ -93,13 +93,13 @@ with PearchClient() as client:
     results = client.search(V2SearchRequest(query=QUERY))
 ```
 
-Set `time_budget` to customize the target search time in seconds. When omitted, it defaults to 30 seconds for `type="fast"` and 200 seconds for `type="pro"`:
+Set `timeout` (or its synonym `time_budget`) to customize the target search time in seconds. When omitted, it defaults to 30 seconds for `type="fast"` and 300 seconds for `type="pro"`. Pro search requires at least 60 seconds. If both parameters are supplied, `time_budget` takes precedence:
 
 ```python
 results = client.search(V2SearchRequest(
     query=QUERY,
     type="fast",
-    time_budget=45,
+    timeout=45,
 ))
 ```
 
