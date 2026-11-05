@@ -1640,31 +1640,32 @@ paths:
         **Three levels; send as much as you have:**
 
         1. *Rating.* `rating` is `up`, `down` or `maybe`. This is all a thumbs button needs.
-        2. *Reasons: why.* Up to three `reasons`. Use a preset `code` from
-           `GET /v2/search/feedback/reasons` when one fits, otherwise send your own code. Add
-           `unstated: true` when the reason is a criterion the search did not contain, such as
-           an employer you exclude.
-        3. *Verdicts: which requirements.* Send `verdicts` for the requirements you checked,
-           each with its `requirement_index` and a `verdict`. A recruiter who marks the
-           requirements a profile misses sends `does_not_meet` for each of them.
+        2. *Profile feedback: why.* `profile_feedback` is a string or a list. A string is free
+           text, for example `"15 years of experience, we need 3-5"`. An object carries a
+           `code`: a preset from `GET /v2/search/feedback/reasons` when one fits, otherwise your
+           own code, up to three codes per profile. Add `unstated: true` when the criterion was
+           not in the search request, such as an employer you exclude.
+        3. *Requirement feedback: which requirements.* `requirement_feedback` gives a `verdict`
+           for each requirement you checked, by its `requirement_index`. A recruiter who marks
+           the requirements a profile misses sends `does_not_meet` for each of them.
 
-        **Only verdicts refer to requirements.** `requirement_index` is the position of the
-        requirement in the `/v2/search` response's `search_requirements`, where every entry
-        carries its `requirement_index`. Searches made from a natural-language query list the
-        requirements Pearch parsed from it. You never send requirement text.
-
-        **Free text is always `comment`:** on a reason, on a verdict, or at the top level for
-        the profile as a whole.
+        **Only requirement feedback refers to requirements.** `requirement_index` is the
+        position of the requirement in the `/v2/search` response's `search_requirements`,
+        where every entry carries its `requirement_index`. Searches made from a
+        natural-language query list the requirements Pearch parsed from it. You never send
+        requirement text.
 
         **Each submission replaces the stored feedback** for that `(thread_id, linkedin_slug)`,
-        whoever sends it, so send the rating, reasons and comment together. To send many
-        decisions at once, for example from an ATS, use `POST /v2/search/feedback/batch`.
+        whoever sends it, so send the rating, profile feedback and requirement feedback
+        together. To send many decisions at once, for example from an ATS, use
+        `POST /v2/search/feedback/batch`.
 
         A rejected request returns 400 or 404 with the reason in `status`, for example
         `'rating': rating must be 'up', 'down' or 'maybe'`. String values are trimmed; `rating`,
-        `author_type` and codes are case-insensitive. Unknown fields are rejected;
-        `chat_thread_id`, `search_call_uuid` and `reason` are still accepted as older names for
-        `thread_id`, `search_id` and `comment`.
+        `author_type` and codes are case-insensitive. Unknown fields are rejected. Older names
+        are still accepted: `chat_thread_id` and `search_call_uuid` for `thread_id` and
+        `search_id`, `reasons` and `verdicts` for `profile_feedback` and `requirement_feedback`,
+        and a top-level `comment` or `reason` as a free-text profile feedback item.
       security:
         - bearerAuth: []
       requestBody:
@@ -1675,34 +1676,34 @@ paths:
               $ref: '#/components/schemas/SearchFeedbackInput'
             examples:
               thumbs:
-                summary: A thumbs-down with a comment
+                summary: A thumbs-down with one line of text
                 value:
                   thread_id: "ec191bf9-99ff-4989-8383-c97c71fafb6d"
                   linkedin_slug: "jason-tysl"
                   rating: "down"
-                  comment: "Based in Canada"
-              reasons:
-                summary: Reasons with the requirement the profile misses
+                  profile_feedback: "Based in Canada"
+              profile_feedback:
+                summary: Codes and text, with the requirement the profile misses
                 value:
                   thread_id: "ec191bf9-99ff-4989-8383-c97c71fafb6d"
                   linkedin_slug: "jason-tysl"
                   rating: "down"
-                  reasons:
+                  profile_feedback:
+                    - "Works at our client"
                     - code: "wrong_location"
                     - code: "excluded_employer"
                       unstated: true
-                      comment: "Works at our client"
-                  verdicts:
+                  requirement_feedback:
                     - requirement_index: 1
                       verdict: "does_not_meet"
-              verdicts:
+              requirement_feedback:
                 summary: Verdicts on individual requirements
                 value:
                   thread_id: "ec191bf9-99ff-4989-8383-c97c71fafb6d"
                   linkedin_slug: "jason-tysl"
                   rating: "up"
                   author_type: "agent"
-                  verdicts:
+                  requirement_feedback:
                     - requirement_index: 0
                       verdict: "meets"
                     - requirement_index: 2
@@ -1722,7 +1723,7 @@ paths:
                         example: "success"
                   - $ref: '#/components/schemas/SearchFeedback'
         "400":
-          description: "Invalid request: an invalid value, a preset reason code that does not match the rating, or a requirement index outside the search's requirements. `status` names the field and the rule."
+          description: "Invalid request: an invalid value, a preset code that does not match the rating, or a requirement index outside the search's requirements. `status` names the field and the rule."
         "401":
           description: Invalid API key
         "403":
@@ -1870,10 +1871,10 @@ paths:
                   linkedin_slug: "jason-tysl"
                   rating: "down"
                   author_type: "agent"
-                  reasons:
+                  profile_feedback:
                     - code: "experience_above_max"
                       unstated: true
-                      comment: "Max 12 years, has 15"
+                    - "Max 12 years, has 15"
                 - thread_id: "ec191bf9-99ff-4989-8383-c97c71fafb6d"
                   linkedin_slug: "ada-lovelace"
                   rating: "up"
@@ -1928,7 +1929,7 @@ paths:
       tags:
         - Search Feedback
       description: |
-        Preset reason codes for `reasons[].code` in `POST /v2/search/feedback`. Use a preset when
+        Preset codes for `profile_feedback[].code` in `POST /v2/search/feedback`. Use a preset when
         one fits; any other code is accepted as your own. Show `label` to users and
         `description` as a hint, and offer the codes whose `rating` matches the user's rating
         (both lists for `maybe`). A preset code with the opposite rating is rejected.
@@ -2697,7 +2698,14 @@ components:
         must_have:
           type: boolean
           default: false
-    SearchFeedbackReason:
+    SearchProfileFeedbackItem:
+      description: Free text as a plain string, or an object with a code.
+      oneOf:
+        - type: string
+          maxLength: 500
+          example: "15 years of experience, we need 3-5"
+        - $ref: '#/components/schemas/SearchProfileFeedbackCode'
+    SearchProfileFeedbackCode:
       type: object
       additionalProperties: false
       required: [code]
@@ -2710,12 +2718,8 @@ components:
         unstated:
           type: boolean
           default: false
-          description: "`true` when the reason is a criterion the search request did not state."
-        comment:
-          type: string
-          maxLength: 500
-          description: Free text about this reason.
-    SearchFeedbackVerdict:
+          description: "`true` when the criterion was not in the search request."
+    SearchRequirementFeedback:
       type: object
       additionalProperties: false
       required: [requirement_index, verdict]
@@ -2761,21 +2765,21 @@ components:
           type: string
           enum: [up, down, maybe]
           description: "`maybe` marks a borderline profile."
-        reasons:
-          type: array
-          maxItems: 3
-          items:
-            $ref: '#/components/schemas/SearchFeedbackReason'
-        verdicts:
+        profile_feedback:
+          description: Why the profile fits or not, as one string or a list; up to three items with a code. `reasons` is accepted as its older name.
+          oneOf:
+            - type: string
+              maxLength: 500
+            - type: array
+              maxItems: 10
+              items:
+                $ref: '#/components/schemas/SearchProfileFeedbackItem'
+        requirement_feedback:
           type: array
           maxItems: 50
-          description: Verdicts on the requirements you checked; each requirement at most once.
+          description: Verdicts on the requirements you checked; each requirement at most once. `verdicts` is accepted as its older name.
           items:
-            $ref: '#/components/schemas/SearchFeedbackVerdict'
-        comment:
-          type: string
-          nullable: true
-          description: Free text about the profile as a whole. `reason` is accepted as its older name.
+            $ref: '#/components/schemas/SearchRequirementFeedback'
         author_type:
           type: string
           enum: [person, agent, mixed]
@@ -2800,17 +2804,15 @@ components:
         rating:
           type: string
           enum: [up, down, maybe]
-        reasons:
+        profile_feedback:
+          type: array
+          description: Free text first, as one string, then the items with a code.
+          items:
+            $ref: '#/components/schemas/SearchProfileFeedbackItem'
+        requirement_feedback:
           type: array
           items:
-            $ref: '#/components/schemas/SearchFeedbackReason'
-        verdicts:
-          type: array
-          items:
-            $ref: '#/components/schemas/SearchFeedbackVerdict'
-        comment:
-          type: string
-          nullable: true
+            $ref: '#/components/schemas/SearchRequirementFeedback'
         requirements:
           type: array
           nullable: true
