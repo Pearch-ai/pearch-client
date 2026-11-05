@@ -315,6 +315,217 @@ paths:
         "429":
           description: Rate limit exceeded. JSON body contains the triggered window, current value, and limit.
 
+  /v2/search/sql:
+    post:
+      operationId: post_v2-search-sql
+      summary: Search profiles with SQL filters
+      tags:
+      - Search
+      description: 'Search professional profiles using a SQL condition, an optional ranking query, or both. Provide a nonempty
+        `query` or `sql_filter`. With `query`, results are ordered by relevance; filters-only result order is unspecified.
+
+
+        See the [SQL language and profile schema](https://apidocs.pearch.ai/reference/sql-search-schema) for supported fields,
+        operators, and examples. Send one SQL condition rather than a complete top-level SELECT statement. Unsupported fields,
+        constructs, and request parameters return HTTP 400.
+
+
+        **Cost: 0.5 credits per returned profile, rounded up once per request:** `credits_used = ceil(number_of_profiles_returned
+        × 0.5)`. Balance checks use the requested `limit`; the final charge covers only returned profiles.
+
+
+        This endpoint shares the search rate limit with `/v2/search`: 60 requests per user per 60 seconds by default, subject
+        to organization configuration. Each request is independent; pagination is not supported.
+
+        '
+      security:
+      - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              additionalProperties: false
+              anyOf:
+              - properties:
+                  query:
+                    pattern: \S
+                    type: string
+                required:
+                - query
+              - properties:
+                  sql_filter:
+                    pattern: \S
+                required:
+                - sql_filter
+              properties:
+                query:
+                  default: null
+                  title: Query
+                  description: Optional ranking text. Omit, set to null, or leave blank for filters-only search.
+                  type: string
+                  nullable: true
+                sql_filter:
+                  default: ''
+                  maxLength: 16384
+                  title: Sql Filter
+                  type: string
+                  description: SQL condition that results must satisfy. Supports LOCATION(place, country) and LOCATION(place,
+                    country, radius, unit). Omit or leave empty to apply no SQL filter.
+                limit:
+                  default: 10
+                  maximum: 1000
+                  minimum: 1
+                  title: Limit
+                  type: integer
+              title: SqlSearchParamsV2
+              type: object
+            examples:
+              ranked:
+                summary: Rank experienced US engineers by relevance
+                value:
+                  query: Python backend engineers
+                  sql_filter: location_country_code = 'US' AND total_experience_years >= 5
+                  limit: 10
+              filters_only:
+                summary: Find experienced US profiles using only filters
+                value:
+                  sql_filter: location_country_code = 'US' AND total_experience_years >= 5
+                  limit: 10
+      responses:
+        '200':
+          description: Matching profiles in the standard Pearch search envelope, ranked when query is supplied. Profiles that
+            could not be retrieved are skipped.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - uuid
+                - query
+                - status
+                - search_results
+                - credits_used
+                properties:
+                  uuid:
+                    type: string
+                    format: uuid
+                  query:
+                    type: string
+                    description: The ranking query, or an empty string for filters-only searches.
+                  status:
+                    type: string
+                    enum:
+                    - Done
+                  created_at:
+                    type: number
+                    description: API-call creation time as a UNIX timestamp.
+                  duration:
+                    type: number
+                  user:
+                    type: string
+                  parameters:
+                    additionalProperties: false
+                    anyOf:
+                    - properties:
+                        query:
+                          pattern: \S
+                          type: string
+                      required:
+                      - query
+                    - properties:
+                        sql_filter:
+                          pattern: \S
+                      required:
+                      - sql_filter
+                    properties:
+                      query:
+                        default: null
+                        title: Query
+                        description: Optional ranking text. Omit, set to null, or leave blank for filters-only search.
+                        type: string
+                        nullable: true
+                      sql_filter:
+                        default: ''
+                        maxLength: 16384
+                        title: Sql Filter
+                        type: string
+                        description: SQL condition that results must satisfy. Supports LOCATION(place, country) and LOCATION(place,
+                          country, radius, unit). Omit or leave empty to apply no SQL filter.
+                      limit:
+                        default: 10
+                        maximum: 1000
+                        minimum: 1
+                        title: Limit
+                        type: integer
+                    title: SqlSearchParamsV2
+                    type: object
+                  search_results:
+                    type: array
+                    items:
+                      type: object
+                      required:
+                      - docid
+                      - profile
+                      properties:
+                        docid:
+                          type: string
+                        profile:
+                          $ref: '#/components/schemas/SqlSearchProfile'
+                    description: Profiles ordered by relevance when query is supplied. Filters-only order is unspecified. Profiles
+                      that could not be retrieved are skipped.
+                  credits_used:
+                    type: integer
+                    description: ceil(returned profiles × 0.5) credits.
+                  credits_remaining:
+                    type: integer
+                  credits_breakdown:
+                    type: object
+              example:
+                uuid: a4862482-9067-4acd-b229-74a44de26a99
+                query: Python backend engineers
+                status: Done
+                search_results:
+                - docid: example-engineer
+                  profile:
+                    linkedin_slug: example-engineer
+                    first_name: Alex
+                    title: Backend Engineer
+                    skills:
+                    - Distributed systems
+                    canonical_skills:
+                    - Python
+                    experiences:
+                    - company_info:
+                        name: Example
+                        domain: example.com
+                      company_roles:
+                      - title: Backend Engineer
+                        start_date: '2022-01-01'
+                credits_used: 1
+                credits_remaining: 99
+                credits_breakdown:
+                  version: 1
+                  total: 1
+                  items:
+                  - component: search
+                    data_point_type: profile
+                    quantity: 1
+                    unit_cost: 0.5
+                    credits: 1
+        '400':
+          description: Invalid parameters or SQL
+        '402':
+          description: Insufficient credits
+        '403':
+          description: Invalid credentials or access denied
+        '429':
+          description: Search rate limit exceeded
+        '500':
+          description: Internal error
+        '502':
+          description: Search service error
+
   /v2/search/parse:
     post:
       operationId: post_v2-search-parse
@@ -2680,6 +2891,569 @@ paths:
 
 components:
   schemas:
+    SqlSearchProfile:
+      properties:
+        id:
+          default: null
+          title: Id
+          type: string
+          nullable: true
+        docid:
+          default: null
+          title: Docid
+          type: string
+          nullable: true
+        linkedin_slug:
+          default: null
+          title: Linkedin Slug
+          type: string
+          nullable: true
+        first_name:
+          default: null
+          title: First Name
+          type: string
+          nullable: true
+        middle_name:
+          default: null
+          title: Middle Name
+          type: string
+          nullable: true
+        last_name:
+          default: null
+          title: Last Name
+          type: string
+          nullable: true
+        picture_url:
+          default: null
+          title: Picture Url
+          type: string
+          nullable: true
+        title:
+          default: null
+          title: Title
+          type: string
+          nullable: true
+        canonical_title:
+          description: Canonical title labels for the profile headline.
+          title: Canonical Title
+          items:
+            type: string
+          type: array
+          nullable: true
+        summary:
+          default: null
+          title: Summary
+          type: string
+          nullable: true
+        gender:
+          default: null
+          title: Gender
+          type: string
+          nullable: true
+        is_decision_maker:
+          default: null
+          title: Is Decision Maker
+          type: number
+          nullable: true
+        languages:
+          title: Languages
+          items:
+            $ref: '#/components/schemas/Language'
+          type: array
+          nullable: true
+        inferred_languages:
+          title: Inferred Languages
+          items:
+            $ref: '#/components/schemas/Language'
+          type: array
+          nullable: true
+        location:
+          default: null
+          title: Location
+          type: string
+          nullable: true
+        location_coordinates:
+          properties:
+            country_code:
+              default: null
+              title: Country Code
+              type: string
+              nullable: true
+            lng:
+              default: null
+              title: Lng
+              type: number
+              nullable: true
+            lat:
+              default: null
+              title: Lat
+              type: number
+              nullable: true
+          title: Location
+          type: object
+          default: null
+          nullable: true
+        location_country_code:
+          default: null
+          title: Location Country Code
+          type: string
+          nullable: true
+        location_state_code:
+          default: null
+          title: Location State Code
+          type: string
+          nullable: true
+        location_regions:
+          default: null
+          title: Location Regions
+          items:
+            type: string
+          type: array
+          nullable: true
+        location_is_eu:
+          default: null
+          title: Location Is Eu
+          type: boolean
+          nullable: true
+        is_top_universities:
+          default: null
+          title: Is Top Universities
+          type: boolean
+          nullable: true
+        is_opentowork:
+          default: null
+          title: Is Opentowork
+          type: boolean
+          nullable: true
+        is_hiring:
+          default: null
+          title: Is Hiring
+          type: boolean
+          nullable: true
+        total_experience_years:
+          default: null
+          title: Total Experience Years
+          type: number
+          nullable: true
+        estimated_age:
+          default: null
+          title: Estimated Age
+          type: number
+          nullable: true
+        profile_created_date:
+          default: null
+          title: Profile Created Date
+          format: date
+          type: string
+          nullable: true
+        github:
+          properties:
+            handle:
+              default: null
+              title: Handle
+              type: string
+              nullable: true
+            url:
+              default: null
+              title: Url
+              type: string
+              nullable: true
+            source:
+              default: null
+              title: Source
+              type: string
+              nullable: true
+            declared_linkedin_matches:
+              default: null
+              title: Declared Linkedin Matches
+              type: boolean
+              nullable: true
+            name:
+              default: null
+              title: Name
+              type: string
+              nullable: true
+            company:
+              default: null
+              title: Company
+              type: string
+              nullable: true
+            location:
+              default: null
+              title: Location
+              type: string
+              nullable: true
+            bio:
+              default: null
+              title: Bio
+              type: string
+              nullable: true
+            is_hireable:
+              default: null
+              title: Is Hireable
+              type: boolean
+              nullable: true
+            account_created_at:
+              default: null
+              title: Account Created At
+              format: date
+              type: string
+              nullable: true
+            followers:
+              default: null
+              title: Followers
+              type: integer
+              nullable: true
+            public_repos:
+              default: null
+              title: Public Repos
+              type: integer
+              nullable: true
+            commits_12m:
+              default: null
+              title: Commits 12M
+              type: integer
+              nullable: true
+            pull_requests_12m:
+              default: null
+              title: Pull Requests 12M
+              type: integer
+              nullable: true
+            reviews_12m:
+              default: null
+              title: Reviews 12M
+              type: integer
+              nullable: true
+            issues_12m:
+              default: null
+              title: Issues 12M
+              type: integer
+              nullable: true
+            programming_languages:
+              title: Programming Languages
+              items:
+                type: string
+              type: array
+              nullable: true
+            organizations:
+              title: Organizations
+              items:
+                type: string
+              type: array
+              nullable: true
+            pinned_repos:
+              title: Pinned Repos
+              items:
+                type: string
+              type: array
+              nullable: true
+            oss_contributions:
+              title: Oss Contributions
+              items:
+                properties:
+                  repo:
+                    default: null
+                    title: Repo
+                    type: string
+                    nullable: true
+                  project_name:
+                    default: null
+                    title: Project Name
+                    type: string
+                    nullable: true
+                  github_url:
+                    default: null
+                    title: Github Url
+                    type: string
+                    nullable: true
+                  lang:
+                    default: null
+                    title: Lang
+                    type: string
+                    nullable: true
+                  user_role:
+                    default: null
+                    title: User Role
+                    type: string
+                    nullable: true
+                  stars:
+                    default: null
+                    title: Stars
+                    type: integer
+                    nullable: true
+                  forks:
+                    default: null
+                    title: Forks
+                    type: integer
+                    nullable: true
+                  is_archived:
+                    default: null
+                    title: Is Archived
+                    type: boolean
+                    nullable: true
+                  first_commit_date:
+                    default: null
+                    title: First Commit Date
+                    format: date
+                    type: string
+                    nullable: true
+                  last_commit_date:
+                    default: null
+                    title: Last Commit Date
+                    format: date
+                    type: string
+                    nullable: true
+                title: GithubRepository
+                type: object
+              type: array
+              nullable: true
+            pushes_total:
+              default: null
+              title: Pushes Total
+              type: integer
+              nullable: true
+            pull_requests_total:
+              default: null
+              title: Pull Requests Total
+              type: integer
+              nullable: true
+            reviews_total:
+              default: null
+              title: Reviews Total
+              type: integer
+              nullable: true
+            issues_total:
+              default: null
+              title: Issues Total
+              type: integer
+              nullable: true
+            releases_total:
+              default: null
+              title: Releases Total
+              type: integer
+              nullable: true
+            stars_given_total:
+              default: null
+              title: Stars Given Total
+              type: integer
+              nullable: true
+            years_with_pushes:
+              default: null
+              title: Years With Pushes
+              type: integer
+              nullable: true
+            first_event_at:
+              default: null
+              title: First Event At
+              format: date
+              type: string
+              nullable: true
+            last_event_at:
+              default: null
+              title: Last Event At
+              format: date
+              type: string
+              nullable: true
+            last_push_at:
+              default: null
+              title: Last Push At
+              format: date
+              type: string
+              nullable: true
+          title: GithubInfo
+          type: object
+          default: null
+          nullable: true
+        github_handle:
+          default: null
+          title: Github Handle
+          type: string
+          nullable: true
+        github_url:
+          default: null
+          title: Github Url
+          type: string
+          nullable: true
+        programming_languages:
+          title: Programming Languages
+          items:
+            type: string
+          type: array
+          nullable: true
+        github_skills:
+          title: Github Skills
+          items:
+            additionalProperties: true
+            type: object
+          type: array
+          nullable: true
+        github_skills_curated:
+          title: Github Skills Curated
+          items:
+            additionalProperties: true
+            type: object
+          type: array
+          nullable: true
+        github_oss_contributions:
+          title: Github Oss Contributions
+          items:
+            additionalProperties: true
+            type: object
+          type: array
+          nullable: true
+        skills:
+          title: Skills
+          items:
+            type: string
+          type: array
+          nullable: true
+        canonical_skills:
+          title: Canonical Skills
+          items:
+            type: string
+          type: array
+          nullable: true
+        emails:
+          title: Emails
+          items:
+            type: string
+          type: array
+          nullable: true
+        has_phone_numbers:
+          default: null
+          title: Has Phone Numbers
+          type: boolean
+          nullable: true
+        has_emails:
+          default: null
+          title: Has Emails
+          type: boolean
+          nullable: true
+        phone_numbers:
+          title: Phone Numbers
+          items:
+            type: string
+          type: array
+          nullable: true
+        phone_types:
+          title: Phone Types
+          items:
+            type: string
+          type: array
+          nullable: true
+        websites:
+          title: Websites
+          items:
+            type: string
+          type: array
+          nullable: true
+        followers_count:
+          default: null
+          title: Followers Count
+          type: integer
+          nullable: true
+        connections_count:
+          default: null
+          title: Connections Count
+          type: integer
+          nullable: true
+        experiences:
+          title: Experiences
+          items:
+            $ref: '#/components/schemas/CompanyExperienceGroup'
+          type: array
+          nullable: true
+        educations:
+          title: Educations
+          items:
+            $ref: '#/components/schemas/Education'
+          type: array
+          nullable: true
+        awards:
+          title: Awards
+          items:
+            type: string
+          type: array
+          nullable: true
+        certifications:
+          title: Certifications
+          items:
+            $ref: '#/components/schemas/Certification'
+          type: array
+          nullable: true
+        recommendations:
+          title: Recommendations
+          items:
+            $ref: '#/components/schemas/Recommendation'
+          type: array
+          nullable: true
+        activities:
+          title: Activities
+          items:
+            $ref: '#/components/schemas/Activity'
+          type: array
+          nullable: true
+        memberships:
+          title: Memberships
+          items:
+            properties:
+              name:
+                default: null
+                title: Name
+                type: string
+                nullable: true
+              title:
+                default: null
+                title: Title
+                type: string
+                nullable: true
+              beginDate:
+                default: null
+                title: Begindate
+                type: string
+                nullable: true
+            title: Membership
+            type: object
+          type: array
+          nullable: true
+        patents:
+          title: Patents
+          items:
+            $ref: '#/components/schemas/Patent'
+          type: array
+          nullable: true
+        publications:
+          title: Publications
+          items:
+            properties:
+              title:
+                default: null
+                title: Title
+                type: string
+                nullable: true
+              issue:
+                default: null
+                title: Issue
+                type: string
+                nullable: true
+              date:
+                default: null
+                title: Date
+                type: string
+                nullable: true
+            title: Publication
+            type: object
+          type: array
+          nullable: true
+        outreach_message:
+          default: null
+          title: Outreach Message
+          type: string
+          nullable: true
+      type: object
+      description: Profile data returned by SQL search. Company experience is grouped into company_info and company_roles. skills
+        contains free-text skills; canonical_skills contains canonical skill labels.
+
     ResponseSearchRequirement:
       type: object
       properties:
