@@ -155,7 +155,10 @@ paths:
                 filter_out_no_emails:
                   type: boolean
                   default: false
-                  description: "Only return profiles with at least one email address. Profiles will have additional `has_email` field set to true. **Cost: 1 credit per candidate**. Deprecated name: `require_emails`"
+                  description: |
+                    Only return profiles with at least one email address. Profiles will have additional `has_email` field set to true. **Cost: 1 credit per candidate**. Deprecated name: `require_emails`.
+
+                    **Available on Scale with Us. Not included in Free Trial or Self-Service.** This filter can sharply reduce the number of matching candidates. [Contact us](mailto:support@pearch.ai) so we can help configure it for your search. Enabling this filter without access returns HTTP 403 with code `feature_not_enabled`.
                 reveal_emails:
                   type: boolean
                   default: false
@@ -163,11 +166,17 @@ paths:
                 filter_out_no_phones:
                   type: boolean
                   default: false
-                  description: "Only return profiles with at least one phone number. Profiles will have additional `has_phone_numbers` field set to true. **Cost: 1 credit per candidate**. Deprecated name: `require_phone_numbers`"
+                  description: |
+                    Only return profiles with at least one phone number. Profiles will have additional `has_phone_numbers` field set to true. **Cost: 1 credit per candidate**. Deprecated name: `require_phone_numbers`.
+
+                    **Available on Scale with Us. Not included in Free Trial or Self-Service.** This filter can sharply reduce the number of matching candidates. [Contact us](mailto:support@pearch.ai) so we can help configure it for your search. Enabling this filter without access returns HTTP 403 with code `feature_not_enabled`.
                 filter_out_no_phones_or_emails:
                   type: boolean
                   default: false
-                  description: "Only return profiles with at least one phone number OR at least one email address. Useful when you need contact information but either email or phone is acceptable. **Cost: 1 credit per candidate**. Deprecated name: `require_phones_or_emails`"
+                  description: |
+                    Only return profiles with at least one phone number OR at least one email address. Useful when you need contact information but either email or phone is acceptable. **Cost: 1 credit per candidate**. Deprecated name: `require_phones_or_emails`.
+
+                    **Available on Scale with Us. Not included in Free Trial or Self-Service.** This filter can sharply reduce the number of matching candidates. [Contact us](mailto:support@pearch.ai) so we can help configure it for your search. Enabling this filter without access returns HTTP 403 with code `feature_not_enabled`.
                 reveal_phones:
                   type: boolean
                   default: false
@@ -187,13 +196,13 @@ paths:
                   type: array
                   items:
                     type: string
-                  description: List of profile docids to exclude from search results. Use this to filter out profiles that have already been seen or contacted.
+                  description: "List of profile docids to exclude from search results. Use this to filter out profiles that have already been seen or contacted. Plan limit per request: Free Trial 100 profiles; Self-Service 10,000 profiles; Scale with Us 10,000 profiles, with higher limits by agreement. Exceeding the limit returns HTTP 400 with code `docid_blacklist_too_large`."
                   example: ["johndoe", "janedoe"]
                 docid_whitelist:
                   type: array
                   items:
                     type: string
-                  description: List of profile docids to limit search results to. Only profiles with these docids will be returned.
+                  description: "List of profile docids to limit search results to. Only profiles with these docids will be returned. Plan limit per request: Free Trial 100 profiles; Self-Service 10,000 profiles; Scale with Us 10,000 profiles, with higher limits by agreement. Exceeding the limit returns HTTP 400 with code `docid_whitelist_too_large`."
                   example: ["johndoe", "janedoe"]
                 async:
                   type: boolean
@@ -695,10 +704,12 @@ paths:
                 strict_filters:
                   type: boolean
                 docid_blacklist:
+                  description: "Plan limit per request: Free Trial 100 profiles; Self-Service 10,000 profiles; Scale with Us 10,000 profiles, with higher limits by agreement. Exceeding the limit returns HTTP 400 with code `docid_blacklist_too_large`."
                   type: array
                   items:
                     type: string
                 docid_whitelist:
+                  description: "Plan limit per request: Free Trial 100 profiles; Self-Service 10,000 profiles; Scale with Us 10,000 profiles, with higher limits by agreement. Exceeding the limit returns HTTP 400 with code `docid_whitelist_too_large`."
                   type: array
                   items:
                     type: string
@@ -1172,7 +1183,10 @@ paths:
                 filter_out_no_emails:
                   type: boolean
                   default: false
-                  description: "Only return profiles with at least one email address. Profiles will have additional `has_email` field set to true. **Cost: 1 credit per candidate**. Deprecated name: `require_emails`"
+                  description: |
+                    Only return profiles with at least one email address. Profiles will have additional `has_email` field set to true. **Cost: 1 credit per candidate**. Deprecated name: `require_emails`.
+
+                    **Available on Scale with Us. Not included in Free Trial or Self-Service.** This filter can sharply reduce the number of matching candidates. [Contact us](mailto:support@pearch.ai) so we can help configure it for your search. Enabling this filter without access returns HTTP 403 with code `feature_not_enabled`.
                 reveal_emails:
                   type: boolean
                   default: false
@@ -1180,11 +1194,17 @@ paths:
                 filter_out_no_phones:
                   type: boolean
                   default: false
-                  description: "Only return profiles with at least one phone number. Profiles will have additional `has_phone_numbers` field set to true. **Cost: 1 credit per candidate**. Deprecated name: `require_phone_numbers`"
+                  description: |
+                    Only return profiles with at least one phone number. Profiles will have additional `has_phone_numbers` field set to true. **Cost: 1 credit per candidate**. Deprecated name: `require_phone_numbers`.
+
+                    **Available on Scale with Us. Not included in Free Trial or Self-Service.** This filter can sharply reduce the number of matching candidates. [Contact us](mailto:support@pearch.ai) so we can help configure it for your search. Enabling this filter without access returns HTTP 403 with code `feature_not_enabled`.
                 filter_out_no_phones_or_emails:
                   type: boolean
                   default: false
-                  description: "Only return profiles with at least one phone number OR at least one email address. Useful when you need contact information but either email or phone is acceptable. **Cost: 1 credit per candidate**. Deprecated name: `require_phones_or_emails`"
+                  description: |
+                    Only return profiles with at least one phone number OR at least one email address. Useful when you need contact information but either email or phone is acceptable. **Cost: 1 credit per candidate**. Deprecated name: `require_phones_or_emails`.
+
+                    **Available on Scale with Us. Not included in Free Trial or Self-Service.** This filter can sharply reduce the number of matching candidates. [Contact us](mailto:support@pearch.ai) so we can help configure it for your search. Enabling this filter without access returns HTTP 403 with code `feature_not_enabled`.
                 reveal_phones:
                   type: boolean
                   default: false
@@ -1204,13 +1224,13 @@ paths:
                   type: array
                   items:
                     type: string
-                  description: List of profile docids to exclude from search results. Use this to filter out profiles that have already been seen or contacted.
+                  description: "List of profile docids to exclude from search results. Use this to filter out profiles that have already been seen or contacted. Plan limit per request: Free Trial 100 profiles; Self-Service 10,000 profiles; Scale with Us 10,000 profiles, with higher limits by agreement. Exceeding the limit returns HTTP 400 with code `docid_blacklist_too_large`."
                   example: ["johndoe", "janedoe"]
                 docid_whitelist:
                   type: array
                   items:
                     type: string
-                  description: List of profile docids to limit search results to. Only profiles with these docids will be returned.
+                  description: "List of profile docids to limit search results to. Only profiles with these docids will be returned. Plan limit per request: Free Trial 100 profiles; Self-Service 10,000 profiles; Scale with Us 10,000 profiles, with higher limits by agreement. Exceeding the limit returns HTTP 400 with code `docid_whitelist_too_large`."
                   example: ["johndoe", "janedoe"]
                 webhook_url:
                   type: string
@@ -5052,6 +5072,9 @@ components:
       type: object
       description: |
         Custom filters in JSON format for advanced filtering. Omit the parameter to use default filtering logic.
+
+        **Available on Scale with Us. Not included in Free Trial or Self-Service.** Custom filters can sharply reduce the number of matching candidates and exclude relevant people. [Contact us](mailto:support@pearch.ai) so we can help configure them for your search. Using restricted custom filters without access returns HTTP 403 with code `feature_not_enabled`. Natural-language `query` and `search_requirements` remain available on all plans.
+
         Format: `{"filter_name1": ["value1", "value2"], "filter_name2": ["value3", "value4"], ...}`. 
         
         Filtering logic: Conditions between different keys are joined with "AND", so all conditions must pass. Within each condition, we always use "OR". For example, `{"titles": ["swe", "mle"]}` means the profile must have either "swe" OR "mle" as a title. If you specify multiple keys like `{"titles": ["swe", "mle"], "locations": ["San Francisco"]}`, the profile must match at least one title (swe OR mle) AND be in San Francisco.
