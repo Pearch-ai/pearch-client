@@ -25,6 +25,8 @@ pip install -e git+https://github.com/Pearch-ai/pearch-client#egg=pearch-client
 
 Check out API documentation: https://apidocs.pearch.ai/reference/post_v2-search
 
+For coordinates and radius in Fast search, see [Search by coordinates and radius](https://apidocs.pearch.ai/reference/post_v2-search#search-by-coordinates-and-radius). The guide includes examples using `search_requirements` and `custom_filters.location_coordinates`, with distance units and how radius areas combine with other location filters.
+
 Candidate profiles can include the following location fields when available:
 
 ```json
