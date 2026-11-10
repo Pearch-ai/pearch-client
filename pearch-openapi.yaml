@@ -36,11 +36,19 @@ paths:
         - Use the custom_filters parameter and map some or all structured parts to it. This gives you more control over filtering.
 
         Use parameters to control tradeoffs between speed and quality. Here are some recipes:        
-        - For highest quality results (30-180 seconds) use pro search with insights and profile scoring enabled: `{"query": "<YOUR QUERY HERE>", "type": "pro", "insights": true, "profile_scoring": true}`
-        - For medium to high quality results use "fast" search (<50s). `{"query": "<YOUR QUERY HERE>", "type": "fast", "insights": true, "profile_scoring": true}`
+        - For highest quality results (30-180 seconds) use pro search with insights enabled: `{"query": "<YOUR QUERY HERE>", "type": "pro", "insights": true}`
+        - For medium to high quality results use "fast" search (<50s). `{"query": "<YOUR QUERY HERE>", "type": "fast", "insights": true}`
         - For pagination, pass the previous response's `thread_id` with only `limit` and optionally `offset`. Do not resend or change search/filter parameters; including them with `thread_id` returns HTTP 400.
 
-        Results are generally returned in the order of decreasing relevancy. However, you may notice results with out of order `score` values in some cases especially when requesting large number of results. It should be safe to use stable sorting by `score` field on the client side in this cases. Note that `score` field is only calculated and returned when `profile_scoring=true`.
+        ### Scoring and result order
+
+        Fast and Pro always evaluate candidate relevance. The optional `profile_scoring` parameter is accepted for backward compatibility but ignored: `true`, `false`, and omitting it do not change scoring, filtering, ranking, or whether `score` is returned. Setting it to `false` does not skip scoring or make the search faster. The legacy `type: "superfast"` value is an alias for Fast, with insights off by default; it does not disable scoring.
+
+        The public `score` is a coarse 1–4 grade, not the full ranking value. Fast's current binary scoring path checks whether candidates pass each mandatory requirement. Candidates that pass all mandatory requirements receive `score: 4`; candidates that fail a mandatory requirement receive `score: 1` and are rejected by that path. A page of only 4s is therefore expected and does not mean all candidates are equally relevant. Optional requirements can affect ranking even when they do not change this grade. Low-confidence fill results and other scoring paths can have different grades.
+
+        Fast's binary scoring path ranks accepted candidates using a more detailed internal match score. Pro orders results by its final relevance score. Preserve the API's returned order; sorting only by the public `score` does not reproduce the full ranking. Changing `profile_scoring` does not set a minimum-score filter.
+
+        Per-requirement explanations in `insights` are controlled separately by `insights` and `insights_items`, not by `profile_scoring`. Use `insights: false` when explanations are not needed; candidate scoring and filtering still run.
 
         Check out other parameters below to adjust speed vs quality and additional data that can be returned by the endpoint. 
 
@@ -127,7 +135,10 @@ paths:
                 insights:
                   type: boolean
                   default: true
-                  description: 'Enable detailed insights and analysis for search results. This includes scores for each of query requirements along with quotes from profiles that match subqueries. Check out `insights` output fields for details. This may be helpful if you share search results with users and want to provide deeper explanations of why profiles are relevant. If your product only needs highly relevant profiles without explanations, use `{"insights": false, "profile_scoring": true}` **Cost: 1 credit per candidate**'
+                  description: 'Enable detailed insights and analysis for search results, including per-requirement explanations and supporting profile quotes. See the `insights` output fields for details. Use `insights: false` if your product only needs relevant profiles without explanations; scoring, filtering, and ranking still run. This setting is independent of the ignored `profile_scoring` parameter. **Cost: 1 credit per candidate**'
+                profile_scoring:
+                  type: boolean
+                  description: 'Accepted for backward compatibility and ignored. Fast and Pro always evaluate candidate relevance and return `score`, whether this parameter is true, false, or omitted. It does not control result filtering, order, per-requirement insights, or a minimum-score threshold. Omit it in new integrations.'
                 insights_items:
                   type: array
                   items:
@@ -4806,7 +4817,10 @@ components:
                       example: "I have 3+ years of experience in software development."
         score:
           type: integer
-          description: Numerical score representing candidate relevance. 4 - great candidate, 3 - good candidate, 2 - worth reviewing, 1 - irrelevant candidate. We don't return irrelevant candidates (score=1) when `profile_scoring=true` unless docid_whitelist is provided.
+          description: |
+            Coarse candidate relevance grade from 1 to 4, returned independently of `profile_scoring` in Fast and Pro. It is not the full ranking value or a match percentage.
+            Fast's current binary scoring path assigns 4 to candidates that pass all mandatory requirements and rejects candidates that fail one (grade 1). Accepted candidates can therefore all have grade 4 while their internal ranking scores differ. Optional requirements can influence ranking without changing this grade.
+            Other scoring paths can produce intermediate grades: 3 indicates partial mandatory-requirement alignment, and 2 can identify a low-confidence fill result. The grade alone is not a universal quality threshold across search modes. Preserve the API's returned order rather than re-ranking by this field.
           example: 4
           enum: [1, 2, 3, 4]
         credits_charged:
