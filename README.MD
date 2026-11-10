@@ -492,7 +492,6 @@ stream = client.chat.completions.create(
         "reveal_phones": True,
         "filter_out_no_emails": True,
         "filter_out_no_phones": True,
-        "profile_scoring": True,
         "strict_filters": False,
         "custom_filters": {}
     }
