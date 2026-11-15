@@ -3847,7 +3847,7 @@ components:
               - type: string
               - $ref: '#/components/schemas/Language'
           description: >-
-            Include profiles by language. Supply an exact name from the [canonical language list](https://gist.github.com/vslaykovsky/6226be891e040939e83a19c3afa0e0d1)
+            Include profiles by language. Supply an exact name from the [canonical language list](https://gist.githubusercontent.com/vslaykovsky/6226be891e040939e83a19c3afa0e0d1/raw/canonical_languages.txt)
             as a string or as the language field of an object with optional minimum proficiency.
             Match the published spelling, case, and whitespace. Values outside the list return HTTP 400.
           example: ["Spanish", {"language": "English", "proficiency": "C1"}]
@@ -3858,7 +3858,7 @@ components:
               - type: string
               - $ref: '#/components/schemas/Language'
           description: >-
-            Exclude profiles by language. Supply an exact name from the [canonical language list](https://gist.github.com/vslaykovsky/6226be891e040939e83a19c3afa0e0d1)
+            Exclude profiles by language. Supply an exact name from the [canonical language list](https://gist.githubusercontent.com/vslaykovsky/6226be891e040939e83a19c3afa0e0d1/raw/canonical_languages.txt)
             as a string or as the language field of an object with optional minimum proficiency.
             Match the published spelling, case, and whitespace. Values outside the list return HTTP 400.
           example: ["French", {"language": "Spanish", "proficiency": "B2"}]
