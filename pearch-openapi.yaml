@@ -38,7 +38,7 @@ paths:
         Use parameters to control tradeoffs between speed and quality. Here are some recipes:        
         - For highest quality results (30-180 seconds) use pro search with insights enabled: `{"query": "<YOUR QUERY HERE>", "type": "pro", "insights": true}`
         - For medium to high quality results use "fast" search (<50s). `{"query": "<YOUR QUERY HERE>", "type": "fast", "insights": true}`
-        - For pagination, pass the previous response's `thread_id` with only `limit` and optionally `offset`. Do not resend or change search/filter parameters; including them with `thread_id` returns HTTP 400.
+        - Reuse `thread_id` to page through saved ranked candidates with `limit` and `offset`. Omitted, empty, and unchanged search criteria are accepted. Per-page options include profile ID lists, liked-profile exclusions, contact filters and reveal options, freshness, insights, response formatting, and a time budget. Start a new search without `thread_id` to change search criteria.
 
         ### Scoring and result order
 
@@ -114,7 +114,7 @@ paths:
                       must_have: false
                 thread_id:
                   type: string
-                  description: "Unique identifier returned by every `/v2/search` call. Reuse it only for pagination by sending `thread_id` with `limit` and optionally `offset`; omit `query` and all search/filter parameters. Adding or changing search/filter parameters, including `query`, `search_requirements`, `custom_filters`, `docid_blacklist`, or `docid_whitelist`, returns HTTP 400. Running a search with the same `thread_id` and same `limit` returns the same results without additional charges."
+                  description: "Unique search thread identifier. Reuse `thread_id` to page through saved ranked candidates with `limit` and `offset`. Omitted, empty, and unchanged search criteria are accepted. Per-page options include profile ID lists, liked-profile exclusions, contact filters and reveal options, freshness, insights, response formatting, and a time budget. Start a new search without `thread_id` to change search criteria."
                   example: "ec191bf9-99ff-4989-8383-c97c71fafb6d"
                 type:
                   type: string
@@ -127,7 +127,7 @@ paths:
                 time_budget:
                   type: integer
                   minimum: 1
-                  description: Target search time budget in seconds. Defaults to 30 for fast search and 300 for pro search. Pro search requires at least 60 seconds. Synonym of timeout; time_budget takes precedence if both are supplied.
+                  description: Target search time budget in seconds. Defaults to 30 for fast search and 300 for pro search. Pro search requires at least 60 seconds. Synonym of timeout; time_budget takes precedence if both are supplied. With thread_id, this budget applies to work for the requested page, such as refresh, contacts, or insights.
                 timeout:
                   type: integer
                   minimum: 1
@@ -242,8 +242,7 @@ paths:
                   thread_id:
                     type: string
                     description: Thread ID for pagination through `/v2/search` or `/v2/search/submit`. If the search is still
-                      in progress, using this `thread_id` returns HTTP 202. Search or filter parameters supplied with `thread_id`
-                      return HTTP 400.
+                      in progress, using this `thread_id` returns HTTP 202. Once the search completes, reuse the thread ID to page its saved candidates.
                     example: 550e8400-e29b-41d4-a716-446655440000
                   status:
                     type: string
@@ -300,12 +299,12 @@ paths:
                     example: false
                   has_more_results:
                     type: boolean
-                    description: Whether this thread can return further results through pagination (`thread_id` with `offset`/`limit`). `true` means the thread still holds unreturned candidates or can still fetch more of them with the same filters; `false` means the matching population has been scanned and a larger `offset` returns no new profiles. Unlike `total_estimate`, which extrapolates the size of the matching population, this reflects what the thread can actually still serve.
+                    description: Whether the thread has more saved ranked candidates for the current page filters. Pagination uses the saved pool without retrieving new candidates. When a page reaches its time budget, check stop_reason for incomplete evaluation.
                     example: true
                   stop_reason:
                     type: string
                     enum: [target_reached, time_budget_exhausted, candidate_pool_exhausted]
-                    description: Why the search stopped evaluating candidates. `target_reached` means the requested number of matching profiles was found. `time_budget_exhausted` means a time or work budget ended the search before the fetched candidates were fully evaluated; paginating on the same `thread_id` continues where it stopped. `candidate_pool_exhausted` means every fetched candidate was evaluated and no further matches remain in this thread; check `has_more_results` to see whether paginating further can still fetch more, otherwise a broader query is needed.
+                    description: Why processing stopped. target_reached means the requested page was filled. time_budget_exhausted means work ended before all requested processing finished. candidate_pool_exhausted means the saved ranked pool has no more results for the page filters.
                     example: target_reached
                   credits_remaining:
                     type: integer
@@ -357,7 +356,7 @@ paths:
         "401":
           description: Invalid API key
         "400":
-          description: "Invalid parameter values. A request that combines `thread_id` with search or filter parameters is rejected with status: `thread_id only supports pagination parameters for this client. Unsupported with thread_id: <field names>`."
+          description: "Invalid parameter values. A page request that changes fixed search parameters returns HTTP 400 with code `unsupported_thread_parameter_changes` and lists every unsupported field supplied in the request."
         "429":
           description: Rate limit exceeded. JSON body contains the triggered window, current value, and limit.
 
