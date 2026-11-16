@@ -38,7 +38,12 @@ paths:
         Use parameters to control tradeoffs between speed and quality. Here are some recipes:        
         - For highest quality results (30-180 seconds) use pro search with insights enabled: `{"query": "<YOUR QUERY HERE>", "type": "pro", "insights": true}`
         - For medium to high quality results use "fast" search (<50s). `{"query": "<YOUR QUERY HERE>", "type": "fast", "insights": true}`
-        - For pagination, pass the previous response's `thread_id` with only `limit` and optionally `offset`. Do not resend or change search/filter parameters; including them with `thread_id` returns HTTP 400.
+
+        ### Pagination
+
+        Send the previous response's `thread_id` with `limit` and `offset` to page through saved ranked candidates. The API applies page filters before the offset. You can change profile ID lists, liked-profile exclusions, contact filters and reveal options, freshness, insights, response formatting, and the time budget for each page.
+
+        Omit fixed search parameters such as `query`, `search_requirements`, and `custom_filters`, or repeat their saved values. Empty fixed parameters are treated as omitted. Start a new search without `thread_id` to change the search criteria or retrieve more candidates.
 
         ### Scoring and result order
 
@@ -114,7 +119,7 @@ paths:
                       must_have: false
                 thread_id:
                   type: string
-                  description: "Unique identifier returned by every `/v2/search` call. Reuse it only for pagination by sending `thread_id` with `limit` and optionally `offset`; omit `query` and all search/filter parameters. Adding or changing search/filter parameters, including `query`, `search_requirements`, `custom_filters`, `docid_blacklist`, or `docid_whitelist`, returns HTTP 400. Running a search with the same `thread_id` and same `limit` returns the same results without additional charges."
+                  description: Identifier from a previous search response. Reuse it to page through saved ranked candidates. Omitted filters and formatting options use their saved settings when available.
                   example: "ec191bf9-99ff-4989-8383-c97c71fafb6d"
                 type:
                   type: string
@@ -148,11 +153,17 @@ paths:
                 high_freshness:
                   type: boolean
                   default: false
-                  description: "Enable real-time profile updates for fresher data. This downloads the most recent copies of profiles directly from source websites in realtime (e.g. Linkedin). If you are ok with profiles that may be a few months outdated, and want to save ~30 seconds, turn off high_freshness. Refreshed roles include `employment_type` when the source provides it. **Cost: 2 credits per candidate**"
+                  description: |
+                    Enable real-time profile updates for fresher data. This downloads the most recent copies of profiles directly from source websites in real time (for example, LinkedIn). Refreshed roles include `employment_type` when the source provides it. **Cost: 2 credits per candidate**.
+
+                    Enabling freshness on a page of a search originally run with freshness disabled refreshes and rechecks saved candidates. The request can return HTTP 409 if the original filters cannot be rechecked.
                 fill_with_low_confidence_results:
                   type: boolean
                   default: false
-                  description: "Fill below-limit responses with low confidence results when profile scoring exhausts candidates before reaching the requested limit. These fallback profiles are marked with their score and remain free for search and scoring. When contact reveal is requested, fallback profiles are enriched like regular results and credits_charged includes only contact data actually returned."
+                  description: |
+                    Fill below-limit responses with low-confidence results when profile scoring exhausts candidates before reaching the requested limit. These fallback profiles are marked with their score and remain free for search and scoring. When contact reveal is requested, fallback profiles are enriched like regular results and `credits_charged` includes only contact data actually returned.
+
+                    On a saved thread, set this to false to exclude saved low-confidence results. Setting it to true requires the original search to have enabled it.
                 custom_filters:
                   $ref: '#/components/schemas/CustomFilters'
                 custom_filters_mode:
@@ -197,12 +208,15 @@ paths:
                   minimum: 1
                   maximum: 1000
                   default: 10
-                  description: The maximum number of search results to return.
+                  description: The maximum number of search results to return. With `thread_id`, omitting it inherits the saved page size.
                 offset:
                   type: integer
                   minimum: 0
                   default: 0
-                  description: The number of search results to skip before returning results. Used for pagination in combination with limit.
+                  description: |
+                    Number of matching saved results to skip. A positive offset requires `thread_id`, and the effective `offset + limit` must be at most 1000. Plan limits can be lower.
+
+                    When omitted, the offset is zero if you supply `limit`. If you omit both, the saved offset is used, or zero if none was saved.
                 docid_blacklist:
                   type: array
                   items:
@@ -215,6 +229,18 @@ paths:
                     type: string
                   description: "List of profile docids to limit search results to. Only profiles with these docids will be returned. Plan limit per request: Free Trial 100 profiles; Self-Service 10,000 profiles; Scale with Us 10,000 profiles, with higher limits by agreement. Exceeding the limit returns HTTP 400 with code `docid_whitelist_too_large`."
                   example: ["johndoe", "janedoe"]
+                exclude_liked_profiles:
+                  type: boolean
+                  description: Exclude profiles previously liked by the authenticated user.
+                short_response:
+                  type: boolean
+                  description: Omit company details from each profile's work history.
+                omit_fields:
+                  type: array
+                  items:
+                    type: string
+                  description: Top-level profile fields to omit. Use `experiences.company_info` to omit company details from work history.
+                  example: ["experiences.company_info"]
                 async:
                   type: boolean
                   default: false
@@ -241,13 +267,11 @@ paths:
                     example: ec191bf9-99ff-4989-8383-c97c71fafb6d
                   thread_id:
                     type: string
-                    description: Thread ID for pagination through `/v2/search` or `/v2/search/submit`. If the search is still
-                      in progress, using this `thread_id` returns HTTP 202. Search or filter parameters supplied with `thread_id`
-                      return HTTP 400.
+                    description: Thread ID for paging through saved results once available. A request for a thread whose first search is still in progress returns HTTP 202.
                     example: 550e8400-e29b-41d4-a716-446655440000
                   status:
                     type: string
-                    description: The current status of the submitted task. Upon submission, the status is always `pending`.
+                    description: Current status of the in-progress task. A newly submitted task starts as `pending`.
                     example: pending
                   message:
                     type: string
@@ -300,12 +324,20 @@ paths:
                     example: false
                   has_more_results:
                     type: boolean
-                    description: Whether this thread can return further results through pagination (`thread_id` with `offset`/`limit`). `true` means the thread still holds unreturned candidates or can still fetch more of them with the same filters; `false` means the matching population has been scanned and a larger `offset` returns no new profiles. Unlike `total_estimate`, which extrapolates the size of the matching population, this reflects what the thread can actually still serve.
+                    description: |
+                      On an initial search, `true` can indicate unreturned profiles, candidates awaiting processing, or remaining retrieval work.
+
+                      On a saved page, `true` indicates an additional matching saved candidate or that candidate filtering ran out of time before the API could determine whether more matched. Check `stop_reason` for incomplete page processing.
                     example: true
                   stop_reason:
                     type: string
                     enum: [target_reached, time_budget_exhausted, candidate_pool_exhausted]
-                    description: Why the search stopped evaluating candidates. `target_reached` means the requested number of matching profiles was found. `time_budget_exhausted` means a time or work budget ended the search before the fetched candidates were fully evaluated; paginating on the same `thread_id` continues where it stopped. `candidate_pool_exhausted` means every fetched candidate was evaluated and no further matches remain in this thread; check `has_more_results` to see whether paginating further can still fetch more, otherwise a broader query is needed.
+                    description: |
+                      Why the initial search or saved page stopped.
+
+                      - `target_reached` means the initial search met its result target, or the saved page filled and another matching saved candidate is available.
+                      - `time_budget_exhausted` means evaluation ended with work incomplete, for example because of a time or work limit.
+                      - `candidate_pool_exhausted` means the initial search stopped due to candidate availability or low yield, or the saved pool has no further matches for the page filters. A full final page can have this reason.
                     example: target_reached
                   credits_remaining:
                     type: integer
@@ -357,7 +389,9 @@ paths:
         "401":
           description: Invalid API key
         "400":
-          description: "Invalid parameter values. A request that combines `thread_id` with search or filter parameters is rejected with status: `thread_id only supports pagination parameters for this client. Unsupported with thread_id: <field names>`."
+          description: Invalid request parameters. Changing fixed search parameters or enabling low-confidence fill for the first time on a saved thread returns `unsupported_thread_parameter_changes` and lists the unsupported changes.
+        "409":
+          description: The thread has no reusable search state, or its saved filters cannot be rechecked for a requested profile refresh.
         "429":
           description: Rate limit exceeded. JSON body contains the triggered window, current value, and limit.
 
