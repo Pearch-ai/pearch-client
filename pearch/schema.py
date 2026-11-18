@@ -177,11 +177,45 @@ class CompanyExperienceGroup(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
 
+class HealthcareTaxonomy(BaseModel):
+    code: str | None = None
+    display_name: str | None = None
+    classification: str | None = None
+    specialization: str | None = None
+    taxonomy_group: str | None = None
+    is_primary: bool | None = None
+    license_state: str | None = None
+    license_number: str | None = None
+    model_config = ConfigDict(extra="ignore")
+
+
+class HealthcareLicense(BaseModel):
+    state_code: str | None = None
+    license_number: str | None = None
+    model_config = ConfigDict(extra="ignore")
+
+
+class HealthcareInfo(BaseModel):
+    primary_taxonomy_code: str | None = None
+    primary_specialty: str | None = None
+    primary_classification: str | None = None
+    occupation_group: str | None = None
+    credentials: List[str] | None = None
+    is_sole_proprietor: bool | None = None
+    enumeration_date: Date | None = None
+    last_updated_date: Date | None = None
+    snapshot_date: Date | None = None
+    taxonomies: List[HealthcareTaxonomy] | None = None
+    licenses: List[HealthcareLicense] | None = None
+    model_config = ConfigDict(extra="ignore")
+
+
 class Profile(BaseModel):
     docid: str | None = None
     linkedin_slug: str | None = None
     npi: str | None = None
     sources: List[str] | None = None
+    healthcare: HealthcareInfo | None = None
     first_name: str | None = None
     middle_name: str | None = None
     last_name: str | None = None

@@ -117,10 +117,12 @@ results = client.search(V2SearchRequest(
     reveal_phones=True,
 ))
 for result in results.search_results:
-    print(result.docid, result.profile.npi, result.profile.title)
+    healthcare = result.profile.healthcare
+    licenses = [(item.state_code, item.license_number) for item in healthcare.licenses or []] if healthcare else []
+    print(result.docid, result.profile.npi, result.profile.title, licenses)
 ```
 
-The `healthcare` source adds about 6.8 million US healthcare providers from the CMS NPPES registry who have no matching LinkedIn profile: physicians, nurse practitioners, physician assistants, dentists, pharmacists, therapists, and other providers with an NPI. A registry record has `docid` `npi:<NPI>`, the `npi` field, and a null `linkedin_slug`; it has the provider's specialty, practice location, and state licenses, but no work history. `reveal_phones` returns the registry's practice phone when no other provider shares it, plus any phones and emails our contact providers find. Expect fewer contacts than on LinkedIn profiles. Retrieve a single registry record with `V1ProfileRequest(docid="npi:<NPI>")`.
+The `healthcare` source adds about 6.8 million US healthcare providers from the CMS NPPES registry who have no matching LinkedIn profile: physicians, nurse practitioners, physician assistants, dentists, pharmacists, therapists, and other providers with an NPI. A registry record has `docid` `npi:<NPI>`, the `npi` field, and a null `linkedin_slug`; it has the provider's specialty and practice location but no work history. `profile.healthcare` lists every specialty reported to the registry with its NUCC taxonomy code, license state, and license number, plus credentials and the date the NPI was issued. `reveal_phones` returns the registry's practice phone when no other provider shares it, plus any phones and emails our contact providers find. Expect fewer contacts than on LinkedIn profiles. Retrieve a single registry record with `V1ProfileRequest(docid="npi:<NPI>")`.
 
 **The healthcare source is in beta.** Coverage, ranking, and contact enrichment for registry records may change, and you may run into bugs. Please report problems to [support@pearch.ai](mailto:support@pearch.ai).
 

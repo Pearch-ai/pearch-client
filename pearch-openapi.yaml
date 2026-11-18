@@ -45,7 +45,7 @@ paths:
 
         The `healthcare` source adds about 6.8 million US healthcare providers from the CMS NPPES registry who have no matching LinkedIn profile: physicians, nurse practitioners, physician assistants, dentists, pharmacists, therapists, and other providers with an NPI. Most registered nurses have no NPI, so few of them are in the registry.
 
-        A registry record has `docid` `npi:<NPI>`, the `npi` field, and a null `linkedin_slug`. It carries the provider's specialty as `title`, the practice location, and the state licenses reported to the registry in `certifications`. It has no work history.
+        A registry record has `docid` `npi:<NPI>`, the `npi` field, and a null `linkedin_slug`. It carries the provider's specialty as `title` and the practice location. The `healthcare` object lists every specialty reported to the registry with its NUCC taxonomy code, license state, and license number, plus credentials and the date the NPI was issued. It has no work history.
 
         With `reveal_phones`, a registry record returns the practice phone listed in the registry when no other provider shares that number, plus any phones and emails our contact providers find for the person. Expect fewer contacts than on LinkedIn profiles. Registry records cost the same as other profiles. When a registry record and a LinkedIn profile in the same results have the same name and state, only the LinkedIn profile is returned.
 
@@ -4607,6 +4607,99 @@ components:
           items:
             $ref: '#/components/schemas/Experience'
 
+    HealthcareInfo:
+      type: object
+      nullable: true
+      description: Registry data of a US healthcare provider, set on registry records from the `healthcare` source (beta). It comes from the CMS NPPES registry as of `snapshot_date`.
+      properties:
+        primary_taxonomy_code:
+          type: string
+          description: NUCC taxonomy code of the provider's primary specialty.
+          example: "207LP3000X"
+        primary_specialty:
+          type: string
+          description: Name of the primary specialty.
+          example: "Pediatric Anesthesiology Physician"
+        primary_classification:
+          type: string
+          description: NUCC classification of the primary specialty.
+          example: "Anesthesiology"
+        occupation_group:
+          type: string
+          description: NUCC grouping of the primary specialty.
+          example: "Allopathic & Osteopathic Physicians"
+        credentials:
+          type: array
+          items:
+            type: string
+          description: Credentials reported to the registry.
+          example: ["MD"]
+        is_sole_proprietor:
+          type: boolean
+          description: Whether the provider is registered as a sole proprietor.
+          example: false
+        enumeration_date:
+          type: string
+          format: date
+          description: Date the NPI was issued.
+          example: "2008-04-02"
+        last_updated_date:
+          type: string
+          format: date
+          description: Date the provider last updated the registry record.
+          example: "2026-05-15"
+        snapshot_date:
+          type: string
+          format: date
+          description: Date of the registry snapshot this record comes from.
+          example: "2026-11-02"
+        taxonomies:
+          type: array
+          description: Specialties reported to the registry, one entry per specialty and license state.
+          items:
+            type: object
+            properties:
+              code:
+                type: string
+                description: NUCC taxonomy code.
+                example: "207LP3000X"
+              display_name:
+                type: string
+                example: "Pediatric Anesthesiology Physician"
+              classification:
+                type: string
+                example: "Anesthesiology"
+              specialization:
+                type: string
+                example: "Pediatric Anesthesiology"
+              taxonomy_group:
+                type: string
+                example: "Allopathic & Osteopathic Physicians"
+              is_primary:
+                type: boolean
+                description: Whether this is the provider's primary specialty.
+                example: true
+              license_state:
+                type: string
+                description: Two-letter code of the state that issued the license reported with this specialty.
+                example: "TX"
+              license_number:
+                type: string
+                description: License number reported with this specialty.
+                example: "P0303"
+        licenses:
+          type: array
+          description: Distinct state licenses reported to the registry.
+          items:
+            type: object
+            properties:
+              state_code:
+                type: string
+                description: Two-letter code of the issuing state.
+                example: "TX"
+              license_number:
+                type: string
+                example: "P0303"
     Profile:
       type: object
       description: Structured profile of the candidate based on StrictProfile schema.
@@ -4631,6 +4724,8 @@ components:
             type: string
           description: Data sources this search result comes from, such as `linkedin` or `healthcare`. Returned on `/v2/search` results.
           example: ["healthcare"]
+        healthcare:
+          $ref: '#/components/schemas/HealthcareInfo'
         first_name:
           type: string
           description: First name of the candidate.

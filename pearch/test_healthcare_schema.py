@@ -32,3 +32,17 @@ def test_registry_record_fields_survive_response_parsing(response_model):
         parsed_profile = response.search_results[0].profile
 
     assert parsed_profile.model_dump(include=set(profile)) == profile
+
+
+def test_registry_specialties_and_licenses_survive_response_parsing():
+    healthcare = {
+        "primary_taxonomy_code": "207LP3000X",
+        "credentials": ["MD"],
+        "enumeration_date": "2008-04-02",
+        "taxonomies": [{"code": "207LP3000X", "is_primary": True, "license_state": "TX", "license_number": "P0303"}],
+        "licenses": [{"state_code": "TX", "license_number": "P0303"}],
+    }
+
+    parsed = V1ProfileResponse.model_validate({"profile": {"docid": "npi:1346413036", "healthcare": healthcare}}).profile
+
+    assert parsed.healthcare.model_dump(mode="json", exclude_none=True) == healthcare
