@@ -22,7 +22,7 @@ paths:
         - Search
       description: |        
         
-        - Test this endpoint in the [playground](https://chat.pearch.ai/api-search/new)
+        - Test this endpoint in the [playground](https://platform.pearch.ai/dashboard?tab=people-search)
         - Check out official [Python client](https://github.com/Pearch-ai/pearch-client)        
         
         Run a search query. This accepts a natural language query as `query` parameter along with additional settings. It returns a list of profiles that match the query and orders them by relevance.
@@ -531,7 +531,7 @@ paths:
         - Enrichment
       description: |
 
-        - Test this endpoint in the [playground](https://chat.pearch.ai/api-enrichment?tab=company)
+        - Test this endpoint in the [playground](https://platform.pearch.ai/dashboard?tab=company-enrichment)
 
         Retrieve the complete stored company document using either its LinkedIn company slug or its website domain. The LinkedIn company slug is the part after `https://www.linkedin.com/company/` in a LinkedIn company URL.
 
@@ -670,7 +670,7 @@ paths:
         - Search
       description: |
         
-        - Test this endpoint in the [playground](https://chat.pearch.ai/api-leads-search/new)
+        - Test this endpoint in the [playground](https://platform.pearch.ai/dashboard?tab=company-search)
         - Check out official [Python client](https://github.com/Pearch-ai/pearch-client)        
         
         Endpoint for finding companies and related leads within those companies. Primary use case is for B2B sales, but can also be used for headhunting/executive search. It uses natural language query and returns a list of most relevant companies. Allows for generation of personalized outreach messages for the identified leads. Main difference with [/v2/search](/reference/post_v2-search) is that the search starts with shortlisting relevant companies first, then finding leads who necessarily activaly work at these companies.
@@ -1683,7 +1683,7 @@ paths:
         - Enrichment
       description: |
 
-        - Test this endpoint in the [playground](https://chat.pearch.ai/api-enrichment)
+        - Test this endpoint in the [playground](https://platform.pearch.ai/dashboard?tab=profile-enrichment)
         - Check out official [Python client](https://github.com/Pearch-ai/pearch-client)        
         
         Retrieve an enriched profile using a LinkedIn profile ID, profile UUID, or email address. A LinkedIn profile ID is the part after `https://www.linkedin.com/in/` in the profile URL.
