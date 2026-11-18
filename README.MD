@@ -105,6 +105,25 @@ results = client.search(V2SearchRequest(
 ))
 ```
 
+## Healthcare source (beta)
+
+By default `/v2/search` covers every data source: LinkedIn profiles and the US National Provider Identifier (NPI) registry of healthcare providers. Pass `sources` to choose: `["linkedin"]` returns only LinkedIn profiles, and `["healthcare"]` returns only registry records.
+
+```python
+results = client.search(V2SearchRequest(
+    query="family nurse practitioner in California",
+    type="pro",
+    sources=["healthcare"],
+    reveal_phones=True,
+))
+for result in results.search_results:
+    print(result.docid, result.profile.npi, result.profile.title)
+```
+
+The `healthcare` source adds about 6.8 million US healthcare providers from the CMS NPPES registry who have no matching LinkedIn profile: physicians, nurse practitioners, physician assistants, dentists, pharmacists, therapists, and other providers with an NPI. A registry record has `docid` `npi:<NPI>`, the `npi` field, and a null `linkedin_slug`; it has the provider's specialty, practice location, and state licenses, but no work history. `reveal_phones` returns the registry's practice phone when no other provider shares it, plus any phones and emails our contact providers find. Expect fewer contacts than on LinkedIn profiles. Retrieve a single registry record with `V1ProfileRequest(docid="npi:<NPI>")`.
+
+**The healthcare source is in beta.** Coverage, ranking, and contact enrichment for registry records may change, and you may run into bugs. Please report problems to [support@pearch.ai](mailto:support@pearch.ai).
+
 ## Count matching profiles (/v2/search/count)
 
 Use `search_count` to count profiles without returning profile records. It accepts a natural-language `query`, structured `search_requirements`, or `custom_filters`. Filters can be combined with either natural-language input.
@@ -335,7 +354,7 @@ with PearchClient() as client:
 ```
 
 Available parameters:
-- `docid` (required): LinkedIn profile ID
+- `docid` (required): LinkedIn profile ID, or `npi:<NPI>` for a healthcare registry record (beta). Registry records are not refreshed, so leave `high_freshness` off for them.
 - `high_freshness` (optional): Enable real-time profile updates (`realtime_profiles_cost`)
 - `fast` (optional, default `False`): Prioritize speed when retrieving requested emails and phone numbers. This can reduce response time but may return fewer contacts than standard enrichment. This option is separate from `/v2/search`'s `type`.
 - `reveal_emails` (optional): Include email addresses if available (`email_cost` when emails are found). Deprecated: `show_emails` (still supported but deprecated)

@@ -180,6 +180,8 @@ class CompanyExperienceGroup(BaseModel):
 class Profile(BaseModel):
     docid: str | None = None
     linkedin_slug: str | None = None
+    npi: str | None = None
+    sources: List[str] | None = None
     first_name: str | None = None
     middle_name: str | None = None
     last_name: str | None = None
@@ -540,6 +542,7 @@ class V2SearchRequest(BaseModel):
     offset: int | None = Field(default=None, ge=0)
     docid_blacklist: List[str] | None = None
     docid_whitelist: List[str] | None = None
+    sources: List[Literal["linkedin", "healthcare"]] | None = Field(default=None, min_length=1)
     require_emails: bool | None = None
     show_emails: bool | None = None
     require_phone_numbers: bool | None = None
