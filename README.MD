@@ -561,6 +561,14 @@ Available in editable installation.
 pytest
 ```
 
+`pearch/test_contract.py` holds the contract tests: what a live API must deliver for every public client method.
+Pearch runs them against production on a schedule, and any error response fails them.
+
+```
+pytest -m contract_health pearch/test_contract.py
+pytest -m contract_full pearch/test_contract.py
+```
+
  
 # Development
 
