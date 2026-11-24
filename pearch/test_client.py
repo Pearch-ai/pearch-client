@@ -414,7 +414,7 @@ def generate_curl_command(client_method: str, request: Any) -> str:
         "search_company_leads": ("POST", "v2/search_company_leads"),
         "get_company": ("GET", "v2/company"),
         "search_count": ("POST", "v2/search/count"),
-        "search_submit": ("POST", "v2/search/submit"),
+        "search_submit": ("POST", "v2/search"),
         "get_search_status": ("GET", "v2/search/status"),
     }
 
@@ -439,7 +439,10 @@ def generate_curl_command(client_method: str, request: Any) -> str:
         curl_parts.extend(["-H", f"'X-Test-Secret: {token}'"])
 
     if http_method == "POST" and hasattr(request, "model_dump"):
-        request_json = json.dumps(request.model_dump(exclude_none=True))
+        body = request.model_dump(exclude_none=True, by_alias=True)
+        if client_method == "search_submit":
+            body["async"] = True
+        request_json = json.dumps(body)
         curl_parts.extend(["-d", f"'{request_json}'"])
     elif http_method == "GET" and request is not None and hasattr(request, "model_dump"):
         params = request.model_dump(exclude_none=True)
@@ -633,7 +636,8 @@ async def test_profile_batch():
     assert credits_before - credits_after == response.credits_used, "Credits check failed"
 
 @pytest.mark.asyncio
-async def test_v1_fast_search():
+async def test_deprecated_v1_fast_search():
+    """Deprecated compatibility check. Don't use search_v1. Use POST /v2/search via search()."""
     credits1 = await get_credits()
     request = V1SearchRequest(
         query="software engineer",
@@ -1165,7 +1169,11 @@ async def test_company():
 
 
 @pytest.mark.asyncio
-async def test_get_search_status():
+async def test_deprecated_search_submit_and_status():
+    """Deprecated compatibility check. Don't use search_submit or get_search_status.
+
+    Start with POST /v2/search and async=true. Poll POST /v2/search with thread_id.
+    """
     start_time = time.time()
     credits1 = await get_credits()
     first_submit_request = V2SearchRequest(
@@ -1235,6 +1243,7 @@ async def test_async_search_v2():
     generate_curl_command("search", first_request)
     response = await AsyncPearchClient().search(first_request)
     assert response.status == "pending", "Async submit did not return pending"
+    assert response.thread_id
 
     check_results = V2SearchRequest(
         thread_id=response.thread_id,

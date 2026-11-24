@@ -71,7 +71,7 @@ paths:
 
         ### Asynchronous search
 
-        Set `"async": true` in the JSON body of `POST /v2/search` to run a search in the background. A new task returns HTTP 202 with `task_id`, `uuid` (the same identifier), and `thread_id`. Use `task_id` to [poll for the result](https://apidocs.pearch.ai/docs/asynchronous-search#poll-for-results) and `thread_id` to paginate. A cached page can return HTTP 200 with results immediately.
+        Set `"async": true` in the JSON body of `POST /v2/search` to run a search in the background. On HTTP 202, save `thread_id`. To [poll for the result](https://apidocs.pearch.ai/docs/asynchronous-search#poll-for-results), send `POST /v2/search` with only `thread_id` in the JSON body. HTTP 202 means the search is still running. HTTP 200 returns the results, including when a cached page is available immediately. Reuse `thread_id` with `limit` and `offset` to paginate.
 
         ```json
         {"query": "Python developer in Ohio", "type": "fast", "async": true}
@@ -81,9 +81,9 @@ paths:
 
         Supply `webhook_url`, for example `https://client.example.com/callback?token=<your-webhook-secret>`. Use HTTPS and a dedicated secret generated and verified by your application. The supplied URL, including query parameters, is used for delivery. Callbacks have no HMAC signature or timestamp header; the URL secret does not provide cryptographic payload integrity or timestamp-based replay protection.
 
-        Each callback includes `uuid`, `task_id` (equal to `uuid`), `thread_id`, and `task_status`. Deduplicate by `task_id`, since separate tasks can share a thread. Every retry sends identical JSON bytes.
+        Each callback includes `uuid`, `task_id` (a compatibility alias for `uuid`), `thread_id`, and `task_status`. Deduplicate by `uuid`, since separate tasks can share a thread. Every retry sends identical JSON bytes.
 
-        A successful callback preserves the synchronous result fields, including `status="Done"`, `search_results` and `search_requirements`, and adds `task_id` and `task_status="completed"`. Polling uses the outer `status="completed"`; the nested result's `status="Done"` also means success.
+        A successful callback preserves the synchronous result fields, including `status="Done"`, `search_results` and `search_requirements`, and adds `task_id` and `task_status="completed"`.
 
         Example successful callback (other search-result fields omitted):
 
@@ -103,7 +103,7 @@ paths:
 
         Delivery makes at most four attempts: one immediately, then retries after waits of 1, 2, and 4 seconds following the previous failure. Every non-2xx response or transport error triggers a retry. Each attempt uses a 10-second connection/read timeout; redirects are not followed. Return any 2xx promptly after safely accepting the event, including duplicates. Failed delivery does not rerun the search or change its completion status.
 
-        Retries run in the API worker, without a durable delivery queue. A process crash or restart can interrupt delivery, and delivery stops after the fourth failure. For newly started background tasks (HTTP 202), [poll for the result](https://apidocs.pearch.ai/docs/asynchronous-search#poll-for-results) if the callback is missed. For cached requests (HTTP 200), process the result in that HTTP response: polling the new task ID can return `completed` with `result=null`. If needed, reload the cached page using `thread_id` with the same `limit` and `offset`; this creates a separate API-call identifier.
+        Retries run in the API worker, without a durable delivery queue. A process crash or restart can interrupt delivery, and delivery stops after the fourth failure. After HTTP 202, [poll with `thread_id`](https://apidocs.pearch.ai/docs/asynchronous-search#poll-for-results) to retrieve results if a callback is missed. When the original request returns HTTP 200, read the results from that response.
 
         **Cost: (number of profiles returned) × (credits for `type` + `insights` + `high_freshness` + `reveal_emails` + `reveal_phones`).**
 
@@ -270,7 +270,7 @@ paths:
                 async:
                   type: boolean
                   default: false
-                  description: If true, a new background search returns HTTP 202 with task_id, uuid (equal to task_id), and thread_id. Poll using task_id; paginate using thread_id. Cached thread results can return HTTP 200 immediately.
+                  description: If true, a new background search returns HTTP 202. Poll this endpoint with the returned thread_id. Cached thread results can return HTTP 200 immediately.
                 webhook_url:
                   type: string
                   format: uri
@@ -278,7 +278,7 @@ paths:
                   example: "https://client.example.com/pearch/results"
       responses:
         "202":
-          description: Search task submitted successfully
+          description: Search accepted or still in progress
           content:
             application/json:
               schema:
@@ -286,14 +286,14 @@ paths:
                 properties:
                   uuid:
                     type: string
-                    description: API-call identifier, equal to task_id.
+                    description: API-call identifier for the background search.
                   task_id:
                     type: string
-                    description: Unique identifier for the submitted search task.
+                    description: Compatibility alias for uuid. Use thread_id for polling.
                     example: ec191bf9-99ff-4989-8383-c97c71fafb6d
                   thread_id:
                     type: string
-                    description: Thread ID for paging through saved results once available. A request for a thread whose first search is still in progress returns HTTP 202.
+                    description: Thread ID for polling and paging through saved results. A poll returns HTTP 202 while the search is in progress.
                     example: 550e8400-e29b-41d4-a716-446655440000
                   status:
                     type: string
@@ -312,7 +312,7 @@ paths:
                 properties:
                   uuid:
                     type: string
-                    description: Unique identifier for this API call. Equal to task_id for its asynchronous task; different from thread_id.
+                    description: Unique identifier for this API call.
                     example: "ec191bf9-99ff-4989-8383-c97c71fafb6d"
                   thread_id:
                     type: string

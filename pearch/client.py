@@ -221,6 +221,9 @@ class PearchClient:
         This is the recommended search endpoint with advanced parameters for
         granular control over search behavior.
 
+        Set ``async_=True`` to start a background search. Poll with
+        ``search(V2SearchRequest(thread_id=response.thread_id))``.
+
         Args:
             request: Search request parameters
 
@@ -308,36 +311,30 @@ class PearchClient:
 
     def search_submit(self, request: V2SearchRequest) -> V2SearchSubmitResponse:
         """
-        Submit a search task for background execution
+        Deprecated. Don't use ``search_submit``.
 
-        Submit a search query to be processed asynchronously. Returns a task ID
-        and thread ID that can be used to check the status, retrieve results,
-        and paginate through search results.
-
-        Args:
-            request: Search submit request parameters
-
-        Returns:
-            Search submit response with task ID, thread ID, and status
+        Use ``search`` with ``V2SearchRequest(async_=True, ...)`` to send
+        ``POST /v2/search`` with ``"async": true``.
         """
         logger.info(f"Submitting search task with query: {request.query}")
 
         response_data = self._make_request(
             method="POST",
-            endpoint="v2/search/submit",
-            data=request.model_dump(exclude_none=True),
+            endpoint="v2/search",
+            data={**request.model_dump(exclude_none=True, by_alias=True), "async": True},
         )
 
         return V2SearchSubmitResponse(**response_data)
 
     def get_search_status(self, task_id: str) -> V2SearchStatusResponse:
         """
-        Get the status of a submitted search task
+        Deprecated. Don't use ``get_search_status``.
 
-        Check the current status of a search task and retrieve results if completed.
+        Poll with ``search(V2SearchRequest(thread_id=thread_id))``, which sends
+        ``POST /v2/search`` with the ``thread_id`` from the initial response.
 
         Args:
-            task_id: The task ID returned from search_submit
+            task_id: The task ID returned by a background search.
 
         Returns:
             Search status response with current status and results if available
@@ -355,10 +352,9 @@ class PearchClient:
 
     def search_v1(self, request: V1SearchRequest) -> V1ProSearchResponse:
         """
-        Execute a search query (v1 legacy endpoint)
+        Deprecated. Don't use ``search_v1``.
 
-        Legacy search endpoint that accepts parameters as query parameters.
-        Consider using the v2 search endpoint for new implementations.
+        Use ``search(V2SearchRequest(...))`` to send ``POST /v2/search``.
 
         Args:
             request: Search request parameters
@@ -770,6 +766,9 @@ class AsyncPearchClient:
         """
         Execute an enhanced search query (v2 endpoint) - async version
 
+        Set ``async_=True`` to start a background search. Poll with
+        ``await search(V2SearchRequest(thread_id=response.thread_id))``.
+
         Args:
             request: Search request parameters
 
@@ -850,36 +849,30 @@ class AsyncPearchClient:
 
     async def search_submit(self, request: V2SearchRequest) -> V2SearchSubmitResponse:
         """
-        Submit a search task for background execution - async version
+        Deprecated. Don't use ``search_submit``.
 
-        Submit a search query to be processed asynchronously. Returns a task ID
-        and thread ID that can be used to check the status, retrieve results,
-        and paginate through search results.
-
-        Args:
-            request: Search submit request parameters
-
-        Returns:
-            Search submit response with task ID, thread ID, and status
+        Use ``search`` with ``V2SearchRequest(async_=True, ...)`` to send
+        ``POST /v2/search`` with ``"async": true``.
         """
         logger.info(f"Submitting async search task with query: {request.query}")
 
         response_data = await self._make_request(
             method="POST",
-            endpoint="v2/search/submit",
-            data=request.model_dump(exclude_none=True),
+            endpoint="v2/search",
+            data={**request.model_dump(exclude_none=True, by_alias=True), "async": True},
         )
 
         return V2SearchSubmitResponse(**response_data)
 
     async def get_search_status(self, task_id: str) -> V2SearchStatusResponse:
         """
-        Get the status of a submitted search task - async version
+        Deprecated. Don't use ``get_search_status``.
 
-        Check the current status of a search task and retrieve results if completed.
+        Poll with ``await search(V2SearchRequest(thread_id=thread_id))``, which
+        sends ``POST /v2/search`` with the ``thread_id`` from the initial response.
 
         Args:
-            task_id: The task ID returned from search_submit
+            task_id: The task ID returned by a background search.
 
         Returns:
             Search status response with current status and results if available
@@ -897,7 +890,9 @@ class AsyncPearchClient:
 
     async def search_v1(self, request: V1SearchRequest) -> List[Profile]:
         """
-        Execute a search query (v1 legacy endpoint) - async version
+        Deprecated. Don't use ``search_v1``.
+
+        Use ``search(V2SearchRequest(...))`` to send ``POST /v2/search``.
 
         Args:
             request: Search request parameters

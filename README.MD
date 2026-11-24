@@ -108,7 +108,7 @@ results = client.search(V2SearchRequest(
 
 Set `"async": true` in the JSON body of `POST /v2/search`. In Python, pass `async_=True` to `V2SearchRequest` with either client.
 
-A new task returns HTTP 202. A cached page can return HTTP 200 with results immediately. The [asynchronous search guide](https://apidocs.pearch.ai/docs/asynchronous-search) shows how to poll for results and load more pages.
+A new search returns HTTP 202. To poll, call `search(V2SearchRequest(thread_id=response.thread_id))`. Repeat while the search is pending or running. When the response status is `Done`, read `search_results`. A cached page can return results immediately. [Asynchronous search guide](https://apidocs.pearch.ai/docs/asynchronous-search)
 
 ## Healthcare source (beta)
 

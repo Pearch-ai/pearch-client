@@ -71,6 +71,10 @@ async def test_fast_search_returns_profiles(client):
 
 @pytest.mark.contract_full
 async def test_submitted_pro_search_returns_scored_profiles_with_insights(client):
+    """Deprecated compatibility check. Don't use search_submit or get_search_status.
+
+    Start with POST /v2/search and async=true. Poll POST /v2/search with thread_id.
+    """
     request = V2SearchRequest(
         query=QUERY,
         type="pro",
@@ -143,6 +147,7 @@ async def test_company_is_found_by_linkedin_slug_and_by_domain(client):
 
 @pytest.mark.contract_full
 async def test_v1_search_returns_profiles(client):
+    """Deprecated compatibility check. Don't use search_v1. Use POST /v2/search via search()."""
     async with client:
         profiles = await client.search_v1(V1SearchRequest(query="software engineer", type="fast", limit=3))
     assert profiles

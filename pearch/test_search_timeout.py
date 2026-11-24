@@ -20,10 +20,9 @@ def test_search_request_rejects_non_positive_budgets(parameter, value):
         V2SearchRequest(query="engineers", **{parameter: value})
 
 
-@pytest.mark.parametrize("path", ["/v2/search", "/v2/search/submit"])
-def test_openapi_documents_both_budget_names(path):
+def test_openapi_documents_both_budget_names():
     source = Path(__file__).resolve().parents[1] / "pearch-openapi.yaml"
-    operation = yaml.safe_load(source.read_text())["paths"][path]["post"]
+    operation = yaml.safe_load(source.read_text())["paths"]["/v2/search"]["post"]
     properties = operation["requestBody"]["content"]["application/json"]["schema"]["properties"]
     for parameter in ("time_budget", "timeout"):
         assert properties[parameter]["type"] == "integer"
