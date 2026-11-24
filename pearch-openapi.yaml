@@ -69,9 +69,15 @@ paths:
 
         Check out other parameters below to adjust speed vs quality and additional data that can be returned by the endpoint. 
 
-        ### Async search callbacks
+        ### Asynchronous search
 
-        A new asynchronous search returns HTTP 202 with `task_id`, `uuid` (the same identifier), and `thread_id`. A cached thread result can return HTTP 200 immediately. Use `async=true` on `/v2/search`; `/v2/search/submit` is asynchronous by default.
+        Set `"async": true` in the JSON body of `POST /v2/search` to run a search in the background. A new task returns HTTP 202 with `task_id`, `uuid` (the same identifier), and `thread_id`. Use `task_id` to [poll for the result](https://apidocs.pearch.ai/docs/asynchronous-search#poll-for-results) and `thread_id` to paginate. A cached page can return HTTP 200 with results immediately.
+
+        ```json
+        {"query": "Python developer in Ohio", "type": "fast", "async": true}
+        ```
+
+        ### Async search callbacks
 
         Supply `webhook_url`, for example `https://client.example.com/callback?token=<your-webhook-secret>`. Use HTTPS and a dedicated secret generated and verified by your application. The supplied URL, including query parameters, is used for delivery. Callbacks have no HMAC signature or timestamp header; the URL secret does not provide cryptographic payload integrity or timestamp-based replay protection.
 
@@ -97,11 +103,11 @@ paths:
 
         Delivery makes at most four attempts: one immediately, then retries after waits of 1, 2, and 4 seconds following the previous failure. Every non-2xx response or transport error triggers a retry. Each attempt uses a 10-second connection/read timeout; redirects are not followed. Return any 2xx promptly after safely accepting the event, including duplicates. Failed delivery does not rerun the search or change its completion status.
 
-        Retries run in the API worker, without a durable delivery queue. A process crash or restart can interrupt delivery, and delivery stops after the fourth failure. For newly started background tasks (HTTP 202), reconcile missing callbacks through `/v2/search/status/{task_id}`. For cached requests (HTTP 200), process the result in that HTTP response: polling the new task ID can return `completed` with `result=null`. If needed, reload the cached page using `thread_id` with the same `limit` and `offset`; this creates a separate API-call identifier.
+        Retries run in the API worker, without a durable delivery queue. A process crash or restart can interrupt delivery, and delivery stops after the fourth failure. For newly started background tasks (HTTP 202), [poll for the result](https://apidocs.pearch.ai/docs/asynchronous-search#poll-for-results) if the callback is missed. For cached requests (HTTP 200), process the result in that HTTP response: polling the new task ID can return `completed` with `result=null`. If needed, reload the cached page using `thread_id` with the same `limit` and `offset`; this creates a separate API-call identifier.
 
         **Cost: (number of profiles returned) × (credits for `type` + `insights` + `high_freshness` + `reveal_emails` + `reveal_phones`).**
 
-        **Rate limit: 60 actual search requests per user per 60 seconds.** `/v2/search`, `/v2/search/submit`, and `/v2/search/count` share this limit. Fully cached thread reloads that do not run a new search use a separate higher limit of 120 cached requests per user per 60 seconds. When the rate limit is exceeded, the API returns HTTP 429 with details about the triggered window, current value, and limit.
+        **Rate limit: 60 actual search requests per user per 60 seconds.** Synchronous and asynchronous `/v2/search` executions share this limit with `/v2/search/count`. Fully cached thread reloads that do not run a new search use a separate higher limit of 120 cached requests per user per 60 seconds. When the rate limit is exceeded, the API returns HTTP 429 with details about the triggered window, current value, and limit.
 
       security:
         - bearerAuth: []
@@ -436,7 +442,7 @@ paths:
 
         **Cost: 2 credits for a custom-filter-only request; 5 credits when `query` or `search_requirements` is present, including requests that also contain custom filters; plus 5 credits when `stats=true`.**
 
-        **Rate limit: 60 requests per user per 60 seconds.** This endpoint shares the same rate limit as actual `/v2/search` and `/v2/search/submit` executions. When the rate limit is exceeded, the API returns HTTP 429 with details about the triggered window, current value, and limit.
+        **Rate limit: 60 requests per user per 60 seconds.** This endpoint shares the limit with synchronous and asynchronous `/v2/search` executions. When the rate limit is exceeded, the API returns HTTP 429 with details about the triggered window, current value, and limit.
 
         _Check out official [Python client](https://github.com/Pearch-ai/pearch-client)_
       security:
@@ -1147,11 +1153,7 @@ paths:
 
         By default, history includes calls made with every API key assigned to the authenticated user. Pass `api_key` to return calls made with one specific key only.
         
-        This endpoint returns history for the following endpoints:
-        - `/v1/search`
-        - `/v2/search`
-        - `/v2/search/submit`
-        - `/v2/search_company_leads`
+        History includes people and company lead searches. Each entry records the path used by the original request.
 
         **Cost: 0 credits**
         

@@ -44,9 +44,8 @@ With `high_freshness=True`, refreshed profiles include `employment_type` at `pro
 
 Rate limits are per user and use a rolling 60 second window. When a limit is exceeded, the API returns HTTP 429 with details about the triggered window, current value, and limit.
 
-- `/v2/search`, `/v2/search/submit`, and `/v2/search/count`: 60 actual search/count requests per 60 seconds, shared across these endpoints. Fully cached `/v2/search` thread reloads that do not run a new search use a separate 120 requests per 60 seconds limit.
+- `/v2/search` and `/v2/search/count` share a limit of 60 search and count executions per 60 seconds. Fully cached search pages have a separate limit of 120 requests per 60 seconds.
 - `/v2/company`: 180 requests per 60 seconds.
-- `/v1/search`: 60 requests per 60 seconds.
 - `/v1/profile`: 60 requests per 60 seconds.
 - `/v1/profile/batch`: 180 batch requests per 60 seconds. Each batch counts as one request regardless of item count.
 
@@ -104,6 +103,12 @@ results = client.search(V2SearchRequest(
     timeout=45,
 ))
 ```
+
+## Run searches in the background
+
+Set `"async": true` in the JSON body of `POST /v2/search`. In Python, pass `async_=True` to `V2SearchRequest` with either client.
+
+A new task returns HTTP 202. A cached page can return HTTP 200 with results immediately. The [asynchronous search guide](https://apidocs.pearch.ai/docs/asynchronous-search) shows how to poll for results and load more pages.
 
 ## Healthcare source (beta)
 
