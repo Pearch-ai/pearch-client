@@ -185,7 +185,7 @@ paths:
                 open_to_work:
                   type: boolean
                   default: false
-                  description: Require a positive open-to-work signal in the profile index. False or omitted leaves the search unrestricted by this signal.
+                  description: Require a positive open-to-work signal. Search uses the profile index for candidate retrieval and checks the current LinkedIn signal when high_freshness is enabled. False or omitted leaves the search unrestricted by this flag.
                 custom_filters:
                   $ref: '#/components/schemas/CustomFilters'
                 custom_filters_mode:

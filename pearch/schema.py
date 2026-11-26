@@ -569,7 +569,7 @@ class V2SearchRequest(BaseModel):
     strict_filters: bool | None = None
     open_to_work: bool | None = Field(
         default=None,
-        description="Require a positive open-to-work signal in the profile index.",
+        description="Require a positive open-to-work signal. With high_freshness enabled, recheck the current LinkedIn signal.",
     )
     filter_out_no_emails: bool | None = None
     reveal_emails: bool | None = None
