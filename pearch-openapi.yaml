@@ -55,7 +55,7 @@ paths:
 
         Send the previous response's `thread_id` with `limit` and `offset` to page through saved ranked candidates. The API applies page filters before the offset. You can change profile ID lists, liked-profile exclusions, contact filters and reveal options, freshness, insights, response formatting, and the time budget for each page.
 
-        Omit fixed search parameters such as `query`, `search_requirements`, and `custom_filters`, or repeat their saved values. Empty fixed parameters are treated as omitted. Start a new search without `thread_id` to change the search criteria or retrieve more candidates.
+        Omit fixed search parameters such as `query`, `search_requirements`, `custom_filters`, and `open_to_work`, or repeat their saved values. Empty fixed parameters are treated as omitted. Start a new search without `thread_id` to change the search criteria or retrieve more candidates.
 
         ### Scoring and result order
 
@@ -182,6 +182,10 @@ paths:
                     Fill below-limit responses with low-confidence results when profile scoring exhausts candidates before reaching the requested limit. These fallback profiles are marked with their score and remain free for search and scoring. When contact reveal is requested, fallback profiles are enriched like regular results and `credits_charged` includes only contact data actually returned.
 
                     On a saved thread, set this to false to exclude saved low-confidence results. Setting it to true requires the original search to have enabled it.
+                open_to_work:
+                  type: boolean
+                  default: false
+                  description: Require a positive open-to-work signal in the profile index. False or omitted leaves the search unrestricted by this signal.
                 custom_filters:
                   $ref: '#/components/schemas/CustomFilters'
                 custom_filters_mode:
@@ -430,17 +434,17 @@ paths:
       description: |
         **Do not use this endpoint if you only want to estimate the total number of results for a query.** Use `total_estimate` from the `/v2/search` response instead; it supersedes this endpoint's count as the more accurate estimate.
 
-        Return the number of profiles that match a natural-language `query`, structured `search_requirements`, or `custom_filters`.
+        Return the number of profiles that match a natural-language `query`, structured `search_requirements`, or filters.
 
         Queries and search requirements use the same parsing and filtering behavior as a superfast search, but the endpoint does not return profiles. Custom-filter-only requests continue to use the optimized custom-filter count path unless `stats` is true.
 
         Set `stats` to true to aggregate canonical profile fields from a sample of up to 1,000 matching profiles. Repeated values are counted at most once per profile. The response reports the full matching count separately from the sampled profile count. Profile statistics add 5 credits to the request cost.
 
-        The request must include at least one of `query`, `search_requirements`, or `custom_filters`. Filters can be combined with either natural-language input and are ANDed with the derived search filters, matching `/v2/search` behavior. If both `query` and `search_requirements` are provided, `search_requirements` takes precedence.
+        Provide `query`, `search_requirements`, non-empty `custom_filters`, or `open_to_work: true`. Use `open_to_work: true` by itself for a filter-only count, or combine it with other criteria. Filters are ANDed with the derived search filters, matching `/v2/search` behavior. If both `query` and `search_requirements` are provided, `search_requirements` takes precedence.
 
         Expect slower response for expected large counts. E.g. for title="manager" from "US" you should expect slower response and approximate=true in the response. For title="meteorologist" from "tokio" expect faster response and approximate=false in the response.
 
-        **Cost: 2 credits for a custom-filter-only request; 5 credits when `query` or `search_requirements` is present, including requests that also contain custom filters; plus 5 credits when `stats=true`.**
+        **Cost: 2 credits for a filter-only request; 5 credits when `query` or `search_requirements` is present, including requests that also contain custom filters; plus 5 credits when `stats=true`.**
 
         **Rate limit: 60 requests per user per 60 seconds.** This endpoint shares the limit with synchronous and asynchronous `/v2/search` executions. When the rate limit is exceeded, the API returns HTTP 429 with details about the triggered window, current value, and limit.
 
@@ -463,6 +467,10 @@ paths:
                   description: Structured requirements interpreted into search filters. If present, these take precedence over `query`. A request using search requirements costs 5 credits before optional stats.
                   items:
                     $ref: '#/components/schemas/SearchRequirement'
+                open_to_work:
+                  type: boolean
+                  default: false
+                  description: Require a positive open-to-work signal in the profile index. False or omitted leaves the search unrestricted by this signal.
                 custom_filters:
                   $ref: '#/components/schemas/CustomFilters'
                 custom_filters_mode:
