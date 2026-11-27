@@ -567,6 +567,10 @@ class V2SearchRequest(BaseModel):
     custom_filters: CustomFilters | None = None
     custom_filters_mode: CustomFiltersMode | None = None
     strict_filters: bool | None = None
+    open_to_work: bool | None = Field(
+        default=None,
+        description="Require a positive open-to-work signal. With high_freshness enabled, recheck the current LinkedIn signal.",
+    )
     filter_out_no_emails: bool | None = None
     reveal_emails: bool | None = None
     filter_out_no_phones: bool | None = None
@@ -603,6 +607,10 @@ class V2SearchCountRequest(BaseModel):
         description="Structured search requirements. A requirements-based count costs 5 credits.",
     )
     strict_filters: bool | None = None
+    open_to_work: bool | None = Field(
+        default=None,
+        description="Require a positive open-to-work signal in the profile index.",
+    )
     custom_filters: CustomFilters | None = None
     custom_filters_mode: CustomFiltersMode | None = None
     docid_blacklist: List[str] | None = None
